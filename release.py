@@ -25,11 +25,18 @@ def validate():
     """"""
     if subprocess.call(["pip list | grep wheel"], shell=True, **LOUD):
         print("wheel is required and not installed.\nUse `pip install wheel`\nTerminating...")
-        sys.exit(0)
+        sys.exit()
 
     if subprocess.call(["pip list | grep twine"], shell=True, **LOUD):
         print("twine is required and not installed.\nUse `pip install twine`\nTerminating...")
-        sys.exit(0)
+        sys.exit()
+
+
+def clean(curdir):
+    """"""
+    shutil.rmtree(os.path.join(curdir, 'dist'))
+    shutil.rmtree(os.path.join(curdir, 'build'))
+    shutil.rmtree(os.path.join(curdir, 'django_hacs.egg-info'))
 
 
 def main():
@@ -71,14 +78,20 @@ def main():
 
         if confirm in ('n', 'no'):
             print "Release process is halt due to user's  interruption."
-            exit(0)
+            sys.exit()
 
-    subprocess.call(["python setup.py sdist bdist_wheel"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    subprocess.call(["twine upload dist/*"])
+    curdir = os.path.dirname(os.path.abspath(__file__))
+
+    if subprocess.call(["python setup.py sdist bdist_wheel"], shell=True, cwd=curdir, **LOUD):
+        print "can't build! exiting.."
+        sys.exit()
+    if subprocess.call(["twine upload dist/*"], shell=True, cwd=curdir, **LOUD):
+        print "can't upload to PyPi server!"
+        clean(curdir)
+        sys.exit()
 
     if params.enable_hook_git_tag:
-        curdir = os.path.dirname(os.path.abspath(__file__))
-        if params['tag_message']:
+        if params.tag_message:
             try:
                 msg = params.tag_message % get_version()
             except TypeError:
@@ -86,18 +99,19 @@ def main():
         else:
             msg = "version: %s has been released" % get_version()
 
-        subprocess.call(["git tag -a %s -m %s" % (get_version(),  msg)], shell=True, cwd=curdir, **LOUD)
-        print " git tag -a %s -m %s" % (get_version(),  msg)
+        print " git tag -a %s -m '%s'" % (get_version(), msg)
+        if subprocess.call(["git tag -a %s -m \"%s\"" % (get_version(),  msg)], shell=True, cwd=curdir, **LOUD):
+            print "Can't make a git tag, do this manually"
 
-        subprocess.call(["git push --tags"], shell=True, cwd=curdir, **LOUD)
         print "git push --tags"
+        if subprocess.call(["git push --tags"], shell=True, cwd=curdir, **LOUD):
+            print "failed to push git server, do this manually"
+
     else:
-        print("You can also git tag the version automatically, by passing `--hook-git-tag` argument")
+        print("You can also git tag the version automatically, by passing `--hook-git-tag or -t` argument")
 
     # Let's clean
-    shutil.rmtree('dist')
-    shutil.rmtree('build')
-    shutil.rmtree('django_hacs.egg-info')
+    clean(curdir)
     sys.exit()
 
 if __name__ == '__main__':
