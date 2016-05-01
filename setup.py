@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 """Installer for the django-hacs package."""
 import os
-import sys
-import shutil
-import subprocess
 from setuptools import setup
 
 
