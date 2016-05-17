@@ -8,13 +8,16 @@ from django.conf import settings
 from django.core.cache import caches
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
-from django.urls import get_resolver, Resolver404
+try:
+    # expect django version 1.10.x or higher
+    from django.urls import get_resolver, Resolver404
+except ImportError:
+    from django.core.urlresolvers import get_resolver, Resolver404
 from django.utils.functional import cached_property
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
-
 from .globals import HACS_APP_NAME
 from .models import ContentTypeRoutingTable
 from .defaults import HACS_FALLBACK_URLCONF
