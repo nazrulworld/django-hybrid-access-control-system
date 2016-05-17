@@ -52,7 +52,7 @@ class RoutingTable(models.Model):
     generated_module = models.TextField(_('Generated Module'), null=True, blank=True, default=None)
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
     is_deleted = models.BooleanField(_('Soft Delete'), null=False, blank=True, default=False)
-    created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now())
+    created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now)
     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
     objects = RoutingTableManager()
