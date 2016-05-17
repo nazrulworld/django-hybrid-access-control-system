@@ -23,7 +23,7 @@ TEST_FIXTURE = os.path.join(CURRENT_PATH, 'fixtures', 'testing_fixture.json')
 ROUTE_FIXTURE = os.path.join(CURRENT_PATH, 'fixtures', 'testing_routing_fixture.json')
 
 
-class TestImportModule(TestCase):
+class TestImportRoutes(TestCase):
     """ """
     fixtures = (TEST_FIXTURE, )
 
@@ -204,4 +204,4 @@ class TestImportModule(TestCase):
 
     def tearDown(self):
 
-        super(TestImportModule, self).tearDown()
+        super(TestImportRoutes, self).tearDown()
