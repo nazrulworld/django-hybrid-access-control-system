@@ -110,14 +110,14 @@ class SiteRoutingTable(models.Model):
                               db_column='route_id',
                               db_constraint=False,
                               related_name='hacs_route_sites')
-    site = models.ForeignKey(Site,
+    site = models.OneToOneField(Site,
                              on_delete=models.CASCADE,
                              unique=True,
                              null=False,
                              blank=False,
                              related_name='hacs_site_routes')
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
-    created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now())
+    created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now)
     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
     objects = SiteRoutingTableManager()
@@ -198,7 +198,7 @@ class ContentTypeRoutingTable(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
-    created_on = models.DateTimeField(_('Created On'),  blank=True, default=timezone.now())
+    created_on = models.DateTimeField(_('Created On'),  blank=True, default=timezone.now)
     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
     objects = ContentTypeRoutingTableManager()
