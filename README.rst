@@ -1,5 +1,8 @@
 HACS(Hybrid Access Control System)
 ==================================
+.. image:: https://badge.fury.io/py/django-hacs.svg
+    :target: https://badge.fury.io/py/django-hacs
+
 The full featured advanced `Access Control System` powered by `Django <https://www.djangoproject.com/>`_. ``HACS`` provides enterprise standard authorization system,
 it also covers IAM(Identity and Access Management).
 
@@ -7,7 +10,7 @@ Features
 --------
 1. **Django MultiSite:** Support to run `multiple sites <https://docs.djangoproject.com/en/1.9/ref/contrib/sites/#associating-content-with-multiple-sites>`_ with single config file(settings), this is dynamic process, so you can add unlimited sites.
 
-2. **Firewall/Access Control:** This is routing table instead of `IP Table <https://en.wikipedia.org/wiki/Iptables>`_ for your application. This firewall can analyzes whether a request has authorized request path or request is directly handled to http404 handler. For example your application has a url route ``/admin/user/create`` and you define that this route is not for anonymous user and an anonymous use request with this url path, now in this case firewall simple halt further execution and transfer to http404 handler. This is pre-authorization process.
+2. **Firewall/Access Control:** This is ``routing table`` instead of `IP Table <https://en.wikipedia.org/wiki/Iptables>`_ for your application. This firewall can analyzes whether a request has authorized request path or request is directly handled to http404 handler. For example your application has a url route ``/admin/user/create`` and you define that this route is not for anonymous user and an anonymous use request with this url path, now in this case firewall simple halt further execution and transfer to http404 handler. This is pre-authorization process.
 
 3. **Advanced Authorization: (coming)** Committed to be more than combination of `Django Guardian <http://django-guardian.readthedocs.io/>`_ and `Django Authority <http://django-authority.readthedocs.io/en/latest/>`_ but definitely base idea could be from those.
 
