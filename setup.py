@@ -82,6 +82,6 @@ setup(
         'django',
     ],
     extras_require={
-        'test': [],
+        'test': ['pytest', 'pytest-django'],
     }
 )
