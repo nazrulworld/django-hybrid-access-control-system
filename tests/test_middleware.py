@@ -2,48 +2,47 @@
 # ++ This file `test_middleware.py` is generated at 3/7/16 6:11 PM ++
 import os
 import sys
+import time
+import pytest
 import hashlib
+import tempfile
 import datetime
-from importlib import import_module
-from django.conf import settings
-from django.utils import timezone
 from django.test import Client
 from django.test import TestCase
+from django.conf import settings
+from django.utils import timezone
+from importlib import import_module
+from django.core.cache import caches
 from django.test import RequestFactory
 from django.test import override_settings
 from django.test import modify_settings
 from django.contrib.auth.models import Group
-from django.contrib.sites.models import Site
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
-from django.core.cache import caches
 
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingTable
 from hacs.globals import HACS_SITE_CACHE
-
 from hacs.utils import set_site_urlconf
 from hacs.utils import generate_urlconf_file
-
 from hacs.middleware import UserModel
 from hacs.middleware import FirewallMiddleware
 from hacs.models import ContentTypeRoutingTable
 from hacs.middleware import DynamicRouteMiddleware
-
 from hacs.lru_wrapped import get_site_urlconf
 from hacs.lru_wrapped import get_group_key
 from hacs.lru_wrapped import get_user_key
 from hacs.lru_wrapped import get_generated_urlconf_file
 from hacs.lru_wrapped import get_generated_urlconf_module
 from hacs.lru_wrapped import clean_all_lru_caches
-
 from hacs.defaults import HACS_CACHE_SETTING_NAME
 from hacs.defaults import HACS_FALLBACK_URLCONF
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-sys.path.append('/tmp')
+if tempfile.gettempdir() not in sys.path:
+    sys.path.append(tempfile.gettempdir())
 
 TEST_USER_NAME = 'test_user'
 TEST_USER_EMAIL = 'test_user@test.co'
@@ -61,7 +60,7 @@ def clean_lru():
     clean_all_lru_caches()
 
 
-@override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
+@override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
 class TestMiddlewareFunction(TestCase):
 
     fixtures = (TEST_FIXTURE, )
@@ -93,6 +92,7 @@ class TestMiddlewareFunction(TestCase):
 
         site_route = SiteRoutingTable.objects.get(site=request.site)
         site_route.route.updated_on = timezone.now()
+        site_route.route.description = 'catch'
         site_route.route.save()
         set_site_urlconf(site=request.site)
 
