@@ -1,6 +1,3 @@
 [report]
 include =
-    src/django/*
-omit =
-    */test*
-    */upgrades/*
+    hacs
