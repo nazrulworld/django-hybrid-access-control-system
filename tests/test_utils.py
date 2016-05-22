@@ -2,16 +2,14 @@
 # ++ This file `test_utils.py` is generated at 3/7/16 6:12 PM ++
 import os
 import sys
-from importlib import import_module
-from django.test import TestCase
-from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
+import tempfile
 from django.utils import six
+from django.test import TestCase
+from importlib import import_module
 from django.test import RequestFactory
+from hacs.models import SiteRoutingTable
 from django.test import override_settings
 from django.contrib.auth.models import User
-from django.contrib.sites.models import Site
-from django.contrib.auth.models import Group
 from django.contrib.sites.shortcuts import get_current_site
 from hacs.utils import *
 
@@ -56,7 +54,7 @@ class UtilsTestCase(TestCase):
         result = get_user_key(request, prefix='hacs')
         self.assertEqual(result, 'hacs:site_%s:user_%s' % (request.site.id, user.id))
 
-    @override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
+    @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
     def test_get_generated_urlconf_file(self):
         """
         :return:
@@ -68,7 +66,7 @@ class UtilsTestCase(TestCase):
         result = get_generated_urlconf_file(site_route.route.route_name, prefix='hacs')
         self.assertEqual(result, '/tmp/hacs_%s_urls.py' % sanitize_filename(site_route.route.route_name))
 
-    @override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
+    @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
     def test_generate_urlconf_file(self):
 
         request = self.request_factory.request()
@@ -80,8 +78,10 @@ class UtilsTestCase(TestCase):
 
         generate_urlconf_file(filename, site_route.route)
         self.assertTrue(os.path.exists(filename))
+        # Clean generated
+        os.unlink(filename)
 
-    @override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
+    @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
     def test_get_generated_urlconf_module(self):
 
         request = self.request_factory.request()
@@ -89,13 +89,16 @@ class UtilsTestCase(TestCase):
         site_route = SiteRoutingTable.objects.get(site=site)
         filename = get_generated_urlconf_file(site_route.route.route_name, prefix='hacs')
         generate_urlconf_file(filename, site_route.route)
-        sys.path.append('/tmp')
+        if tempfile.gettempdir() not in sys.path:
+            sys.path.append(tempfile.gettempdir())
         result = get_generated_urlconf_module(filename, validation=True)
         self.assertEqual(result, 'hacs_default_route_urls')
         try:
             import_module(result)
         except ImportError:
             raise AssertionError("Code should not come here")
+        # Clean Generated File
+        os.unlink(filename)
 
     def test_sanitize_filename(self):
 
