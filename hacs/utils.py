@@ -153,6 +153,7 @@ def generate_urlconf_file_on_demand(route):
     """
     generated_urlconf_file = get_generated_urlconf_file(route.route_name)
     route_updated_on = route.updated_on
+
     if route_updated_on:
         # Making Native datetime from offset-aware datetime.
         # See http://goo.gl/eHOIe2
@@ -161,7 +162,7 @@ def generate_urlconf_file_on_demand(route):
     # we are checking if file need to be created
     if not os.path.exists(generated_urlconf_file) or \
         (os.path.exists(generated_urlconf_file) and route_updated_on and
-                 datetime.datetime.fromtimestamp(
+                 datetime.datetime.utcfromtimestamp(
                      os.path.getmtime(generated_urlconf_file)) < route_updated_on):
         # OK: we need to generate the file
         generate_urlconf_file(generated_urlconf_file, route)
