@@ -2,6 +2,10 @@ HACS(Hybrid Access Control System)
 ==================================
 .. image:: https://badge.fury.io/py/django-hacs.svg
     :target: https://badge.fury.io/py/django-hacs
+.. image:: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system.svg?branch=master
+    :target: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system
+.. image:: https://coveralls.io/repos/github/nazrulworld/django-hybrid-access-control-system/badge.svg?branch=master
+    :target: https://coveralls.io/github/nazrulworld/django-hybrid-access-control-system?branch=master
 
 The full featured advanced `Access Control System` powered by `Django <https://www.djangoproject.com/>`_. ``HACS`` provides enterprise standard authorization system,
 it also covers IAM(Identity and Access Management).
