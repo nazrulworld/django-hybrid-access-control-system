@@ -180,17 +180,30 @@ def generate_urlconf_file(filename, route):
 
         for url in route.urls:
             url_module = url['url_module']
+            if url.get('app_name'):
+                if isinstance(url_module, six.string_types):
+                    url_module = (url_module, url.get('app_name'))
+                elif isinstance(url_module, (tuple, list, set)) and len(url_module) == 1:
+                    url_module = tuple(url_module) + (url.get('app_name'))
+
             if not isinstance(url_module, six.string_types):
                 if isinstance(url_module, (list, set)):
                     url_module = tuple(url_module)
+                if isinstance(url_module, tuple):
+                    if len(url_module) > 2:
+                        url_module = url_module[0:2]
+                        if not url.get('namespace'):
+                            url['namespace'] = url_module[2]
 
                 url_module = smart_bytes(url_module)
             else:
-                url_module = "'%s'" % url_module
+                # `admin.site.urls` is kind of special case, i. admin autodiscover
+                if url_module != 'admin.site.urls':
+                    url_module = "'%s'" % url_module
 
-            urlpatterns += "\turl(r'{prefix}', include({url_module},{namespace})),\n".\
+            urlpatterns += "\turl(r'{prefix}', include({url_module}{namespace})),\n".\
                 format(prefix=url.get('prefix') + '/' if url.get('prefix', None) else '^', url_module=url_module,
-                       namespace=", namespace='%s'" % url.get('namespace', None) and url.get('namespace') or '')
+                       namespace=url.get('namespace') and ", namespace='%s'" % url.get('namespace', None) or '')
 
         error_handlers = ''
         if route.handlers:
