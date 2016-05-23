@@ -64,15 +64,14 @@
       "route_name": "default-route",
       "urls": [
         {
-          "prefix": null,
-          "url_module": "project_hacs.urls",
-          "namespace": null,
+          "prefix": "admin",
+          "url_module": "admin.site.urls",
           "children": []
         },
         {
           "prefix": "hacs",
           "url_module": ["hacs.urls", "hacs"],
-          "namespace": null,
+          "namespace": "hacs",
           "children": []
         }
       ],
@@ -97,15 +96,14 @@
       "route_name": "localhost-route",
       "urls": [
         {
-          "prefix": null,
-          "url_module": "project_hacs.urls",
-          "namespace": null,
+          "prefix": "admin",
+          "url_module": "admin.site.urls",
           "children": []
         },
         {
           "prefix": "hacs",
           "url_module": ["hacs.urls", "hacs"],
-          "namespace": null,
+          "namespace": "hacs",
           "children": []
         }
       ],
@@ -130,15 +128,14 @@
       "route_name": "user-route",
       "urls": [
         {
-          "prefix": null,
-          "url_module": "project_hacs.urls",
-          "namespace": null,
+          "prefix": "admin",
+          "url_module": "admin.site.urls",
           "children": []
         },
         {
           "prefix": "hacs",
           "url_module": ["hacs.urls", "hacs"],
-          "namespace": null,
+          "namespace": "hacs",
           "children": []
         }
       ],
@@ -165,15 +162,14 @@
       "route_name": "group-route",
       "urls": [
         {
-          "prefix": null,
-          "url_module": "project_hacs.urls",
-          "namespace": null,
+          "prefix": "admin",
+          "url_module": "admin.site.urls",
           "children": []
         },
         {
           "prefix": "hacs",
           "url_module": ["hacs.urls", "hacs"],
-          "namespace": null,
+          "namespace": "hacs",
           "children": []
         }
       ],
