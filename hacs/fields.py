@@ -4,7 +4,6 @@ import ast
 import json
 from django.db import models
 from django.utils import six
-from types import UnicodeType
 from django.conf import settings
 from django.utils.encoding import smart_bytes, smart_text
 from django.utils.translation import ugettext_lazy as _
