@@ -47,10 +47,6 @@ class JsonField(models.TextField):
             elif isinstance(value, six.string_types):
                 value = json.loads(smart_text(value), encoding=settings.DEFAULT_CHARSET)
 
-            elif type(value) == UnicodeType:
-                # Fallback Unicode problem
-                value = json.loads(smart_bytes(value), encoding=settings.DEFAULT_CHARSET)
-
         except ValueError:
             try:
                 # Fallback: django serializer may cast dict or list value as string
