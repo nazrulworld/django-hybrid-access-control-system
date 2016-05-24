@@ -280,7 +280,7 @@ def get_installed_apps_urlconf(pattern=r'*urls.py', to_json=False, exclude=()):
             result.append(item(module=urlconf, app_label=app.label, error_handlers=error_handlers, prefix=None))
 
     if to_json:
-        return json.dumps(list(result), cls=DjangoJSONEncoder, encoding=settings.DEFAULT_CHARSET)
+        return json.dumps(list(result), cls=DjangoJSONEncoder)
     else:
         return tuple(result)
 
