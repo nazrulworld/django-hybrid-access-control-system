@@ -12,6 +12,7 @@ from django.test import TestCase
 from django.conf import settings
 from django.utils import timezone
 from importlib import import_module
+from django.utils.encoding import smart_bytes
 from django.core.cache import caches
 from django.test import RequestFactory
 from django.test import override_settings
@@ -361,7 +362,7 @@ class TestFirewallMiddleware(TestCase):
         request = self.request_factory.request()
         request.path_info = u'/admin/'
         request.site = get_current_site(request)
-        session = request.session = self.SessionStore(hashlib.md5('hacs').hexdigest())
+        session = request.session = self.SessionStore(hashlib.md5(smart_bytes('hacs')).hexdigest())
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
 
         middleware = FirewallMiddleware()
@@ -418,7 +419,7 @@ class TestFirewallMiddleware(TestCase):
         request.path_info = u'/admin/'
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
-        request.session = self.SessionStore(hashlib.md5(user.username).hexdigest())
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
         middleware = FirewallMiddleware()
         middleware.process_request(request)
 
@@ -467,7 +468,7 @@ class TestFirewallMiddleware(TestCase):
                     os.unlink(os.path.join(root, file_name))
 
 
-@override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
+@override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
 class TestFirewallMiddlewareFromBrowser(TestCase):
 
     fixtures = (TEST_FIXTURE, )

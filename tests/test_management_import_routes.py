@@ -4,10 +4,10 @@ import os
 import shutil
 import tempfile
 from django.test import TestCase
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
+from django.utils.encoding import smart_text
 from django.core.management import call_command
 from django.core.management import CommandError
 from django.contrib.contenttypes.models import ContentType
@@ -140,49 +140,49 @@ class TestImportRoutes(TestCase):
             call_command('import_routes', omit_app_dir_walking=True)
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn("Required value is missing!", exc.message)
+            self.assertIn("Required value is missing!", smart_text(exc))
 
         # Test: validation error:: invalid/not installed app provided
         try:
             call_command('import_routes', exclude_apps=['fake_app'])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('Invalid app', exc.message)
+            self.assertIn('Invalid app', smart_text(exc))
 
         # Test: validation error:: invalid site name is provided
         try:
             call_command('import_routes', exclude_sites=[_test_site, 'fake_site', ])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_site', exc.message)
+            self.assertIn('fake_site', smart_text(exc))
 
         # Test: validation error:: invalid group name is provided
         try:
             call_command('import_routes', exclude_groups=[_test_group, 'fake_group', ])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_group', exc.message)
+            self.assertIn('fake_group', smart_text(exc))
 
         # Test: validation error:: invalid user name is provided
         try:
             call_command('import_routes', exclude_users=[_test_user, 'fake_user', ])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_user', exc.message)
+            self.assertIn('fake_user', smart_text(exc))
 
         # Test: with `source`, invalid app and path
         try:
             call_command('import_routes', source='fake_app:fake_file.json')
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('Invalid app path pattern', exc.message)
+            self.assertIn('Invalid app path pattern', smart_text(exc))
 
         # Test: with source, correct app but invalid path
         try:
             call_command('import_routes', source='hacs:fake_file.json')
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('Invalid source path specified!', exc.message)
+            self.assertIn('Invalid source path specified!', smart_text(exc))
         _temp_dir = tempfile.mkdtemp()
         shutil.copyfile(TEST_FIXTURE, os.path.join(_temp_dir, 'test.json'))
 
@@ -191,7 +191,7 @@ class TestImportRoutes(TestCase):
             call_command('import_routes', source='test.json')
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('Invalid source path specified!', exc.message)
+            self.assertIn('Invalid source path specified!', smart_text(exc))
 
         # Test: with `source` HACS_SERIALIZED_ROUTING_DIR is set but invalid file
         with self.settings(HACS_SERIALIZED_ROUTING_DIR=_temp_dir):
@@ -199,7 +199,7 @@ class TestImportRoutes(TestCase):
                 call_command('import_routes', source='fake_test.json')
                 raise AssertionError("Code should not reach here!, because of validation error")
             except CommandError as exc:
-                self.assertIn('Invalid source path specified!', exc.message)
+                self.assertIn('Invalid source path specified!', smart_text(exc))
 
 
     def tearDown(self):

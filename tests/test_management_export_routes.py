@@ -3,14 +3,16 @@
 import os
 import glob
 import json
+import pytest
 import shutil
 import tempfile
+from django.utils import six
 from django.test import TestCase
 from django.conf import settings
-from django.utils import six
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.utils.encoding import smart_text
 from django.core.management import call_command
 from django.core.management import CommandError
 from django.contrib.contenttypes.models import ContentType
@@ -319,49 +321,49 @@ class TestExportRoutes(TestCase):
             call_command('export_routes')
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertEqual("You have to pass either destination of output file or enable print only", exc.message)
+            self.assertEqual(smart_text("You have to pass either destination of output file or enable print only"), smart_text(exc))
 
         # Test: validation error:: serialized routing directory location not set
         try:
             call_command('export_routes', destination='my_fake.json')
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('You provide destination file name, not with full path', exc.message)
+            self.assertIn(smart_text('You provide destination file name, not with full path'), smart_text(exc))
 
         # Test: validation error:: invalid/not installed app provided
         try:
             call_command('export_routes', print_only=True, exclude_apps=['fake_app'])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('Invalid app', exc.message)
+            self.assertIn('Invalid app', smart_text(exc))
 
         # Test: validation error:: invalid route name is provided
         try:
             call_command('export_routes', print_only=True, exclude_routes=[_test_route1, 'fake_route',])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_route', exc.message)
+            self.assertIn('fake_route', smart_text(exc))
 
         # Test: validation error:: invalid site name is provided
         try:
             call_command('export_routes', print_only=True, exclude_sites=[_test_site, 'fake_site', ])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_site', exc.message)
+            self.assertIn('fake_site', smart_text(exc))
 
         # Test: validation error:: invalid group name is provided
         try:
             call_command('export_routes', print_only=True, exclude_groups=[_test_group, 'fake_group', ])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_group', exc.message)
+            self.assertIn('fake_group', smart_text(exc))
 
         # Test: validation error:: invalid user name is provided
         try:
             call_command('export_routes', print_only=True, exclude_users=[_test_user, 'fake_user', ])
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('fake_user', exc.message)
+            self.assertIn('fake_user', smart_text(exc))
 
         # Test: validation error:: extended natural key not applied if omit natural PK and FK
         try:
@@ -369,7 +371,7 @@ class TestExportRoutes(TestCase):
                          no_natural_foreign_keys=True, extended_natural_keys=True)
             raise AssertionError("Code should not reach here!, because of validation error")
         except CommandError as exc:
-            self.assertIn('--extended-natural-keys could be only applied', exc.message)
+            self.assertIn('--extended-natural-keys could be only applied', smart_text(exc))
 
 
     def tearDown(self):
