@@ -5,8 +5,7 @@ import ast
 import json
 from django.db import models
 from django.utils import six
-from django.conf import settings
-from django.utils.encoding import smart_bytes, smart_text
+from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -42,10 +41,10 @@ class JsonField(models.TextField):
 
         try:
             if isinstance(value, six.text_type):
-                value = json.loads(value, encoding=settings.DEFAULT_CHARSET)
+                value = json.loads(value)
 
             elif isinstance(value, six.string_types):
-                value = json.loads(smart_text(value), encoding=settings.DEFAULT_CHARSET)
+                value = json.loads(smart_text(value))
 
         except ValueError:
             try:
@@ -66,7 +65,7 @@ class JsonField(models.TextField):
         value = super(JsonField, self).get_prep_value(value)
         if isinstance(value, (dict, list, set, tuple)):
             try:
-                value = json.dumps(value, cls=DjangoJSONEncoder, encoding=settings.DEFAULT_CHARSET)
+                value = json.dumps(value, cls=DjangoJSONEncoder)
             except ValueError:
                 raise
         return value
