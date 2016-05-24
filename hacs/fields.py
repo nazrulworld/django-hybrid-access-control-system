@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 # ++ This file `fields.py` is generated at 3/4/16 5:54 PM ++
 import ast
 import json
