@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core import serializers
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import Group
+from django.utils.encoding import smart_text
 from django.contrib.auth import get_user_model
 from django.core.management import BaseCommand
 from django.core.management import CommandError
@@ -164,16 +165,16 @@ class Command(BaseCommand):
                     self._wrap_extended_natural_keys(objects)
 
                     with open(filename + '.tmp', 'w') as fp:
-                        json.dump(objects, fp=fp, cls=DjangoJSONEncoder, encoding=settings.DEFAULT_CHARSET)
+                        json.dump(objects, fp=fp, cls=DjangoJSONEncoder)
 
                 shutil.move(filename + '.tmp', filename)
 
         else:
             data = serializers.serialize(serializer, objects, **serializer_options)
             if options['extended_natural_keys'] and serializer == 'json':
-                data = json.loads(data, encoding=settings.DEFAULT_CHARSET)
+                data = json.loads(data)
                 self._wrap_extended_natural_keys(data)
-                data = json.dumps(data, cls=DjangoJSONEncoder, encoding=settings.DEFAULT_CHARSET)
+                data = json.dumps(data, cls=DjangoJSONEncoder)
             self.stdout.write(data)
 
     def collect_all_objects_list(self, *args, **kwargs):
@@ -251,7 +252,7 @@ class Command(BaseCommand):
                 try:
                     apps.get_app_config(app_label)
                 except LookupError as err:
-                    raise CommandError("Invalid app: " + err.message)
+                    raise CommandError("Invalid app: " + smart_text(err))
 
         exclude_sites = kwargs['exclude_sites']
         if exclude_sites is not None and isinstance(exclude_sites, six.string_types):

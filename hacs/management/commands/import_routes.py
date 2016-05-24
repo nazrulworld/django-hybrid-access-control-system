@@ -9,11 +9,11 @@ from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.contrib.auth.models import Group
+from django.utils.encoding import smart_text
 from django.contrib.sites.models import Site
 from django.contrib.auth import get_user_model
 from django.utils.module_loading import import_string
 from django.contrib.contenttypes.models import ContentType
-from django.core.serializers.json import DjangoJSONEncoder
 from django.core.management.base import BaseCommand, CommandError
 
 from hacs.models import RoutingTable
@@ -112,10 +112,10 @@ class Command(BaseCommand):
             if os.path.splitext(serialized_file)[1][1:].lower() == 'json':
                 _temp_file = tempfile.mktemp(suffix='.json')
                 with open(serialized_file, 'r') as f:
-                    objects = json.load(f, encoding=settings.DEFAULT_CHARSET)
+                    objects = json.load(f)
                     self._normalize_unwanted_natural_keys(objects)
                     with open(_temp_file, 'w') as t_f:
-                        json.dump(objects, t_f, cls=DjangoJSONEncoder)
+                        json.dump(objects, t_f)
                 file_like_obj = open(_temp_file, 'r')
                 os.unlink(_temp_file)
             else:
@@ -192,7 +192,7 @@ class Command(BaseCommand):
                 try:
                     apps.get_app_config(app_label)
                 except LookupError as err:
-                    raise CommandError("Invalid app: " + err.message)
+                    raise CommandError(smart_text("Invalid app: ") + smart_text(err))
 
         exclude_sites = kwargs['exclude_sites']
         if exclude_sites is not None and isinstance(exclude_sites, six.string_types):
@@ -253,7 +253,7 @@ class Command(BaseCommand):
                     try:
                         app = apps.get_app_config(_temp.split(':')[0])
                     except LookupError as err:
-                        raise CommandError('Invalid app path pattern: ' + err.message + '. Provided path is %s' % _temp)
+                        raise CommandError('Invalid app path pattern: ' + smart_text(err) + '. Provided path is %s' % _temp)
                     else:
                         if os.path.exists(os.path.join(app.path, _temp.split(':')[1])):
                             importable_files.append(os.path.join(app.path, _temp.split(':')[1]))
