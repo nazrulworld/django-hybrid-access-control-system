@@ -18,7 +18,7 @@ try:
 except ImportError:
     from hacs.django_utils_version import get_version
 
-VERSION = (1, 0, 0, 'alpha', 0)
+VERSION = (1, 0, 0, 'alpha', 2)
 default_app_config = 'hacs.apps.HACSConfig'
 
 __version__ = get_version(VERSION)
