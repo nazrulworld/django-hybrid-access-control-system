@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 # ++ This file `release.py` is generated at 4/30/16 6:37 PM ++
 import os
