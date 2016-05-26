@@ -1,7 +1,7 @@
 HACS(Hybrid Access Control System)
 ==================================
 .. image:: https://badge.fury.io/py/django-hacs.svg
-    :target: https://badge.fury.io/py/django-hacs
+    :target: https://pypi.python.org/pypi/django-hacs/
 .. image:: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system.svg?branch=master
     :target: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system
 .. image:: https://coveralls.io/repos/github/nazrulworld/django-hybrid-access-control-system/badge.svg?branch=master
@@ -14,7 +14,7 @@ Features
 --------
 1. **Django MultiSite:** Support to run `multiple sites <https://docs.djangoproject.com/en/1.9/ref/contrib/sites/#associating-content-with-multiple-sites>`_ with single config file(settings), this is dynamic process, so you can add unlimited sites.
 
-2. **Firewall/Access Control:** This is ``routing table`` instead of `IP Table <https://en.wikipedia.org/wiki/Iptables>`_ for your application. This firewall can analyzes whether a request has authorized request path or request is directly handled to http404 handler. For example your application has a url route ``/admin/user/create`` and you define that this route is not for anonymous user and an anonymous use request with this url path, now in this case firewall simple halt further execution and transfer to http404 handler. This is pre-authorization process.
+2. **Firewall/Access Control:** This is ``routing table`` instead of `IP Table <https://en.wikipedia.org/wiki/Iptables>`_ for your application. This firewall can analyzes whether a request has authorized request path else request is directly handled to http404 handler. For example your application has a url route ``/admin/user/create`` that is not assigned for anonymous user and an anonymous user requests with this url path, now in this case firewall simple halt further execution and transfer to http404 handler. This is pre-authorization process.
 
 3. **Advanced Authorization: (coming)** Committed to be more than combination of `Django Guardian <http://django-guardian.readthedocs.io/>`_ and `Django Authority <http://django-authority.readthedocs.io/en/latest/>`_ but definitely base idea could be from those.
 
@@ -23,13 +23,13 @@ Features
 Installation
 ------------
 
-Install `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_, simply use `pip` or `easy_install` ::
+Install `django-hacs <https://pypi.python.org/pypi/django-hacs/>`_, simply use `pip` or `easy_install` ::
 
      ~$ pip install django-hacs
      or
      ~$ easy_install django-hacs
 
-Install `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_ most recent (dev) version ::
+Install most recent (dev) version of `django-hacs <https://pypi.python.org/pypi/django-hacs/>`_ ::
 
      ~$ git clone https://github.com/nazrulworld/django-hybrid-access-control-system.git django-hacs
      ~$ cd django-hacs
@@ -73,7 +73,7 @@ Dependencies
 Documentation
 -------------
 
-Full documentation for end users can be found in the "docs" folder, and is also available online at http://django-hacs.readthedocs.io/
+Full documentation for end users can be found in the "docs" folder, and is also available online at http://django-hacs.readthedocs.org/
 
 
 Routing Management
@@ -91,16 +91,16 @@ Right now we don't have any UI for routing management instead we have command to
 Deploy `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_
 ------------------------------------------------------------------------------------------
 
-1. You can either follow above instruction and create new
+1. You can either follow above instruction and create new routing schema.
 2. If you have already routing schema at local and that are ready for production.
     1. Export from local ``~$ python manage.py export_route -d <output file name with full path. i.e /tmp/my-routes.json>``
-    2. No import route schema from production server's terminal ``~$ python manage.py import_route -S <path to json file>``
+    2. Now import routing schema from production server's terminal ``~$ python manage.py import_route -S <path to json file>``
 
 Contribute
 ----------
 
-- Issue Tracker: https://github.com/collective/django.contrib.hacs/issues
-- Source Code: https://github.com/collective/django.contrib.hacs
+- Issue Tracker: https://github.com/nazrulworld/django-hybrid-access-control-system/issues
+- Source Code: https://github.com/nazrulworld/django-hybrid-access-control-system/
 - Documentation: http://django-hacs.readthedocs.org/
 
 
