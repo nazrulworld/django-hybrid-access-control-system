@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                 ('updated_on', models.DateTimeField(blank=True, null=True, verbose_name='Last updated')),
             ],
             options={
-                'db_table': 'hacl_routing_table',
+                'db_table': 'hacs_routing_table',
                 'verbose_name': 'routing table',
                 'verbose_name_plural': 'routes table',
             },
