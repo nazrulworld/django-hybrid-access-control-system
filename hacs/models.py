@@ -13,7 +13,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 
 from .fields import DictField
 from .fields import SequenceField
-
+from .globals import HTTP_METHOD_LIST
 if not apps.is_installed('django.contrib.admin'):
     # Fallback LogEntry Model, if admin app not installed
     from django.contrib.admin.models import LogEntry as django_LogEntry
@@ -50,6 +50,8 @@ class RoutingTable(models.Model):
     description = models.TextField(_('description'), null=True, blank=True)
     urls = SequenceField(_('URLs'), null=False, blank=False, validators=[])
     handlers = DictField(_('Handlers'), null=True, blank=True, default='', validators=[])
+    allowed_method= SequenceField(_('Allowed Method'), null=True, blank=True,
+                                  choices=[(x, x) for x in HTTP_METHOD_LIST])
     generated_module = models.TextField(_('Generated Module'), null=True, blank=True, default=None)
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
     is_deleted = models.BooleanField(_('Soft Delete'), null=False, blank=True, default=False)
@@ -59,7 +61,7 @@ class RoutingTable(models.Model):
     objects = RoutingTableManager()
 
     class Meta:
-        db_table = 'hacl_routing_table'
+        db_table = 'hacs_routing_table'
         verbose_name = _('routing table')
         verbose_name_plural = _('routes table')
 
