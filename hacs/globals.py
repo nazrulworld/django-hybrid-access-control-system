@@ -8,6 +8,16 @@ HACS_APP_LABEL = HACS_APP_NAME
 HACS_GENERATED_FILENAME_PREFIX = 'hacs__generated_'
 HACS_SERIALIZED_ROUTE_DIR_NAME = 'hacs_routes'
 
+HTTP_METHOD_LIST = (
+    'GET',
+    'POST',
+    'PUT',
+    'HEAD',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
+)
+
 
 class HACSSiteCache(object):
     """ Obviously this class is not tread safe, infact we don't need to be. """

@@ -12,3 +12,4 @@ HACS_FALLBACK_URLCONF = settings.ROOT_URLCONF
 HACS_GENERATED_URLCONF_DIR = safe_join(apps.get_app_config(HACS_APP_NAME).path, 'generated')
 HACS_SERIALIZED_ROUTING_DIR = None
 HACS_USER_OBJECT_QUERY_CALLABLE = "hacs.utils.get_user_object"
+HACS_DEVELOPMENT_MODE = False
