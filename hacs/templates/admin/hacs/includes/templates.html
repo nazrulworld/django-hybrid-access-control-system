@@ -1,0 +1,110 @@
+{% load i18n %}
+{# RoutingTable:URLS #}
+<script id="tplHacsSortableEmptyItem" type="text/x-template">
+        <div id="RouteUrl-<%- id %>" class="hacs-sortable-item ui-widget ui-widget-content ui-helper-clearfix ui-corner-all">
+            <div class="hacs-sortable-item-header ui-widget-header ui-corner-all">
+                <span data-parent="#RouteUrl-<%- id %>" class="ui-icon ui-icon-trash hacs-sortable-remove"></span>
+                <span class="ui-icon ui-icon-minusthick hacs-sortable-toggle"></span>
+                <span>URL Module:</span><a data-value="" data-name="url_module" class="hacs-editable editable-empty editable-click" href="#">click to add</a>
+            </div>
+            <div class="hacs-sortable-item-content">
+                <ul>
+                    <li><span>Prefix: </span><a data-name="prefix" data-value="" href="#" class="hacs-editable editable-empty editable-click">click to add</a></li>
+                    <li><span>App Name: </span><a data-name="app_name" data-value="" href="#" class="hacs-editable editable-empty editable-click">click to add</a></li>
+                    <li><span>Namespace: </span><a data-name="namespace" data-value=""href="#" class="hacs-editable editable-empty editable-click">click to add</a></li>
+                </ul>
+            </div>
+        </div>
+</script>
+
+<script id="tplUrlsSortable" type="text/x-template">
+    <div class="ui-helper-clearfix"></div>
+    <div class="hacs-sortable">
+        <label class="<%- data.label_class %>" ><%- data.label %>:</label>
+        <div class="column">
+            <% if(data.urls){ %>
+            <% $(data.urls).each(function(index, item){ %>
+                <div id="RouteUrl-<%- (index + 1) %>" class="hacs-sortable-item ui-widget ui-widget-content ui-helper-clearfix ui-corner-all">
+                    <div class="hacs-sortable-item-header ui-widget-header ui-corner-all">
+                        <span data-parent="#RouteUrl-<%- (index + 1) %>" class="ui-icon ui-icon-trash hacs-sortable-remove"></span>
+                        <span class="ui-icon ui-icon-minusthick hacs-sortable-toggle"></span>
+                        <span>URL Module:</span>
+                        <a data-name="url_module" data-value="<%- item.url_module %>" class="hacs-editable editable-click" href="#">
+                            <% if(item.url_module){ %>
+                            <%- item.url_module %>
+                            <% } else { %>
+                            click to add
+                            <% } %>
+                        </a>
+                    </div>
+                    <div class="hacs-sortable-item-content">
+                        <ul>
+                            <li>
+                                <span>Prefix: </span>
+                                <a id="RoutePrefix-<%- (index + 1) %>" href="#" data-name="prefix" data-value="<%- item.prefix %>" class="hacs-editable editable-empty editable-click">
+                                    <% if(item.prefix){ %>
+                                    <%- item.prefix %>
+                                    <% } else { %>
+                                    click to add
+                                    <% } %>
+                                </a>
+                            </li>
+                            <li>
+                                <span>App Name: </span>
+                                <a id="RouteAppName-<%- (index + 1) %>" href="#" data-name="app_name" data-value="<%- item.app_name%>" class="hacs-editable editable-empty editable-click">
+                                    <% if(item.app_name){ %>
+                                    <%- item.app_name %>
+                                    <% } else { %>
+                                    click to add
+                                    <% } %>
+                                </a>
+                            </li>
+                            <li>
+                                <span>Namespace: </span>
+                                <a id="RouteNamespace-<%- (index + 1) %>" href="#" data-name="namespace" data-value="<%- item.namespace %>" class="hacs-editable editable-empty editable-click">
+                                    <% if(item.namespace){ %>
+                                    <%- item.namespace %>
+                                    <% } else { %>
+                                    click to add
+                                    <% } %>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            <% }) %>
+            <% } %>
+        </div>
+        <div class="ui-helper-clearfix"></div>
+        <a href="javascript:;"  class="hacs-sortable-item-add">
+            <span class='ui-icon ui-icon-plusthick add'></span>
+        </a>
+    </div>
+</script>
+{# END RoutingTable:URLs #}
+{# RoutingTable:Handlers #}
+<script id="tplHandlers" type="text/x-template">
+    <div class="ui-helper-clearfix"></div>
+    <div class="hacs-handlers">
+        <label class="<%- label_class %>" ><%- label %>:</label>
+        <ul>
+          <li class="ui-state-default">
+              <span>handler400: </span>
+              <a data-name="handler400" data-value="<%= handlers.handler400 %>" class="hacs-handler-editable" href="javascript:;"><%- handlers.handler400 %></a>
+          </li>
+          <li class="ui-state-default">
+              <span>handler403</span>
+              <a data-name="handler403" data-value="<%= handlers.handler403 %>" class="hacs-handler-editable" href="javascript:;"><%- handlers.handler403 %></a>
+          </li>
+          <li class="ui-state-default">
+              <span>handler404</span>
+              <a data-name="handler404" data-value="<%= handlers.handler404 %>" class="hacs-handler-editable" href="javascript:;"><%- handlers.handler404 %></a>
+          </li>
+          <li class="ui-state-default">
+              <span>handler500</span>
+              <a data-name="handler500" data-value="<%= handlers.handler500 %>" class="hacs-handler-editable" href="javascript:;"><%- handlers.handler500 %></a>
+          </li>
+        </ul>
+    </div>
+</script>
+{# END RoutingTable:Handlers #}

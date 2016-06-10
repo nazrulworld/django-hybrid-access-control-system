@@ -1,0 +1,185 @@
+{% load i18n admin_urls admin_static admin_modify hacs_utils %}
+<script>
+//<![CDATA[
+(function ($) {
+    "use strict";
+    $(document).ready(function () {
+        /*
+        * URLs section
+        * */
+        var _urls_field_wrapper = $('.field-urls');
+        var urls_field_name = $("#id_urls").attr('name');
+        var urls_label_class = "hacs-form-label " + _urls_field_wrapper.find('label').first().attr('class');
+        // remove with label also
+        $("#id_urls").parent().remove();
+        var route_urls = {{ adminform.form.urls.value|to_json|safe|default:"[]" }};
+        if (route_urls && typeof route_urls == 'string'){
+            route_urls = JSON.parse(route_urls);
+        }
+        if (!route_urls){
+            route_urls = []
+        }
+        // Normalize route module if type is list rather than string
+        var _temp = route_urls;
+        route_urls = [];
+        for (var i=0; i < _temp.length; i++){
+            var um = _temp[i].url_module;
+            if(typeof um == 'object'){
+                _temp[i].url_module = um[0];
+                if(um.length > 1){
+                    _temp[i].app_name = um[1];
+                }
+                if (um.length > 2){
+                    _temp[i].namespace = um[2];
+                }
+            }
+            route_urls.push(_temp[i]);
+        }
+
+        _urls_field_wrapper.prepend("<input id='id_urls' type='hidden' name='" + urls_field_name + "' value='" + JSON.stringify(route_urls) + "' />");
+
+        var urls_template = _.template($('#tplUrlsSortable').html());
+
+        if (!route_urls){
+            route_urls = [];
+        }
+        var data = {
+            "urls": typeof route_urls == 'string'?JSON.parse(route_urls):route_urls,
+            "label": "{{ adminform.form.urls.label }}",
+            "label_class": urls_label_class
+        };
+
+        _urls_field_wrapper.append(urls_template({"data": data}));
+        /*
+        * Important Sync with current value
+        * */
+        function sync($container) {
+            var _results = new Array();
+            $container.find('.hacs-sortable-item').each(function (index, item) {
+                item = $(item);
+                if (!item.find('a[data-name=url_module]').first().data('value')) {
+                    // Simple loop continuation
+                    return;
+                }
+                _results.push({
+                    "url_module": item.find('a[data-name=url_module]').first().data('value'),
+                    "prefix": item.find('a[data-name=prefix]').first().data('value')?item.find('a[data-name=prefix]').first().data('value'):null,
+                    "namespace": item.find('a[data-name=namespace]').first().data('value')?item.find('a[data-name=namespace]').first().data('value'):null,
+                    "app_name": item.find('a[data-name=app_name]').first().data('value')?item.find('a[data-name=app_name]').first().data('value'):null
+                });
+            });
+
+            $("#id_urls").val(JSON.stringify(_results));
+        }
+        //
+        var $sortable_container = $(".hacs-sortable .column");
+        $sortable_container.sortable({
+            connectWith: ".column",
+            handle: ".hacs-sortable-item-header",
+            cancel: ".hacs-sortable-toggle",
+            placeholder: "hacs-sortable-placeholder ui-corner-all",
+            update: function (event, ui) {
+                sync($sortable_container);
+            }
+        });
+
+        $sortable_container.on("click", ".hacs-sortable-toggle", function() {
+            var icon = $( this );
+            icon.toggleClass( "ui-icon-minusthick ui-icon-plusthick" );
+            icon.closest( ".hacs-sortable-item" ).find( ".hacs-sortable-item-content" ).toggle();
+        });
+        /*
+        * Handler for x-editable
+        * @see `selector` https://vitalets.github.io/x-editable/docs.html#editable
+        * */
+        $.fn.editable.defaults.mode = 'inline';
+        $sortable_container.editable({
+            emptytext: 'click to add',
+            selector: 'a.hacs-editable',
+            success: function (response, newValue) {
+                $(this).data('value', newValue);
+                sync($sortable_container);
+            }
+        });
+        /*
+        * Handler for adding New Item
+        * */
+        $('.hacs-sortable-item-add').click(function (event) {
+            event.preventDefault();
+            var template = _.template($('#tplHacsSortableEmptyItem').html());
+            $sortable_container.append(template({id: $sortable_container.find('.hacs-sortable-item').length + 1}));
+            $sortable_container.sortable('refresh');
+        });
+        /*
+        * Handler for removing Item
+        * */
+        $sortable_container.on('click', '.hacs-sortable-remove', function (event) {
+            event.preventDefault();
+            var $self = $(event.currentTarget);
+            $($self.data('parent')).remove();
+            $sortable_container.sortable('refresh');
+            sync($sortable_container);
+        });
+
+        /*
+        * Http Error Handlers section
+        * */
+        var handlers = {{ adminform.form.handlers.value|to_json|safe|default:"{}" }};
+        if (handlers && typeof handlers == 'string'){
+            handlers = JSON.parse(handlers);
+        }
+        if (!handlers){
+            handlers = {}
+        }
+        // Assign default value if anyone missing
+        _temp = handlers;
+        handlers = {
+            "handler400": typeof _temp.handler400 != 'undefined' && _temp.handler400?_temp.handler400:"hacs.views.errors.bad_request",
+            "handler403": typeof _temp.handler403 != 'undefined' && _temp.handler403?_temp.handler403:"hacs.views.errors.permission_denied",
+            "handler404": typeof _temp.handler404 != 'undefined' && _temp.handler404?_temp.handler404:"hacs.views.errors.page_not_found",
+            "handler500": typeof _temp.handler500 != 'undefined' && _temp.handler500?_temp.handler500:"hacs.views.errors.server_error"
+        };
+        var $handlers_field_wrapper = $('.field-handlers');
+        var handlers_field_name = $("#id_handlers").attr('name');
+        var handlers_label_class = "hacs-form-label " + $handlers_field_wrapper.find('label').first().attr('class');
+        // remove with label also
+        $("#id_handlers").parent().remove();
+        $handlers_field_wrapper.prepend("<input id='id_handlers' type='hidden' name='" + handlers_field_name + "' value='" + JSON.stringify(handlers) + " ' />");
+
+        var template = _.template($('#tplHandlers').html());
+
+        if (typeof handlers == 'string'){
+            handlers = JSON.parse(handlers)
+        }
+
+        $handlers_field_wrapper.append(template({
+            "handlers": handlers,
+            "label": "{{  adminform.form.handlers.label }}",
+            "label_class": handlers_label_class
+        }));
+
+        /*
+        * Important Sync with current value
+        * */
+        function sync_handler($container) {
+            var _results = {};
+            $container.find('.hacs-handler-editable').each(function (index, item) {
+                item = $(item);
+                _results[item.data('name')] = item.data('value');
+            });
+            $("#id_handlers").val(JSON.stringify(_results));
+        }
+        /*
+        * X-Editable for handlers
+        * */
+        $('.hacs-handlers a.hacs-handler-editable').editable({
+            emptytext: 'click to add',
+            success: function (response, newValue) {
+                $(this).data('value', newValue);
+                sync_handler($handlers_field_wrapper);
+            }
+        });
+    })
+})(jQuery);
+//]]>
+</script>

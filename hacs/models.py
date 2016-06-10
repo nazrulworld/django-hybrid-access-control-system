@@ -14,6 +14,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from .fields import DictField
 from .fields import SequenceField
 from .globals import HTTP_METHOD_LIST
+from .validators import UrlModulesValidator
+from .validators import HttpHandlerValidator
+
 if not apps.is_installed('django.contrib.admin'):
     # Fallback LogEntry Model, if admin app not installed
     from django.contrib.admin.models import LogEntry as django_LogEntry
@@ -41,18 +44,18 @@ class RoutingTable(models.Model):
     """
     JSON Field Permitted Format/Python Data pattern
     -----------------------------------------------
-    urls: [{'prefix': None, 'url_module': None, namespace=None, children: []}]
-    OR [{'prefix': None, 'url_module': (module, app_name), namespace=None, children: []}]
+    urls: [{'prefix': None, 'url_module': None, namespace=None, app_name: None}]
+    OR [{'prefix': None, 'url_module': (module, app_name), namespace=None}]
 
     handlers: {'handler400': None, 'handler403': None, 'handler404': None, 'handler500': None}
     """
     route_name = models.SlugField(_('route name'),  null=False, blank=False, unique=True, db_index=True, max_length=127)
     description = models.TextField(_('description'), null=True, blank=True)
-    urls = SequenceField(_('URLs'), null=False, blank=False, validators=[])
-    handlers = DictField(_('Handlers'), null=True, blank=True, default='', validators=[])
+    urls = SequenceField(_('URLs'), null=False, blank=False, validators=[UrlModulesValidator()])
+    handlers = DictField(_('Handlers'), null=True, blank=True, default='', validators=[HttpHandlerValidator()])
     allowed_method= SequenceField(_('Allowed Method'), null=True, blank=True,
                                   choices=[(x, x) for x in HTTP_METHOD_LIST])
-    generated_module = models.TextField(_('Generated Module'), null=True, blank=True, default=None)
+    generated_module = models.CharField(_('Generated Module'), null=True, blank=True, default=None, max_length=255)
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
     is_deleted = models.BooleanField(_('Soft Delete'), null=False, blank=True, default=False)
     created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now)
