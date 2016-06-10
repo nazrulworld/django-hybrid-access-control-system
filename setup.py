@@ -84,5 +84,6 @@ setup(
     ],
     extras_require={
         'test': ['pytest', 'pytest-django'],
+        'develop': ['jsmin', 'rcssmin']
     }
 )
