@@ -1,0 +1,69 @@
+.hacs-handlers, .hacs-sortable{
+    margin-left: 160px;
+    width: 610px;
+    position: relative;
+}
+.hacs-sortable-item {
+
+    margin: 0 0 0.25em 0;
+	padding: 0;
+}
+.hacs-sortable-item-header{
+    padding: 0.2em 0.3em;
+    margin-bottom: 0;
+	position: relative;
+    font-size: 1.0em;
+    font-weight: normal;
+    border: 0;
+}
+.hacs-sortable-item-content{
+    padding: 0.4em;
+}
+.hacs-sortable-toggle{
+    position: absolute;
+    top: 50%;
+	right: 0;
+	margin-top: -8px;
+}
+.hacs-sortable-remove{
+    position: absolute;
+    top: 50%;
+	right: 15px;
+	margin-top: -8px;
+}
+.hacs-sortable-placeholder{
+    border: 1px dotted black;
+    margin: 0 1em 1em 0;
+	height: 50px;
+}
+.hacs-sortable-item-add{
+    display: block;
+    padding: 0.5em;
+    border: 5px dotted #eeeeee;
+}
+.hacs-sortable-item-add span{
+    display: block;
+    margin: auto;
+}
+
+form .hacs-sortable-item-content > ul {
+    padding:0;
+    margin-left: 0;
+}
+
+form .hacs-handlers ul {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+}
+.hacs-handlers ul li {
+    margin: 0 3px 3px 3px;
+    padding: 0.4em;
+    padding-left: 1.0em;
+    font-size: 1.1em;
+    height: 18px;
+}
+.hacs-form-label {
+    position: absolute;
+    left: -160px;
+}
