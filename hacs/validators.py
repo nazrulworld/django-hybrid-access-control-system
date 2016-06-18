@@ -5,14 +5,16 @@ import ast
 import json
 import importlib
 from django.utils import six
+from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.utils.module_loading import import_string
+from django.contrib.contenttypes.models import ContentType
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-__all__ = [str(x) for x in ("UrlModulesValidator", "HttpHandlerValidator", )]
+__all__ = [str(x) for x in ("UrlModulesValidator", "HttpHandlerValidator", "ContentTypeValidator", )]
 
 
 def _validate_importable(string, silent=True):
@@ -147,3 +149,70 @@ class HttpHandlerValidator(object):
         return isinstance(other, HttpHandlerValidator) and \
             self.code == other.code and \
             self.message == other.message
+
+
+@deconstructible
+class ContentTypeValidator(object):
+    """"""
+    white_list = (("auth", "user"), ("auth", "group"), )
+    black_list = ()
+    code = "disallowed"
+    message = _("Disallowed content type `%(value)s`")
+
+    def __init__(self, message=None, code=None, white_list=None, black_list=None):
+        """
+        :param message:
+        :param code:
+        :param white_list:
+        :param black_list:
+        """
+        if message:
+            self.message = message
+        if code:
+            self.code = code
+        if white_list:
+            self.white_list = white_list
+        if black_list:
+            self.black_list = black_list
+
+    def __call__(self, value):
+        """"""
+        try:
+            content_type = ContentType.objects.get(pk=value)
+        except ContentType.DoesNotExist as exc:
+            raise ValidationError(message=smart_text(exc), code='invalid')
+
+        if self.white_list:
+            for ct in self.white_list:
+                if isinstance(ct, six.string_types):
+                    app_label, model = content_type.app_label, ct
+                else:
+                    app_label, model = ct
+                if content_type.app_label == app_label and content_type.model == model:
+                    break
+            else:
+                # Uninterrupted (without break) Loop continuation, value not be in white lists
+                raise ValidationError(message=self.message, code=self.code, params={"value": app_label + ":" + model})
+
+        if self.black_list:
+            for ct in self.black_list:
+                if isinstance(ct, six.string_types):
+                    app_label, model = content_type.app_label, ct
+                else:
+                    app_label, model = ct
+
+                if content_type.app_label == app_label and content_type.model == model:
+                    raise ValidationError(message=self.message, code=self.code,
+                                          params={"value": app_label + ":" + model})
+
+    def __ne__(self, other):
+        """"""
+        return not (self == other)
+
+    def __eq__(self, other):
+        """"""
+        return isinstance(other, ContentTypeValidator) and \
+            self.code == other.code and \
+            self.message == other.message and \
+            self.black_list == other.black_list and \
+            self.white_list == other.white_list
