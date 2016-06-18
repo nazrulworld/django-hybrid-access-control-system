@@ -16,6 +16,7 @@ from .fields import SequenceField
 from .globals import HTTP_METHOD_LIST
 from .validators import UrlModulesValidator
 from .validators import HttpHandlerValidator
+from .validators import ContentTypeValidator
 
 if not apps.is_installed('django.contrib.admin'):
     # Fallback LogEntry Model, if admin app not installed
@@ -200,7 +201,7 @@ class ContentTypeRoutingTable(models.Model):
                              blank=False,
                              related_name='hacs_site_contenttypes_at_routing_table'
                              )
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, validators=[])
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, validators=[ContentTypeValidator()])
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
