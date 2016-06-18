@@ -7,6 +7,7 @@ from .models import SiteRoutingTable
 from .models import ContentTypeRoutingTable
 from .defaults import HACS_DEVELOPMENT_MODE
 from .forms import RoutingTableAdminForm
+from .forms import ContentTypeRoutingTableAdminForm
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -44,4 +45,23 @@ class SiteRoutingTableAdmin(admin.ModelAdmin):
 
 @admin.register(ContentTypeRoutingTable)
 class ContentTypeRoutingTableAdmin(admin.ModelAdmin):
-    pass
+    """"""
+    form = ContentTypeRoutingTableAdminForm
+
+    class Media:
+        css = {}
+        if getattr(settings, 'HACS_DEVELOPMENT_MODE', HACS_DEVELOPMENT_MODE):
+            css['all'] = (
+                'hacs_assets/css/select2.css',
+                'hacs_assets/css/hacs.css',
+            )
+            # Why Own jQuery: https://docs.djangoproject.com/en/1.9/ref/contrib/admin/#jquery
+            js = (
+                'hacs_assets/js/lodash.4.13.1.js',
+                'hacs_assets/js/jquery-2.2.4.js',
+                'hacs_assets/js/select2.full.js',
+                'hacs_assets/js/hacs.js',
+            )
+        else:
+            css['all'] = ('admin/hacs/css/hacs.min.css',)
+            js = ("admin/hacs/js/hacs.min.js",)
