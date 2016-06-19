@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # ++ This file `test_utils.py` is generated at 3/7/16 6:12 PM ++
+from __future__ import unicode_literals
 import os
 import sys
+import pytest
 import tempfile
 from django.utils import six
 from django.test import TestCase
@@ -113,8 +115,8 @@ class UtilsTestCase(TestCase):
         results = get_installed_apps_urlconf()
 
         # As three apps have urls (url pattern)(django.contrib.auth, django.contrib.staticfiles, hacs)
-        # So results should have length 3
-        self.assertEqual(3, len(results))
+        # So results should have length 3 but hacs has two urlconf so total should have 4
+        self.assertEqual(4, len(results))
 
         hacs_urls = [x for x in results if x.app_label == 'hacs'][0]
         urlconf = import_module(hacs_urls.module)
@@ -128,7 +130,7 @@ class UtilsTestCase(TestCase):
 
         # Make sure exclude apps working
         results = get_installed_apps_urlconf(exclude=('staticfiles', ))
-        self.assertEqual(2, len(results))
+        self.assertEqual(3, len(results))
 
         # Make sure patterns work
         results = get_installed_apps_urlconf(r'fake')
@@ -142,7 +144,7 @@ class UtilsTestCase(TestCase):
         import json
         try:
             results = json.loads(results)
-            self.assertEqual(3, len(results))
+            self.assertEqual(4, len(results))
         except ValueError:
             raise AssertionError("Could should not come here! Most provably invalid json string")
 
