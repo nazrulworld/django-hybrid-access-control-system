@@ -19,7 +19,7 @@ from django.contrib.auth import get_user_model
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.module_loading import module_has_submodule
 
-from .models import SiteRoutingTable
+from .models import SiteRoutingRules
 from .globals import HACS_SITE_CACHE
 from .defaults import HACS_FALLBACK_URLCONF
 from .defaults import HACS_GENERATED_URLCONF_DIR
@@ -51,8 +51,8 @@ def set_site_urlconf(site):
     :return:
     """
     try:
-        site_route = SiteRoutingTable.objects.get(site=site)
-    except SiteRoutingTable.DoesNotExist:
+        site_route = SiteRoutingRules.objects.get(site=site)
+    except SiteRoutingRules.DoesNotExist:
         warnings.warn(
                 '%s has not assigned any route yet!' % site.domain
         )

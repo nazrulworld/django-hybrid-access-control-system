@@ -3,11 +3,12 @@ from django.conf import settings
 from django.contrib import admin
 
 from .models import RoutingTable
-from .models import SiteRoutingTable
-from .models import ContentTypeRoutingTable
+from .models import SiteRoutingRules
+from .models import ContentTypeRoutingRules
 from .defaults import HACS_DEVELOPMENT_MODE
 from .forms import RoutingTableAdminForm
-from .forms import ContentTypeRoutingTableAdminForm
+from .forms import SiteRoutingRulesAdminForm
+from .forms import ContentTypeRoutingRulesAdminForm
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -38,15 +39,15 @@ class RoutingTableAdmin(admin.ModelAdmin):
             js = ("admin/hacs/js/hacs.min.js",)
 
 
-@admin.register(SiteRoutingTable)
-class SiteRoutingTableAdmin(admin.ModelAdmin):
-    pass
+@admin.register(SiteRoutingRules)
+class SiteRoutingRulesAdmin(admin.ModelAdmin):
+    form = SiteRoutingRulesAdminForm
 
 
-@admin.register(ContentTypeRoutingTable)
-class ContentTypeRoutingTableAdmin(admin.ModelAdmin):
+@admin.register(ContentTypeRoutingRules)
+class ContentTypeRoutingRulesAdmin(admin.ModelAdmin):
     """"""
-    form = ContentTypeRoutingTableAdminForm
+    form = ContentTypeRoutingRulesAdminForm
 
     class Media:
         css = {}

@@ -18,8 +18,8 @@ from django.core.management import CommandError
 from django.contrib.contenttypes.models import ContentType
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
-from hacs.models import ContentTypeRoutingTable
+from hacs.models import SiteRoutingRules
+from hacs.models import ContentTypeRoutingRules
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -40,8 +40,8 @@ class TestExportRoutes(TestCase):
 
     def clean(self):
         """ Cleaning all existing Routing records those are comes with fixture """
-        ContentTypeRoutingTable.objects.all().delete()
-        SiteRoutingTable.objects.all().delete()
+        ContentTypeRoutingRules.objects.all().delete()
+        SiteRoutingRules.objects.all().delete()
         RoutingTable.objects.all().delete()
 
     def test_with_destination(self):
@@ -61,17 +61,17 @@ class TestExportRoutes(TestCase):
 
         # We make sure serialized  file is usable
         self.assertEqual(4, len(RoutingTable.objects.all()))
-        self.assertEqual(2, len(SiteRoutingTable.objects.all()))
-        self.assertEqual(7, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(2, len(SiteRoutingRules.objects.all()))
+        self.assertEqual(7, len(ContentTypeRoutingRules.objects.all()))
 
         site = Site.objects.get(domain=_test_site)
-        self.assertIsNotNone(SiteRoutingTable.objects.get(site=site))
-        self.assertIsNotNone(ContentTypeRoutingTable.objects.get(
+        self.assertIsNotNone(SiteRoutingRules.objects.get(site=site))
+        self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
             content_type=ContentType.objects.get_for_model(Group),
             object_id=Group.objects.get_by_natural_key(_test_group).pk
         ))
-        self.assertIsNotNone(ContentTypeRoutingTable.objects.get(
+        self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
             content_type=ContentType.objects.get_for_model(User),
             object_id=User.objects.get(username=_test_user).pk
@@ -84,8 +84,8 @@ class TestExportRoutes(TestCase):
         with open(_test_destination, 'r') as fp:
             entries = json.load(fp)
             _applicable_models = (
-                "%s.%s" % (SiteRoutingTable._meta.app_label, SiteRoutingTable._meta.model_name),
-                "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+                "%s.%s" % (SiteRoutingRules._meta.app_label, SiteRoutingRules._meta.model_name),
+                "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
             )
 
             for entry in entries:
@@ -113,8 +113,8 @@ class TestExportRoutes(TestCase):
             entries = json.load(fp)
             _applicable_models = (
                 "%s.%s" % (RoutingTable._meta.app_label, RoutingTable._meta.model_name),
-                "%s.%s" % (SiteRoutingTable._meta.app_label, SiteRoutingTable._meta.model_name),
-                "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+                "%s.%s" % (SiteRoutingRules._meta.app_label, SiteRoutingRules._meta.model_name),
+                "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
             )
 
             for entry in entries:
@@ -145,8 +145,8 @@ class TestExportRoutes(TestCase):
         with open(_test_destination + '.tmp', 'r') as fp:
             entries = json.load(fp)
             _applicable_models = (
-                "%s.%s" % (SiteRoutingTable._meta.app_label, SiteRoutingTable._meta.model_name),
-                "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+                "%s.%s" % (SiteRoutingRules._meta.app_label, SiteRoutingRules._meta.model_name),
+                "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
             )
 
             for entry in entries:
@@ -171,7 +171,7 @@ class TestExportRoutes(TestCase):
         with open(_test_destination + '.tmp', 'r') as fp:
             entries = json.load(fp)
             _applicable_models = (
-                "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+                "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
             )
 
             for entry in entries:
@@ -196,7 +196,7 @@ class TestExportRoutes(TestCase):
         with open(_test_destination + '.tmp', 'r') as fp:
             entries = json.load(fp)
             _applicable_models = (
-                "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+                "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
             )
 
             for entry in entries:
@@ -220,8 +220,8 @@ class TestExportRoutes(TestCase):
         call_command('import_routes', source=_test_destination + '.tmp.xml')
         # We make sure serialized  file is usable
         self.assertEqual(4, len(RoutingTable.objects.all()))
-        self.assertEqual(2, len(SiteRoutingTable.objects.all()))
-        self.assertEqual(7, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(2, len(SiteRoutingRules.objects.all()))
+        self.assertEqual(7, len(ContentTypeRoutingRules.objects.all()))
         os.unlink(_test_destination + '.tmp.xml')
 
         # Test: only file name is provided and save to specified directory
@@ -250,8 +250,8 @@ class TestExportRoutes(TestCase):
         """ """
         _applicable_models = (
             "%s.%s" % (RoutingTable._meta.app_label, RoutingTable._meta.model_name),
-            "%s.%s" % (SiteRoutingTable._meta.app_label, SiteRoutingTable._meta.model_name),
-            "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+            "%s.%s" % (SiteRoutingRules._meta.app_label, SiteRoutingRules._meta.model_name),
+            "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
         )
         # Test: print output instead of generate file
         stdout = six.StringIO()
@@ -305,8 +305,8 @@ class TestExportRoutes(TestCase):
 
         # We make sure captured output  file is usable
         self.assertEqual(4, len(RoutingTable.objects.all()))
-        self.assertEqual(2, len(SiteRoutingTable.objects.all()))
-        self.assertEqual(7, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(2, len(SiteRoutingRules.objects.all()))
+        self.assertEqual(7, len(ContentTypeRoutingRules.objects.all()))
 
         os.unlink(_test_destination)
 

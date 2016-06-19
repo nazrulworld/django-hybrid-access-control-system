@@ -13,8 +13,8 @@ from django.core.management import CommandError
 from django.contrib.contenttypes.models import ContentType
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
-from hacs.models import ContentTypeRoutingTable
+from hacs.models import SiteRoutingRules
+from hacs.models import ContentTypeRoutingRules
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -33,8 +33,8 @@ class TestImportRoutes(TestCase):
 
     def clean(self):
         """ Cleaning all existing Routing records those are comes with fixture """
-        ContentTypeRoutingTable.objects.all().delete()
-        SiteRoutingTable.objects.all().delete()
+        ContentTypeRoutingRules.objects.all().delete()
+        SiteRoutingRules.objects.all().delete()
         RoutingTable.objects.all().delete()
 
     def test_with_source_file(self):
@@ -46,17 +46,17 @@ class TestImportRoutes(TestCase):
 
         # We just checking all entries are inserted from fixture
         self.assertEqual(4, len(RoutingTable.objects.all()))
-        self.assertEqual(2, len(SiteRoutingTable.objects.all()))
-        self.assertEqual(7, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(2, len(SiteRoutingRules.objects.all()))
+        self.assertEqual(7, len(ContentTypeRoutingRules.objects.all()))
 
         site = Site.objects.get(domain=_test_site)
-        self.assertIsNotNone(SiteRoutingTable.objects.get(site=site))
-        self.assertIsNotNone(ContentTypeRoutingTable.objects.get(
+        self.assertIsNotNone(SiteRoutingRules.objects.get(site=site))
+        self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
             content_type=ContentType.objects.get_for_model(Group),
             object_id=Group.objects.get_by_natural_key(_test_group).pk
         ))
-        self.assertIsNotNone(ContentTypeRoutingTable.objects.get(
+        self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
             content_type=ContentType.objects.get_for_model(User),
             object_id=User.objects.get(username=_test_user).pk
@@ -68,51 +68,51 @@ class TestImportRoutes(TestCase):
         call_command('import_routes', source=ROUTE_FIXTURE, exclude_sites=[_test_site])
         # Excluded site should not have any route
         try:
-            SiteRoutingTable.objects.get(site=site)
+            SiteRoutingRules.objects.get(site=site)
             raise AssertionError("Code should not reach here!, because object should not exist")
-        except SiteRoutingTable.DoesNotExist:
+        except SiteRoutingRules.DoesNotExist:
             pass
 
         # As 5 entries are ignored, because those were related to exclude site
-        self.assertEqual(2, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(2, len(ContentTypeRoutingRules.objects.all()))
 
         self.clean()
         # Test: group exclude
         call_command('import_routes', source=ROUTE_FIXTURE, exclude_groups=[_test_group])
         try:
-            ContentTypeRoutingTable.objects.get(
+            ContentTypeRoutingRules.objects.get(
                 site=site,
                 content_type=ContentType.objects.get_for_model(Group),
                 object_id=Group.objects.get_by_natural_key(_test_group).pk
             )
             raise AssertionError("Code should not reach here!, because group object should not exist")
-        except ContentTypeRoutingTable.DoesNotExist:
+        except ContentTypeRoutingRules.DoesNotExist:
             pass
 
         # As 2 entries are ignored, because those were related to exclude group
-        self.assertEqual(5, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(5, len(ContentTypeRoutingRules.objects.all()))
 
         self.clean()
         # Test: group exclude
         call_command('import_routes', source=ROUTE_FIXTURE, exclude_users=[_test_user])
         try:
-            ContentTypeRoutingTable.objects.get(
+            ContentTypeRoutingRules.objects.get(
                 site=site,
                 content_type=ContentType.objects.get_for_model(User),
                 object_id=User.objects.get(username=_test_user).pk
             )
             raise AssertionError("Code should not reach here!, because object should not exist")
-        except ContentTypeRoutingTable.DoesNotExist:
+        except ContentTypeRoutingRules.DoesNotExist:
             pass
 
         # As 2 entries are ignored, because those were related to exclude user
-        self.assertEqual(5, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(5, len(ContentTypeRoutingRules.objects.all()))
 
         self.clean()
         # Test: multi excluding
         call_command('import_routes', source=ROUTE_FIXTURE, exclude_groups=_test_group, exclude_users=_test_user)
         # As 2 + 2 entries are ignored, because those were related to exclude user and group
-        self.assertEqual(3, len(ContentTypeRoutingTable.objects.all()))
+        self.assertEqual(3, len(ContentTypeRoutingRules.objects.all()))
 
     def test_with_autodiscover_files(self):
         """"""
@@ -124,8 +124,8 @@ class TestImportRoutes(TestCase):
             call_command('import_routes')
             # We just checking all entries are inserted from fixture
             self.assertEqual(4, len(RoutingTable.objects.all()))
-            self.assertEqual(2, len(SiteRoutingTable.objects.all()))
-            self.assertEqual(7, len(ContentTypeRoutingTable.objects.all()))
+            self.assertEqual(2, len(SiteRoutingRules.objects.all()))
+            self.assertEqual(7, len(ContentTypeRoutingRules.objects.all()))
 
         shutil.rmtree(HACS_SERIALIZED_ROUTE_DIR_NAME)
 

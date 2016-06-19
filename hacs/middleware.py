@@ -19,7 +19,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from .globals import HACS_APP_NAME
-from .models import ContentTypeRoutingTable
+from .models import ContentTypeRoutingRules
 from .defaults import HACS_FALLBACK_URLCONF
 from .defaults import HACS_CACHE_SETTING_NAME
 from .lru_wrapped import get_user_key
@@ -138,12 +138,12 @@ class FirewallMiddleware(object):
         if not user_settings_cache:
             user_settings_cache = dict()
         try:
-            user_route = ContentTypeRoutingTable.objects.get(
+            user_route = ContentTypeRoutingRules.objects.get(
                 site=request.site,
                 content_type=ContentType.objects.get_for_model(UserModel),
                 object_id=request.user.is_authenticated() and request.user.pk or 0)
 
-        except ContentTypeRoutingTable.DoesNotExist:
+        except ContentTypeRoutingRules.DoesNotExist:
             # User Has No Route Try from group
             _temp = list()
             for group in request.user.groups.all():
@@ -186,9 +186,9 @@ class FirewallMiddleware(object):
         if not group_settings_cache:
             group_settings_cache = dict()
         try:
-            group_route = ContentTypeRoutingTable.objects.get(
+            group_route = ContentTypeRoutingRules.objects.get(
                 content_type=ContentType.objects.get_for_model(Group), object_id=group.id, site=request.site)
-        except ContentTypeRoutingTable.DoesNotExist:
+        except ContentTypeRoutingRules.DoesNotExist:
             # We do nothing
             pass
         else:
@@ -255,13 +255,13 @@ class FirewallMiddleware(object):
         except KeyError:
             try:
                 # The hacs convention anonymous user pk is 0
-                user_route = ContentTypeRoutingTable.objects.get(
+                user_route = ContentTypeRoutingRules.objects.get(
                     site=request.site,
                     content_type=ContentType.objects.get_for_model(UserModel),
                     object_id=0)
                 generate_urlconf_file_on_demand(user_route.route)
                 urlconf = get_generated_urlconf_module(get_generated_urlconf_file(user_route.route.route_name))
-            except ContentTypeRoutingTable.DoesNotExist:
+            except ContentTypeRoutingRules.DoesNotExist:
                 urlconf = None
 
             if 'settings' not in user_settings.keys():

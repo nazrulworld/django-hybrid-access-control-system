@@ -23,13 +23,13 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
+from hacs.models import SiteRoutingRules
 from hacs.globals import HACS_SITE_CACHE
 from hacs.utils import set_site_urlconf
 from hacs.utils import generate_urlconf_file
 from hacs.middleware import UserModel
 from hacs.middleware import FirewallMiddleware
-from hacs.models import ContentTypeRoutingTable
+from hacs.models import ContentTypeRoutingRules
 from hacs.middleware import DynamicRouteMiddleware
 from hacs.lru_wrapped import get_site_urlconf
 from hacs.lru_wrapped import get_group_key
@@ -91,7 +91,7 @@ class TestMiddlewareFunction(TestCase):
         # Make sure urlconf file is not recreated
         self.assertEqual(urlconf_file_creation_time, datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename)))
 
-        site_route = SiteRoutingTable.objects.get(site=request.site)
+        site_route = SiteRoutingRules.objects.get(site=request.site)
         site_route.route.updated_on = timezone.now()
         site_route.route.description = 'catch'
         site_route.route.save()
@@ -119,7 +119,7 @@ class TestMiddlewareFunction(TestCase):
         # We will make sure that again call will server from cache
         urlconf_file_creation_time = datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename))
 
-        site_route = SiteRoutingTable.objects.get(site=request.site)
+        site_route = SiteRoutingRules.objects.get(site=request.site)
         site_route.route.updated_on = timezone.now()
         site_route.route.save()
         get_site_urlconf(request.site)
@@ -380,7 +380,7 @@ class TestFirewallMiddleware(TestCase):
         user_cache_key = get_user_key(request)
         self.assertEqual(self.cache.get(user_cache_key)['urlconf'], user_urlconf_module)
 
-        ContentTypeRoutingTable.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
                                                object_id=user.id).delete()
         request.session.clear()
         request.session['settings'] = dict()
@@ -398,7 +398,7 @@ class TestFirewallMiddleware(TestCase):
         # Make sure cache also be updated and Group specific routing
         self.assertEqual(self.cache.get(user_cache_key)['urlconf'][0], user_urlconf_module)
 
-        ContentTypeRoutingTable.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
 
         request.session.clear()
         request.session['settings'] = dict()
@@ -436,7 +436,7 @@ class TestFirewallMiddleware(TestCase):
         # Should be Fallback urlconf module
         self.assertEqual(request.urlconf, HACS_FALLBACK_URLCONF)
 
-        ContentTypeRoutingTable.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
                                                object_id=user.id).delete()
         user_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME), validation=False)
         self.cache.clear()
@@ -447,7 +447,7 @@ class TestFirewallMiddleware(TestCase):
         # Make sure user's group's urlconf is assigned as user's routing is not available
         self.assertEqual(user_urlconf_module, request.urlconf)
 
-        ContentTypeRoutingTable.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
         self.cache.clear()
         request.session.clear()
         request.urlconf = None
@@ -520,7 +520,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_USER_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
 
-            ContentTypeRoutingTable.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
+            ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
                                                    object_id=response.wsgi_request.user.id).delete()
 
             # Make Session works, as we remove user's route but still should same
@@ -543,7 +543,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
 
-            ContentTypeRoutingTable.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
+            ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
 
             # Now we are cleaning session and cache as well, group's route also clened
             # so we expect urlconf should be like site urlconf

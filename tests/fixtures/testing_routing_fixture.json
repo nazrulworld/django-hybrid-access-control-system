@@ -100,21 +100,21 @@
     }
   },
   {
-    "model": "hacs.SiteRoutingTable",
+    "model": "hacs.SiteRoutingRules",
     "fields": {
       "site": ["testserver"],
       "route": ["test-route1"]
     }
   },
   {
-    "model": "hacs.SiteRoutingTable",
+    "model": "hacs.SiteRoutingRules",
     "fields": {
       "site": ["localhost"],
       "route": ["test-route2"]
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["testserver"],
       "route": ["test-route3"],
@@ -123,7 +123,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["testserver"],
       "route": ["test-route4"],
@@ -132,7 +132,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["testserver"],
       "route": ["test-route2"],
@@ -141,7 +141,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["localhost"],
       "route": ["test-route1"],
@@ -150,7 +150,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["testserver"],
       "route": ["test-route1"],
@@ -159,7 +159,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["localhost"],
       "route": ["test-route1"],
@@ -168,7 +168,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["testserver"],
       "route": ["test-route2"],

@@ -6,7 +6,7 @@ from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
+from hacs.models import SiteRoutingRules
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -98,7 +98,7 @@ class Command(BaseCommand):
             )
             route.save()
 
-        SiteRoutingTable(site=site, route=route).save()
+        SiteRoutingRules(site=site, route=route).save()
         self.stdout.write('>>> Django Hybrid Access Control System is initialized and ready to use!')
 
 

@@ -20,8 +20,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
-from hacs.models import ContentTypeRoutingTable
+from hacs.models import SiteRoutingRules
+from hacs.models import ContentTypeRoutingRules
 from hacs.defaults import HACS_SERIALIZED_ROUTING_DIR
 from hacs.defaults import HACS_USER_OBJECT_QUERY_CALLABLE
 
@@ -199,7 +199,7 @@ class Command(BaseCommand):
         if exclude_sites:
             filters['site__in'] = [Site.objects.get(domain=x) for x in exclude_sites]
 
-        site_routing_queryset = SiteRoutingTable.objects.exclude(**filters)
+        site_routing_queryset = SiteRoutingRules.objects.exclude(**filters)
 
         filter_arg = ()
         exclude_groups = kwargs['exclude_groups']
@@ -224,7 +224,7 @@ class Command(BaseCommand):
                 filter_arg = (Q(content_type=ContentType.objects.get_for_model(UserModel),
                                 object_id__in=exclude_users), )
 
-        contenttype_routing_queryset = ContentTypeRoutingTable.objects.exclude(*filter_arg, **filters)
+        contenttype_routing_queryset = ContentTypeRoutingRules.objects.exclude(*filter_arg, **filters)
 
         return list(routing_table_queryset) + list(site_routing_queryset) + list(contenttype_routing_queryset)
 
@@ -324,8 +324,8 @@ class Command(BaseCommand):
 
         """"""
         _allowed_models = (
-            "%s.%s" % (SiteRoutingTable._meta.app_label, SiteRoutingTable._meta.model_name),
-            "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+            "%s.%s" % (SiteRoutingRules._meta.app_label, SiteRoutingRules._meta.model_name),
+            "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
         )
 
         for entry in entries:

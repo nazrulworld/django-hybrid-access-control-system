@@ -84,7 +84,7 @@
     }
   },
   {
-    "model": "hacs.SiteRoutingTable",
+    "model": "hacs.SiteRoutingRules",
     "fields": {
       "site": 2,
       "route": ["default-route"]
@@ -116,7 +116,7 @@
     }
   },
   {
-    "model": "hacs.SiteRoutingTable",
+    "model": "hacs.SiteRoutingRules",
     "fields": {
       "site": 3,
       "route": ["localhost-route"]
@@ -148,7 +148,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": 2,
       "route": ["user-route"],
@@ -182,7 +182,7 @@
     }
   },
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": 2,
       "route": ["group-route"],

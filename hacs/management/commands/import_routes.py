@@ -17,8 +17,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.management.base import BaseCommand, CommandError
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
-from hacs.models import ContentTypeRoutingTable
+from hacs.models import SiteRoutingRules
+from hacs.models import ContentTypeRoutingRules
 from hacs.defaults import HACS_SERIALIZED_ROUTING_DIR
 from hacs.defaults import HACS_USER_OBJECT_QUERY_CALLABLE
 from hacs.globals import HACS_SERIALIZED_ROUTE_DIR_NAME
@@ -135,7 +135,7 @@ class Command(BaseCommand):
         :param kwargs:
         :return:
         """
-        if not isinstance(obj, (RoutingTable, SiteRoutingTable, ContentTypeRoutingTable, )):
+        if not isinstance(obj, (RoutingTable, SiteRoutingRules, ContentTypeRoutingRules, )):
             return False
 
         exclude_apps = kwargs['exclude_apps']
@@ -156,7 +156,7 @@ class Command(BaseCommand):
         if exclude_groups is not None and isinstance(exclude_groups, six.string_types):
             exclude_groups = (exclude_groups, )
 
-        if exclude_groups and isinstance(obj, ContentTypeRoutingTable):
+        if exclude_groups and isinstance(obj, ContentTypeRoutingRules):
             content_type = ContentType.objects.get_for_model(Group)
             if obj.content_type == content_type and Group.objects.get(pk=obj.object_id).name in exclude_groups:
                 return False
@@ -165,7 +165,7 @@ class Command(BaseCommand):
         if exclude_users is not None and isinstance(exclude_users, six.string_types):
             exclude_users = (exclude_users, )
 
-        if exclude_users and isinstance(obj, ContentTypeRoutingTable):
+        if exclude_users and isinstance(obj, ContentTypeRoutingRules):
 
             content_type = ContentType.objects.get_for_model(UserModel)
             if obj.content_type == content_type and \
@@ -287,8 +287,8 @@ class Command(BaseCommand):
     def _normalize_unwanted_natural_keys(self, entries):
         """ """
         _allowed_models = (
-            "%s.%s" % (SiteRoutingTable._meta.app_label, SiteRoutingTable._meta.model_name),
-            "%s.%s" % (ContentTypeRoutingTable._meta.app_label, ContentTypeRoutingTable._meta.model_name),
+            "%s.%s" % (SiteRoutingRules._meta.app_label, SiteRoutingRules._meta.model_name),
+            "%s.%s" % (ContentTypeRoutingRules._meta.app_label, ContentTypeRoutingRules._meta.model_name),
         )
         for entry in entries:
             if entry['model'].lower() in _allowed_models:

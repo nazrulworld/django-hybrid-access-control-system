@@ -6,7 +6,7 @@ from django.contrib.sites.models import Site
 from django.core.management import call_command
 
 from hacs.models import RoutingTable
-from hacs.models import SiteRoutingTable
+from hacs.models import SiteRoutingRules
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -22,7 +22,7 @@ class TestInitHACS(TestCase):
 
     def clean(self):
         """ Cleaning all existing Routing records those are comes with fixture """
-        SiteRoutingTable.objects.all().delete()
+        SiteRoutingRules.objects.all().delete()
         RoutingTable.objects.all().delete()
 
     def test_handle(self):
@@ -37,10 +37,10 @@ class TestInitHACS(TestCase):
             raise AssertionError("Code should come here!, cause route should be created")
 
         try:
-            site_route = SiteRoutingTable.objects.get(site=Site.objects.get(domain='localhost'))
+            site_route = SiteRoutingRules.objects.get(site=Site.objects.get(domain='localhost'))
             self.assertEqual(site_route.route.route_name, 'default-route')
 
-        except SiteRoutingTable.DoesNotExist:
+        except SiteRoutingRules.DoesNotExist:
             raise AssertionError("Code should come here!, cause site route should be created")
 
     def tearDown(self):

@@ -23,7 +23,7 @@
   },
 # This sample for site`s route
   {
-    "model": "hacs.SiteRoutingTable",
+    "model": "hacs.SiteRoutingRules",
     "fields": {
       "site": ["<domain name. i.e localhost>"],
       "route": ["<route_name is here>"]
@@ -31,7 +31,7 @@
   },
 # This sample for UserGroup based route. (optional)
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["<domain name. i.e localhost>"],
       "route": ["<route name>"],
@@ -41,7 +41,7 @@
   },
 # This sample for User based route. (optional)
   {
-    "model": "hacs.ContentTypeRoutingTable",
+    "model": "hacs.ContentTypeRoutingRules",
     "fields": {
       "site": ["<domain name. i.e localhost>"],
       "route": ["<route name>"],

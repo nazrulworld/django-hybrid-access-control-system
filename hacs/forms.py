@@ -5,23 +5,20 @@ from django import forms
 from django.contrib.contenttypes.models import ContentType
 
 from .models import RoutingTable
-from .models import ContentTypeRoutingTable
+from .models import ContentTypeRoutingRules
 
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-__all__ = [str(x) for x in ('RoutingTableForm', 'RoutingTableAdminForm', 'ContentTypeRoutingTableForm',
-                            'ContentTypeRoutingTableAdminForm')]
+__all__ = [str(x) for x in ('RoutingTableForm', 'RoutingTableAdminForm', 'ContentTypeRoutingRulesForm',
+                            'ContentTypeRoutingRulesAdminForm', 'SiteRoutingRulesForm', 'SiteRoutingRulesAdminForm')]
 
 
 class RoutingTableForm(forms.ModelForm):
     """"""
     class Meta:
         model = RoutingTable
-        fields = ('route_name', 'description', 'urls', 'handlers', 'allowed_method', 'is_active', )
-        widgets = {
-            'allowed_method': forms.SelectMultiple()
-        }
+        fields = ('route_name', 'description', 'urls', 'handlers', 'is_active', )
 
 
 class RoutingTableAdminForm(RoutingTableForm):
@@ -31,7 +28,25 @@ class RoutingTableAdminForm(RoutingTableForm):
         model = None
 
 
-class ContentTypeRoutingTableForm(forms.ModelForm):
+class SiteRoutingRulesForm(forms.ModelForm):
+    """"""
+    class Meta:
+        model = ContentTypeRoutingRules
+        fields = ('route', 'site', 'allowed_method', 'is_active', 'blacklisted_uri',
+                  'whitelisted_uri',
+                  'maintenance_mode')
+        widgets = {
+            'allowed_method': forms.SelectMultiple()
+        }
+
+
+class SiteRoutingRulesAdminForm(SiteRoutingRulesForm):
+    """"""
+    class Meta(SiteRoutingRulesForm.Meta):
+        model = None
+
+
+class ContentTypeRoutingRulesForm(forms.ModelForm):
     """"""
     content_type = forms.ModelChoiceField(queryset=ContentType.objects.filter(
         model__in=("user", "group", ),
@@ -39,11 +54,15 @@ class ContentTypeRoutingTableForm(forms.ModelForm):
     ))
 
     class Meta:
-        model = ContentTypeRoutingTable
-        fields = ('route', 'site', 'content_type', 'object_id', 'is_active',)
+        model = ContentTypeRoutingRules
+        fields = ('route', 'site', 'content_type', 'allowed_method', 'object_id', 'is_active', 'blacklisted_uri',
+                  'whitelisted_uri', 'maintenance_mode')
+        widgets = {
+            'allowed_method': forms.SelectMultiple()
+        }
 
 
-class ContentTypeRoutingTableAdminForm(ContentTypeRoutingTableForm):
+class ContentTypeRoutingRulesAdminForm(ContentTypeRoutingRulesForm):
     """"""
-    class Meta(ContentTypeRoutingTableForm.Meta):
+    class Meta(ContentTypeRoutingRulesForm.Meta):
         model = None
