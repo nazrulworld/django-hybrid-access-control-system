@@ -54,8 +54,6 @@ class RoutingTable(models.Model):
     description = models.TextField(_('description'), null=True, blank=True)
     urls = SequenceField(_('URLs'), null=False, blank=False, validators=[UrlModulesValidator()])
     handlers = DictField(_('Handlers'), null=True, blank=True, default='', validators=[HttpHandlerValidator()])
-    allowed_method= SequenceField(_('Allowed Method'), null=True, blank=True,
-                                  choices=[(x, x) for x in HTTP_METHOD_LIST])
     generated_module = models.CharField(_('Generated Module'), null=True, blank=True, default=None, max_length=255)
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
     is_deleted = models.BooleanField(_('Soft Delete'), null=False, blank=True, default=False)
@@ -81,7 +79,7 @@ class RoutingTable(models.Model):
         return self.route_name
 
 
-class SiteRoutingTableManager(models.Manager):
+class SiteRoutingRulesManager(models.Manager):
     """ """
     use_in_migrations = True
 
@@ -108,7 +106,7 @@ class SiteRoutingTableManager(models.Manager):
         return self.get(site=site)
 
 
-class SiteRoutingTable(models.Model):
+class SiteRoutingRules(models.Model):
 
     """
     """
@@ -123,16 +121,40 @@ class SiteRoutingTable(models.Model):
                              null=False,
                              blank=False,
                              related_name='hacs_site_routes')
+
+    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True,
+                                   choices=[(x, x) for x in HTTP_METHOD_LIST])
+    blacklisted_uri = models.CharField(
+        _('blacklisted uri'),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_('regex formatted uri those will be treated as blacklisted and request will be discarded by firewall'))
+
+    whitelisted_uri = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_('regex formatted uri those will be treated as whitelisted and request will '
+                  'be discarded by firewall if uri not match'))
+
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
+    maintenance_mode = models.BooleanField(
+        _('Maintenance Mode'),
+        null=False,
+        blank=True,
+        default=False,
+        help_text=_('Firewall will only response maintenance view and prevent any further execution '
+                    'for all request if it is on'))
     created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now)
     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
-    objects = SiteRoutingTableManager()
+    objects = SiteRoutingRulesManager()
 
     class Meta:
-        db_table = 'hacs_sites_routing_table'
-        verbose_name = _('site routing table')
-        verbose_name_plural = _('sites routing table')
+        db_table = 'hacs_sites_routing_rules'
+        verbose_name = _('site routing rules')
+        verbose_name_plural = _('sites routing rules')
 
     def natural_key(self):
         """
@@ -143,12 +165,12 @@ class SiteRoutingTable(models.Model):
         except AttributeError:
             # Right now `natural_key` is not implemented by django, but would be good if they do
             site_natural_key = self.site.pk
-
         return (site_natural_key, )
+
     natural_key.dependencies = ["hacs.RoutingTable", "sites.Site"]
 
 
-class ContentTypeRoutingTableManager(models.Manager):
+class ContentTypeRoutingRulesManager(models.Manager):
     """ """
     use_in_migrations = True
 
@@ -184,7 +206,7 @@ class ContentTypeRoutingTableManager(models.Manager):
         )
 
 
-class ContentTypeRoutingTable(models.Model):
+class ContentTypeRoutingRules(models.Model):
 
     """
     """
@@ -199,21 +221,44 @@ class ContentTypeRoutingTable(models.Model):
                              on_delete=models.CASCADE,
                              null=False,
                              blank=False,
-                             related_name='hacs_site_contenttypes_at_routing_table'
+                             related_name='hacs_site_contenttypes_at_routing_rules'
                              )
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, validators=[ContentTypeValidator()])
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
+    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True,
+                                   choices=[(x, x) for x in HTTP_METHOD_LIST])
+    blacklisted_uri = models.CharField(
+        _('blacklisted uri'),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text=_('regex formatted uri those will be treated as blacklisted and request will be '
+                    'discarded by firewall'))
+    whitelisted_uri = models.CharField(
+        _('whitelisted uri'),
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='regex formatted uri those will be treated as whitelisted and request will '
+                  'be discarded by firewall if uri not match')
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
+    maintenance_mode = models.BooleanField(
+        _('Maintenance Mode'),
+        null=False,
+        blank=True,
+        default=False,
+        help_text=_('Firewall will only response maintenance view and prevent any further execution '
+                    'for all request if it is on'))
     created_on = models.DateTimeField(_('Created On'),  blank=True, default=timezone.now)
     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
-    objects = ContentTypeRoutingTableManager()
+    objects = ContentTypeRoutingRulesManager()
 
     class Meta:
-        db_table = 'hacs_ct_routing_table'
-        verbose_name = _('content type routing table')
-        verbose_name_plural = _('content types routing table')
+        db_table = 'hacs_ct_routing_rules'
+        verbose_name = _('content type routing rules')
+        verbose_name_plural = _('content types routing rules')
         unique_together = (("site", "content_type", "object_id"),)
 
     def natural_key(self):
