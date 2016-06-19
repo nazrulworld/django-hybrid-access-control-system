@@ -1,0 +1,111 @@
+{% load i18n admin_urls admin_static admin_modify hacs_utils %}
+<script>
+//<![CDATA[
+(function ($) {
+    "use strict";
+     $(document).ready(function () {
+         var $select2;
+         var max_records = 50;
+         var $content_type = $("#id_content_type");
+         var $content_type_value = $content_type.val();
+         var $content_type_text = $("#id_content_type option:selected").html();
+         var $object_id = $("#id_object_id");
+         var $object_id_parent = $object_id.parent();
+         var object_id_field = $object_id.attr('name');
+         var object_id_value = $object_id.val();
+         var users_url = "{% url 'hacs_admin:select2_users' %}";
+         var groups_url = "{% url 'hacs_admin:select2_groups' %}";
+
+         // Make Input Element to Select Element
+         if (!$content_type_value && !object_id_value){
+             $object_id.remove();
+             $object_id_parent.append("<select name='"+ object_id_field +"' id='id_object_id' ></select>");
+             // Refresh Dom
+             $object_id = $("#id_object_id");
+             $object_id.css({
+                "min-width": "120px"
+             });
+         } else {
+             $object_id.attr('readonly', 'readonly');
+             var _options = {
+                 type: "GET",
+                 cache: true,
+                 url:  'user' == $content_type_text.trim().toLowerCase()?users_url:groups_url,
+                 data: {"pk": object_id_value}
+             };
+             $.ajax(_options).
+             done(function (response) {
+                 $object_id.remove();
+                 $object_id_parent.append("<select name='"+ object_id_field +"' id='id_object_id' ><option selected='selected' value='"+ response.id +"'>"+ response.text +"</option></select>");
+                 // Refresh Dom
+                 $object_id = $("#id_object_id");
+                 $object_id.css({
+                    "min-width": "120px"
+                 });
+                 if ($select2) destroy_select2();
+                 init_select2(_options.url);
+             });
+         }
+         $content_type.on('change', function (event) {
+             var $me = $(event.currentTarget);
+             var label = $('#'+ $me.attr('id') + ' option:selected').html();
+             if (label) label = label.trim().toLowerCase();
+             switch (label){
+                 case 'group':
+                         if ($select2) destroy_select2();
+                         init_select2(groups_url, {"placeholder": "type group name"});
+                       break;
+                 case 'user':
+                         if ($select2) destroy_select2();
+                         init_select2(users_url, {"placeholder": "type username"});
+                        break;
+                 default:
+                       destroy_select2();
+             }
+         });
+
+         function destroy_select2() {
+             $object_id.select2('destroy');
+             $select2 = null;
+         }
+         function init_select2(url, options){
+            var defaults = {
+                placeholder: 'Select an option',
+                minimumInputLength: 1,
+                ajax: {
+                    url: url,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            q: params.term, // search term
+                            page: params.page,
+                            max_records: max_records
+                      };
+                    },
+                    processResults: function (data, params) {
+                      // parse the results into the format expected by Select2
+                      // since we are using custom formatting functions we do not need to
+                      // alter the remote JSON data, except to indicate that infinite
+                      // scrolling can be used
+                      params.page = params.page || 1;
+
+                      return {
+                        results: data.items,
+                        pagination: {
+                          more: (params.page * max_records) < data.total_count
+                        }
+                      };
+                    },
+                    cache: true
+                  }
+            };
+             if (typeof options == 'object') $.extend(defaults, options);
+
+             $select2 = $object_id.select2(defaults);
+
+        };
+     });
+})(jQuery);
+//]]>
+</script>
