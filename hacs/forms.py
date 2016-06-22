@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.contenttypes.models import ContentType
 
 from .models import RoutingTable
+from .models import SiteRoutingRules
 from .models import ContentTypeRoutingRules
 
 
@@ -31,7 +32,7 @@ class RoutingTableAdminForm(RoutingTableForm):
 class SiteRoutingRulesForm(forms.ModelForm):
     """"""
     class Meta:
-        model = ContentTypeRoutingRules
+        model = SiteRoutingRules
         fields = ('route', 'site', 'allowed_method', 'is_active', 'blacklisted_uri',
                   'whitelisted_uri',
                   'maintenance_mode')
@@ -56,7 +57,7 @@ class ContentTypeRoutingRulesForm(forms.ModelForm):
     class Meta:
         model = ContentTypeRoutingRules
         fields = ('route', 'site', 'content_type', 'allowed_method', 'object_id', 'is_active', 'blacklisted_uri',
-                  'whitelisted_uri', 'maintenance_mode')
+                  'whitelisted_uri',)
         widgets = {
             'allowed_method': forms.SelectMultiple()
         }
