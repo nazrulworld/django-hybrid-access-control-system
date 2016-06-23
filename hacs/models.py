@@ -243,13 +243,6 @@ class ContentTypeRoutingRules(models.Model):
         help_text='regex formatted uri those will be treated as whitelisted and request will '
                   'be discarded by firewall if uri not match')
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
-    maintenance_mode = models.BooleanField(
-        _('Maintenance Mode'),
-        null=False,
-        blank=True,
-        default=False,
-        help_text=_('Firewall will only response maintenance view and prevent any further execution '
-                    'for all request if it is on'))
     created_on = models.DateTimeField(_('Created On'),  blank=True, default=timezone.now)
     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
