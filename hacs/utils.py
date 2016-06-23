@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # ++ This file `utils.py` is generated at 3/5/16 10:02 AM ++
+from __future__ import unicode_literals
 import os
 import re
 import copy
@@ -21,6 +22,7 @@ from django.utils.module_loading import module_has_submodule
 
 from .models import SiteRoutingRules
 from .globals import HACS_SITE_CACHE
+from .globals import HTTP_METHOD_LIST
 from .defaults import HACS_FALLBACK_URLCONF
 from .defaults import HACS_GENERATED_URLCONF_DIR
 from .globals import HACS_GENERATED_FILENAME_PREFIX
@@ -45,14 +47,18 @@ urlpatterns = [
 """
 
 
-def set_site_urlconf(site):
+def set_site_settings(site, silent_if_not_exist=True):
     """
     :param site:
+    :param silent_if_not_exist
     :return:
     """
     try:
-        site_route = SiteRoutingRules.objects.get(site=site)
+        site_rules = SiteRoutingRules.objects.get(site=site)
     except SiteRoutingRules.DoesNotExist:
+        if not silent_if_not_exist:
+            # @TODO: need meaningful message
+            raise
         warnings.warn(
                 '%s has not assigned any route yet!' % site.domain
         )
@@ -65,13 +71,39 @@ def set_site_urlconf(site):
                 {'urlconf': getattr(settings, 'HACS_FALLBACK_URLCONF', HACS_FALLBACK_URLCONF)}
     else:
         # we are checking if file need to be created
-        generate_urlconf_file_on_demand(site_route.route)
-        generated_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(site_route.route.route_name))
+        generate_urlconf_file_on_demand(site_rules.route)
+        generated_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(site_rules.route.route_name))
 
         try:
-            HACS_SITE_CACHE[site.domain].update({'urlconf': generated_urlconf_module})
+            HACS_SITE_CACHE[site.domain].update({
+                'urlconf': generated_urlconf_module,
+                'maintenance_mode': site_rules.maintenance_mode,
+                'allowed_http_methods': site_rules.allowed_method or HTTP_METHOD_LIST,
+                'blacklisted_uri': site_rules.blacklisted_uri,
+                'whitelisted_uri': site_rules.whitelisted_uri,
+                'is_active': site_rules.is_active
+            })
         except KeyError:
-            HACS_SITE_CACHE[site.domain] = {'urlconf': generated_urlconf_module}
+            HACS_SITE_CACHE[site.domain] = {
+                'urlconf': generated_urlconf_module,
+                'maintenance_mode': site_rules.maintenance_mode,
+                'allowed_http_methods': site_rules.allowed_method,
+                'blacklisted_uri': site_rules.blacklisted_uri,
+                'whitelisted_uri': site_rules.whitelisted_uri,
+                'is_active': site_rules.is_active
+            }
+
+
+def get_site_settings(site):
+    """
+    @Linked to `lru_wrapped`
+    :param site
+    """
+    try:
+        return HACS_SITE_CACHE[site.domain]
+    except KeyError:
+        set_site_settings(site)
+        return HACS_SITE_CACHE[site.domain]
 
 
 def get_site_urlconf(site):
@@ -79,13 +111,52 @@ def get_site_urlconf(site):
     @Linked to `lru_wrapped`
     :param site
     """
+    return get_site_settings(site)['urlconf']
+
+
+def get_site_blacklisted_uri(site):
+    """
+    @Linked to `lru_wrapped`
+    :param site
+    """
+    return get_site_settings(site)['blacklisted_uri']
+
+
+def get_site_whitelisted_uri(site):
+    """
+    @Linked to `lru_wrapped`
+    :param site
+    """
+    return get_site_settings(site)['whitelisted_uri']
+
+
+
+def site_in_maintenance_mode(site):
+    """
+    @Linked to `lru_wrapped`
+    :param site
+    """
     try:
         # serve from cache
-        return HACS_SITE_CACHE[site.domain]['urlconf']
+        return HACS_SITE_CACHE[site.domain]['maintenance_mode']
 
     except KeyError:
-        set_site_urlconf(site)
-        return HACS_SITE_CACHE[site.domain]['urlconf']
+        set_site_settings(site, False)
+        return HACS_SITE_CACHE[site.domain]['maintenance_mode']
+
+
+def get_site_http_methods(site):
+    """
+    @Linked to `lru_wrapped`
+    :param site
+    """
+    try:
+        # serve from cache
+        return HACS_SITE_CACHE[site.domain]['allowed_http_methods']
+
+    except KeyError:
+        set_site_settings(site)
+        return HACS_SITE_CACHE[site.domain]['allowed_http_methods'] or HTTP_METHOD_LIST
 
 
 def get_group_key(request, group, prefix='hacl', suffix=None):
@@ -299,8 +370,9 @@ def get_user_object(username_or_email_or_mobile, silent=True):
             raise
         return None
 
-__all__ = (
-    "set_site_urlconf",
+__all__ = [str(x) for x in (
+    "set_site_settings",
+    "get_site_settings",
     "get_site_urlconf",
     "get_group_key",
     "get_user_key",
@@ -311,5 +383,9 @@ __all__ = (
     "sanitize_filename",
     "get_installed_apps_urlconf",
     "get_user_object",
-)
+    "site_in_maintenance_mode",
+    "get_site_http_methods",
+    "get_site_blacklisted_uri",
+    "get_site_whitelisted_uri"
+)]
 
