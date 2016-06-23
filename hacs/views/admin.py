@@ -15,7 +15,7 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 def select2_users_view(request):
     """"""
     max_records = 500
-
+    import ipdb;ipdb.set_trace()
     if request.method == 'GET':
         UserModel = get_user_model()
         if request.GET.get('pk'):
