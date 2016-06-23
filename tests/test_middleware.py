@@ -25,7 +25,7 @@ from django.contrib.contenttypes.models import ContentType
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
 from hacs.globals import HACS_SITE_CACHE
-from hacs.utils import set_site_urlconf
+from hacs.utils import set_site_settings
 from hacs.utils import generate_urlconf_file
 from hacs.middleware import UserModel
 from hacs.middleware import FirewallMiddleware
@@ -74,19 +74,19 @@ class TestMiddlewareFunction(TestCase):
         # Let's clear the lru cache, as this function wrapped by lru_cache decorator
         clean_lru()
 
-    def test_set_site_urlconf(self):
+    def test_set_site_settings(self):
 
         request = self.request_factory.request()
         request.site = get_current_site(request)
         urlconf_filename = get_generated_urlconf_file(TEST_ROUTE_NAME)
         if os.path.exists(urlconf_filename):
             os.unlink(urlconf_filename)
-        set_site_urlconf(site=request.site)
+        set_site_settings(site=request.site)
         # urlconf module created
         self.assertTrue(os.path.exists(urlconf_filename))
 
         urlconf_file_creation_time = datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename))
-        set_site_urlconf(site=request.site)
+        set_site_settings(site=request.site)
 
         # Make sure urlconf file is not recreated
         self.assertEqual(urlconf_file_creation_time, datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename)))
@@ -95,7 +95,7 @@ class TestMiddlewareFunction(TestCase):
         site_route.route.updated_on = timezone.now()
         site_route.route.description = 'catch'
         site_route.route.save()
-        set_site_urlconf(site=request.site)
+        set_site_settings(site=request.site)
 
         # Make sure urlconf file recreated, after route modification
         self.assertNotEqual(urlconf_file_creation_time,
@@ -126,7 +126,7 @@ class TestMiddlewareFunction(TestCase):
 
         # Make sure serve from cache!
         # How can we make sure?
-        # We forcefully changed the updated date of route, so if `set_site_urlconf` method is called, then urlconf
+        # We forcefully changed the updated date of route, so if `set_site_settings` method is called, then urlconf
         # module file must be recreated.
         self.assertEqual(urlconf_file_creation_time, datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename)))
 
@@ -152,11 +152,11 @@ class TestMiddlewareFunctionException(TestCase):
         clean_lru()
         HACS_SITE_CACHE.clear()
 
-    def test_set_site_urlconf(self):
+    def test_set_site_settings(self):
 
         request = self.request_factory.request()
         request.site = get_current_site(request)
-        set_site_urlconf(site=request.site)
+        set_site_settings(site=request.site)
         self.assertEqual(TEST_FALLBACK_URLCONF, HACS_SITE_CACHE[request.site.domain]['urlconf'])
 
     def tearDown(self):
@@ -216,7 +216,7 @@ class TestDynamicRouteMiddleware(TestCase):
         middleware.process_request(request)
 
         # Make sure serve from Global Cache although lru cache is cleared
-        # As set_site_urlconf function is not called, new urlrconf file is generated although it is not exist.
+        # As set_site_settings function is not called, new urlrconf file is generated although it is not exist.
         self.assertFalse(os.path.exists(urlconf_filename))
 
     def tearDown(self):
