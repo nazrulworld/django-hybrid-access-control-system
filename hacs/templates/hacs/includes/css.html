@@ -1,0 +1,14 @@
+{% load staticfiles %}
+{% if HACS_DEVELOPMENT_MODE %}
+<link rel="stylesheet" href="{% static "hacs_assets/frontend/css/bootstrap.css" %}">
+<style>
+    body {
+        padding-top: 50px;
+        padding-bottom: 20px;
+    }
+</style>
+<link rel="stylesheet" href="{% static "hacs_assets/frontend/css/bootstrap-theme.css" %}">
+<link rel="stylesheet" href="{% static "hacs_assets/frontend/css/hacs.css" %}">
+{% else %}
+<link rel="stylesheet" href="{% static "hacs/css/hacs.min.css" %}">
+{% endif %}

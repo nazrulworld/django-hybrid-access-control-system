@@ -1,0 +1,8 @@
+{% load staticfiles %}
+{% if HACS_DEVELOPMENT_MODE %}
+<script src="{% static "hacs_assets/frontend/js/vendor/jquery-1.11.2.js" %}"></script>
+<script src="{% static "hacs_assets/frontend/js/vendor/bootstrap.min.js" %} "></script>
+<script src="{% static "hacs_assets/frontend/js/hacs.js" %} "></script>
+{% else %}
+<script src="{% static "hacs/js/hacs.min.js" %} "></script>
+{% endif %}

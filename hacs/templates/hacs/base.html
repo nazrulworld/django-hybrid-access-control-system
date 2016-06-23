@@ -1,0 +1,38 @@
+{% load staticfiles i18n %}
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="{{ LANGUAGE_CODE }}"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>{{ hacs_meta_title | default: "Hybrid Access Control System" }}</title>
+        <meta name="description" content="{{ hacs_meta_description | default: "Hybrid Access Control System powered by Django" }}">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="apple-touch-icon" href="{% static "hacs/apple-touch-icon.png" %}">
+        {% block hacs_meta_extra %}{% endblock  hacs_meta_extra %}
+        {% include "hacs/includes/css.html" %}
+        {% block hacs_css_extra %}{% endblock hacs_css_extra %}
+        <script src="{% if HACS_DEVELOPMENT_MODE %} {% static "hacs_assets/frontend/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js" %} {% else %}{% static "hacs/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js" %}{% endif %}"></script>
+    </head>
+    <body>
+
+        <!--[if lt IE 8]>
+            <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <div class="container">
+            {% block hacs_content %}{% endblock hacs_content %}
+            <hr>
+            <footer>
+                {% block hacs_footer %}
+                    <p>
+                        Powered by <a target="_blank" href="https://github.com/nazrulworld/django-hybrid-access-control-system">HACS</a>
+                    </p>
+                {% endblock hacs_footer %}
+            </footer>
+        </div>
+        {% include "hacs/includes/js.html" %}
+        {% block hacs_javascript_extra %}{% endblock hacs_javascript_extra %}
+    </body>
+</html>
