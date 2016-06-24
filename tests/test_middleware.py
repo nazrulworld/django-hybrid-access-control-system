@@ -2,8 +2,6 @@
 # ++ This file `test_middleware.py` is generated at 3/7/16 6:11 PM ++
 import os
 import sys
-import time
-import pytest
 import hashlib
 import tempfile
 import datetime
@@ -17,6 +15,7 @@ from django.core.cache import caches
 from django.test import RequestFactory
 from django.test import override_settings
 from django.test import modify_settings
+from django.contrib.sites.models import Site
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.sites.shortcuts import get_current_site
@@ -323,14 +322,13 @@ class TestFirewallMiddleware(TestCase):
         # Validate
         self.assertTrue(middleware._validate)
 
-    def test_set_group_urlconf(self):
-
+    def test_set_auth_group_settings(self):
+        """"""
         request = self.request_factory.request()
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
         middleware = FirewallMiddleware()
-
-        middleware._set_group_urlconf(request, user.groups.get(name='administrator'))
+        middleware.set_auth_group_settings(request, user.groups.get(name='administrator'))
         group_key = get_group_key(request, user.groups.get(name='administrator'))
         group_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
 
@@ -343,22 +341,51 @@ class TestFirewallMiddleware(TestCase):
         """
         :return:
         """
-        urls_confs = []
-        for route in RoutingTable.objects.all().order_by('-id'):
-            if not os.path.exists(get_generated_urlconf_file(route.route_name)):
-                generate_urlconf_file(get_generated_urlconf_file(route.route_name), route)
-            urls_confs.append(get_generated_urlconf_module(get_generated_urlconf_file(route.route_name)))
-
         middleware = FirewallMiddleware()
-        result = middleware._calculate_user_urlconf('/admin/', urls_confs)
-        expected_urlconf = get_generated_urlconf_module(
-            get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME),
-            RoutingTable.objects.get(route_name=TEST_GROUP_ROUTE_NAME))
+        request = self.request_factory.request()
+        test_user = UserModel.objects.get(username=TEST_USER_NAME)
+        test_site = Site.objects.get(domain=TEST_HOST_NAME)
+        request.site = test_site
+        user_rules = ContentTypeRoutingRules.objects.get(
+            content_type=ContentType.objects.get_for_model(UserModel),
+            object_id=test_user.pk,
+            site=test_site
+        )
+        user_settings = {
+            'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(user_rules.route.route_name), False),
+            'allowed_http_methods': user_rules.allowed_method,
+            'blacklisted_uri': None,
+            'whitelisted_uri': None
+        }
+
+        result = middleware._calculate_user_urlconf('/admin/', user_settings)
+        expected_urlconf = get_generated_urlconf_module(get_generated_urlconf_file(TEST_USER_ROUTE_NAME), False)
 
         self.assertEqual(result, expected_urlconf)
+        # we remove user's rules so should come from groups
+        ContentTypeRoutingRules.objects.filter(
+            content_type=ContentType.objects.get_for_model(UserModel),
+            object_id=test_user.pk,
+            site=test_site
+        ).delete()
+        user_settings['urlconf'] = None
+        user_settings['allowed_http_methods'] = None
+        user_settings['groups'] = []
 
-    def test_set_user_urlconf(self):
+        for group in test_user.groups.all():
+            user_settings['groups'].append((get_group_key(request, group), group.natural_key()))
+            # We will trigger auth group settings from here
+            middleware.set_auth_group_settings(request, group, False)
+        result = middleware._calculate_user_urlconf('/admin/', user_settings)
+        expected_urlconf = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME), False)
 
+        self.assertEqual(result, expected_urlconf)
+        # Make sure user settings is updated
+        self.assertEqual(len( user_settings['allowed_http_methods']), 2)
+        self.assertEqual(tuple(user_settings['allowed_http_methods']), ('GET', 'POST', ))
+
+    def test_set_auth_user_settings(self):
+        """"""
         request = self.request_factory.request()
         request.path_info = u'/admin/'
         request.site = get_current_site(request)
@@ -367,7 +394,8 @@ class TestFirewallMiddleware(TestCase):
 
         middleware = FirewallMiddleware()
         request.session['settings'] = dict()
-        middleware._set_user_urlconf(request)
+        middleware.set_auth_user_settings(request)
+
         user_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_USER_ROUTE_NAME))
 
         # We Make sure session is updated
@@ -385,33 +413,16 @@ class TestFirewallMiddleware(TestCase):
         request.session.clear()
         request.session['settings'] = dict()
         self.cache.clear()
-        middleware._set_user_urlconf(request)
+        middleware.set_auth_user_settings(request)
 
-        # Make sure session updated and urlconf changed to Group Routing specific
-        user_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
         try:
-            # user's urlconf should be instance of tuple, because use could be member of several groups
-            self.assertEqual(session['settings']['urlconf'][0], user_urlconf_module)
-        except KeyError:
-            raise AssertionError("Code should not come here")
-
-        # Make sure cache also be updated and Group specific routing
-        self.assertEqual(self.cache.get(user_cache_key)['urlconf'][0], user_urlconf_module)
-
-        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
-
-        request.session.clear()
-        request.session['settings'] = dict()
-        self.cache.clear()
-        middleware._set_user_urlconf(request)
-
-        # Make sure fallback urlconf is None, because request has no urlconf attribute either set by DynamicMiddleware
-        # or from django settings
-        try:
-            # user's urlconf should be none, because either user or groups have no urlconf
+            # user's urlconf should be None, because user has no route
             self.assertIsNone(session['settings']['urlconf'])
         except KeyError:
             raise AssertionError("Code should not come here")
+
+        # Make sure cache also be updated g
+        self.assertIsNone(self.cache.get(user_cache_key)['urlconf'])
 
     def test_process_request(self):
 
