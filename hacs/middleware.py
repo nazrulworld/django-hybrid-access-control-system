@@ -96,7 +96,7 @@ class DynamicRouteMiddleware(object):
 class FirewallMiddleware(object):
     """     """
     name = 'hacs.middleware.FirewallMiddleware'
-    cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
+
 
     def process_request(self, request):
         """
@@ -116,12 +116,12 @@ class FirewallMiddleware(object):
         request_path = request.path_info
         if get_site_blacklisted_uri(get_current_site(request)):
             match = re.compile(smart_bytes(get_site_blacklisted_uri(get_current_site(request))))
-            if match.match(request_path):
+            if match.match(request_path.lstrip('/')):
                 return service_unavailable(request)
 
         if get_site_whitelisted_uri(get_current_site(request)):
             match = re.compile(smart_bytes(get_site_whitelisted_uri(get_current_site(request))))
-            if not match.match(request_path):
+            if not match.match(request_path.lstrip('/')):
                 return service_unavailable(request)
 
         # Let's check if HTTP Methods constraint is applicable
@@ -146,12 +146,12 @@ class FirewallMiddleware(object):
                 # Now we are ready to check list
                 if user_settings_session['blacklisted_uri']:
                     match = re.compile(smart_bytes(user_settings_session['blacklisted_uri']))
-                    if match.match(request_path):
+                    if match.match(request_path.lstrip('/')):
                         return service_unavailable(request)
 
-                if user_settings_session['whitelisted_url']:
-                    match = re.compile(smart_bytes(user_settings_session['whitelisted_url']))
-                    if not match.match(request_path):
+                if user_settings_session['whitelisted_uri']:
+                    match = re.compile(smart_bytes(user_settings_session['whitelisted_uri']))
+                    if not match.match(request_path.lstrip('/')):
                         return service_unavailable(request)
 
                 # Let's check if HTTP Methods constraint is applicable
@@ -178,8 +178,9 @@ class FirewallMiddleware(object):
         :param request:
         :return:
         """
+        cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
         # Try from cache
-        user_settings_cache = self.cache.get(get_user_key(request))
+        user_settings_cache = cache.get(get_user_key(request))
         if user_settings_cache and user_settings_cache.get('urlconf', None):
             request.session['settings'].update({
                 'urlconf': user_settings_cache.get('urlconf'),
@@ -188,7 +189,7 @@ class FirewallMiddleware(object):
                 'whitelisted_uri': user_settings_cache.get('blacklisted_uri'),
                 'groups': user_settings_cache.get('groups')
             })
-            return None
+            return
 
         # No cache
         initial_data = {
@@ -204,7 +205,7 @@ class FirewallMiddleware(object):
             self.set_auth_group_settings(request, group, False)
 
         if not user_settings_cache:
-            user_settings_cache = defaultdict()
+            user_settings_cache = dict()
         try:
             user_route_rules = ContentTypeRoutingRules.objects.get(
                 site=request.site,
@@ -228,8 +229,9 @@ class FirewallMiddleware(object):
 
         # Update Session
         request.session['settings'].update(initial_data)
+        user_settings_cache.update(initial_data)
         # Set Cache
-        self.cache.set(get_user_key(request), user_settings_cache.update(initial_data))
+        cache.set(get_user_key(request), user_settings_cache)
 
     def set_auth_group_settings(self, request, group, force_update=True):
         """
@@ -238,15 +240,15 @@ class FirewallMiddleware(object):
         :param force_update:
         :return:
         """
+        cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
         # Try from cache
         cache_key = get_group_key(request, group)
-        group_settings_cache = self.cache.get(cache_key)
-
+        group_settings_cache = cache.get(cache_key)
         # No cache
         if not group_settings_cache:
-            group_settings_cache = defaultdict()
+            group_settings_cache = dict()
 
-        if group_settings_cache.get('urlconf', None) and not force_update:
+        if group_settings_cache.get('urlconf', None) is not None and not force_update:
             return
 
         try:
@@ -266,9 +268,8 @@ class FirewallMiddleware(object):
                 'whitelisted_uri': group_route_rules.whitelisted_uri,
                 'is_active': group_route_rules.is_active
             })
-
         # Set Cache
-        self.cache.set(cache_key, group_settings_cache)
+        cache.set(cache_key, group_settings_cache)
 
     @cached_property
     def _validate(self):
@@ -295,23 +296,25 @@ class FirewallMiddleware(object):
         :param user_settings_session:
         :return:
         """
+        cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
+
         if user_settings_session['urlconf'] and isinstance(user_settings_session['urlconf'], six.string_types):
             return user_settings_session['urlconf']
 
         elif user_settings_session['groups']:
             _temp = None
             for group_cache_key, group_natural_key in user_settings_session['groups']:
-                if not self.cache.get(group_cache_key, {}).get('urlconf', None):
+                if not cache.get(group_cache_key, {}).get('urlconf', None):
                     continue
                 try:
-                    resolver = get_resolver(self.cache.get(group_cache_key).get('urlconf'))
+                    resolver = get_resolver(cache.get(group_cache_key).get('urlconf'))
                     resolver.resolve(request_path)
                     user_settings_session.update({
-                        'allowed_http_methods': self.cache.get(group_cache_key).get('allowed_http_methods'),
-                        'blacklisted_uri': self.cache.get(group_cache_key).get('blacklisted_uri'),
-                        'whitelisted_uri': self.cache.get(group_cache_key).get('whitelisted_uri'),
+                        'allowed_http_methods': cache.get(group_cache_key).get('allowed_http_methods'),
+                        'blacklisted_uri': cache.get(group_cache_key).get('blacklisted_uri'),
+                        'whitelisted_uri': cache.get(group_cache_key).get('whitelisted_uri'),
                     })
-                    _temp = self.cache.get(group_cache_key).get('urlconf')
+                    _temp = cache.get(group_cache_key).get('urlconf')
                     break
                 except Resolver404:
                     continue
