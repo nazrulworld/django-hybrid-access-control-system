@@ -2,6 +2,7 @@
 # ++ This file `test_middleware.py` is generated at 3/7/16 6:11 PM ++
 import os
 import sys
+import json
 import hashlib
 import tempfile
 import datetime
@@ -10,6 +11,7 @@ from django.test import TestCase
 from django.conf import settings
 from django.utils import timezone
 from importlib import import_module
+from django.http import JsonResponse
 from django.utils.encoding import smart_bytes
 from django.core.cache import caches
 from django.test import RequestFactory
@@ -467,6 +469,76 @@ class TestFirewallMiddleware(TestCase):
         # As urlconf is unavailable for user as well as groups and request urlconf attribute has None value
         # So showing warning and assign fallback urlconf
         self.assertEqual(request.urlconf, HACS_FALLBACK_URLCONF)
+
+    def test_site_in_maintenance_mode(self):
+        """
+        :return:
+        """
+        request = self.request_factory.request()
+        request.path_info = u'/admin/'
+        request.site = get_current_site(request)
+        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        middleware = FirewallMiddleware()
+        site_rules = SiteRoutingRules.objects.get(site=request.site)
+        site_rules.maintenance_mode = True
+        site_rules.save()
+
+        request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        response = middleware.process_request(request)
+        self.assertEqual(503, response.status_code)
+        self.assertIn('503', response.content)
+
+        request.META['HTTP_ACCEPT'] = "application/json, text/javascript, */*; q=0.01"
+        response = middleware.process_request(request)
+        self.assertEqual(503, response.status_code)
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(json.loads(response.content)['meta']['status'], 503)
+
+        # Make sure no maintenance mode restriction
+        clean_all_lru_caches()
+        HACS_SITE_CACHE.clear()
+        site_rules.maintenance_mode = False
+        site_rules.save()
+        response = middleware.process_request(request)
+        self.assertIsNone(response)
+
+    def test_uri_blacklist_whitelist_filter(self):
+        """
+        :return:
+        """
+        request = self.request_factory.request()
+        request.path_info = u'/admin/sites/site/'
+        request.site = get_current_site(request)
+        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        middleware = FirewallMiddleware()
+        ##
+        # Site Level URI Filter Test Start
+        ##
+        # BlackList
+        site_rules = SiteRoutingRules.objects.get(site=request.site)
+        site_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
+        site_rules.save()
+        request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        response = middleware.process_request(request)
+
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("503", response.content)
+
+        request.META['HTTP_ACCEPT'] = "application/json, text/javascript, */*; q=0.01"
+        response = middleware.process_request(request)
+        self.assertEqual(503, response.status_code)
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(json.loads(response.content)['meta']['status'], 503)
+
+        clean_all_lru_caches()
+        HACS_SITE_CACHE.clear()
+        site_rules.blacklisted_uri = None
+        site_rules.save()
+        response = middleware.process_request(request)
+        self.assertIsNone(response)
 
     def tearDown(self):
 
