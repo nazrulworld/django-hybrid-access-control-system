@@ -12,6 +12,7 @@ from django.conf import settings
 from django.utils import timezone
 from importlib import import_module
 from django.http import JsonResponse
+from django.utils.encoding import smart_text
 from django.utils.encoding import smart_bytes
 from django.core.cache import caches
 from django.test import RequestFactory
@@ -487,13 +488,13 @@ class TestFirewallMiddleware(TestCase):
         request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
         response = middleware.process_request(request)
         self.assertEqual(503, response.status_code)
-        self.assertIn('503', response.content)
+        self.assertIn('503', smart_text(response.content))
 
         request.META['HTTP_ACCEPT'] = "application/json, text/javascript, */*; q=0.01"
         response = middleware.process_request(request)
         self.assertEqual(503, response.status_code)
         self.assertIsInstance(response, JsonResponse)
-        self.assertEqual(json.loads(response.content)['meta']['status'], 503)
+        self.assertEqual(json.loads(smart_text(response.content))['meta']['status'], 503)
 
         # Make sure no maintenance mode restriction
         clean_all_lru_caches()
@@ -525,13 +526,13 @@ class TestFirewallMiddleware(TestCase):
 
         self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 503)
-        self.assertIn("503", response.content)
+        self.assertIn("503", smart_text(response.content))
 
         request.META['HTTP_ACCEPT'] = "application/json, text/javascript, */*; q=0.01"
         response = middleware.process_request(request)
         self.assertEqual(503, response.status_code)
         self.assertIsInstance(response, JsonResponse)
-        self.assertEqual(json.loads(response.content)['meta']['status'], 503)
+        self.assertEqual(json.loads(smart_text(response.content))['meta']['status'], 503)
 
         clean_all_lru_caches()
         HACS_SITE_CACHE.clear()
