@@ -8,8 +8,8 @@ from collections import defaultdict
 from django.apps import apps
 from django.utils import six
 from django.conf import settings
-from django.utils.encoding import smart_bytes
 from django.core.cache import caches
+from django.utils.encoding import smart_str
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 try:
@@ -97,7 +97,6 @@ class FirewallMiddleware(object):
     """     """
     name = 'hacs.middleware.FirewallMiddleware'
 
-
     def process_request(self, request):
         """
         :param request:
@@ -115,12 +114,12 @@ class FirewallMiddleware(object):
         # Let's check for any black/white listed uri
         request_path = request.path_info
         if get_site_blacklisted_uri(get_current_site(request)):
-            match = re.compile(smart_bytes(get_site_blacklisted_uri(get_current_site(request))))
+            match = re.compile(smart_str(get_site_blacklisted_uri(get_current_site(request))))
             if match.match(request_path.lstrip('/')):
                 return service_unavailable(request)
 
         if get_site_whitelisted_uri(get_current_site(request)):
-            match = re.compile(smart_bytes(get_site_whitelisted_uri(get_current_site(request))))
+            match = re.compile(smart_str(get_site_whitelisted_uri(get_current_site(request))))
             if not match.match(request_path.lstrip('/')):
                 return service_unavailable(request)
 
@@ -145,12 +144,12 @@ class FirewallMiddleware(object):
             if user_urlconf:
                 # Now we are ready to check list
                 if user_settings_session['blacklisted_uri']:
-                    match = re.compile(smart_bytes(user_settings_session['blacklisted_uri']))
+                    match = re.compile(smart_str(user_settings_session['blacklisted_uri']))
                     if match.match(request_path.lstrip('/')):
                         return service_unavailable(request)
 
                 if user_settings_session['whitelisted_uri']:
-                    match = re.compile(smart_bytes(user_settings_session['whitelisted_uri']))
+                    match = re.compile(smart_str(user_settings_session['whitelisted_uri']))
                     if not match.match(request_path.lstrip('/')):
                         return service_unavailable(request)
 
