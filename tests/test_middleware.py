@@ -504,7 +504,7 @@ class TestFirewallMiddleware(TestCase):
         response = middleware.process_request(request)
         self.assertIsNone(response)
 
-    def test_uri_blacklist_whitelist_filter(self):
+    def test_site_uri_blacklist_whitelist_filter(self):
         """
         :return:
         """
@@ -540,6 +540,232 @@ class TestFirewallMiddleware(TestCase):
         site_rules.save()
         response = middleware.process_request(request)
         self.assertIsNone(response)
+
+        # Whitelist
+        clean_all_lru_caches()
+        HACS_SITE_CACHE.clear()
+        site_rules = SiteRoutingRules.objects.get(site=request.site)
+        site_rules.whitelisted_uri = "^a[a-zA-Z0-9/]+/sites/"
+        site_rules.save()
+        request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        response = middleware.process_request(request)
+        # pass filter, so should be None
+        self.assertIsNone(response)
+
+        clean_all_lru_caches()
+        HACS_SITE_CACHE.clear()
+        site_rules.whitelisted_uri = "^f[a-zA-Z0-9/]+/sites/"
+        site_rules.save()
+
+        response = middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("503", smart_text(response.content))
+
+        request.META['HTTP_ACCEPT'] = "application/json, text/javascript, */*; q=0.01"
+        response = middleware.process_request(request)
+        self.assertEqual(503, response.status_code)
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(json.loads(smart_text(response.content))['meta']['status'], 503)
+
+    def test_contenttype_uri_blacklist_whitelist_filter(self):
+        """
+        :return:
+        """
+        request = self.request_factory.request()
+        request.path_info = u'/admin/sites/site/'
+        request.site = get_current_site(request)
+        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        user_rules = ContentTypeRoutingRules.objects.get(site=request.site, content_type=ContentType.objects.get_for_model(UserModel), object_id=user.pk)
+        user_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
+        user_rules.save()
+        middleware = FirewallMiddleware()
+        ##
+        # User Level URI Filter Test Start
+        ##
+        # BlackList
+        response = middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("503", smart_text(response.content))
+
+        request.session.clear()
+        self.cache.clear()
+        user_rules.blacklisted_uri = None
+        user_rules.save()
+        response = middleware.process_request(request)
+        # should not return anything
+        self.assertIsNone(response)
+
+        # Whitelist
+        user_rules.whitelisted_uri = "^a[a-zA-Z0-9/]+/sites/"
+        user_rules.save()
+        request.session.clear()
+        self.cache.clear()
+
+        response = middleware.process_request(request)
+        # as match with white list so should not gives errors
+        self.assertIsNone(response)
+
+        user_rules.whitelisted_uri = "^f[a-zA-Z0-9/]+/sites/"
+        user_rules.save()
+        request.session.clear()
+        self.cache.clear()
+
+        response = middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("503", smart_text(response.content))
+
+        ##
+        # Group Level URI Filter Test Start
+        ##
+        # BlackList
+        request.session.clear()
+        self.cache.clear()
+        user_rules.delete()
+        group_rules = ContentTypeRoutingRules.objects.get(
+            site=request.site,
+            content_type=ContentType.objects.get_for_model(Group),
+            object_id=Group.objects.get(name='administrator').pk
+        )
+        group_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
+        group_rules.save()
+        response = middleware.process_request(request)
+        self.assertIsNone(request.session['settings']['urlconf'])
+        self.assertEqual(request.session['settings']['blacklisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("503", smart_text(response.content))
+
+        request.session.clear()
+        self.cache.clear()
+        group_rules.blacklisted_uri = "^f[a-zA-Z0-9/]+/sites/"
+        group_rules.save()
+
+        response = middleware.process_request(request)
+        # Should be none as blacklisted not match
+        self.assertIsNone(response)
+
+        # Whitelist
+        request.session.clear()
+        self.cache.clear()
+        group_rules.blacklisted_uri = None
+        group_rules.whitelisted_uri = "^a[a-zA-Z0-9/]+/sites/"
+        group_rules.save()
+
+        response = middleware.process_request(request)
+        # Should be none as whitelisted not match
+        self.assertIsNone(response)
+        self.assertIsNone(request.session['settings']['urlconf'])
+        self.assertEqual(request.session['settings']['whitelisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
+
+        request.session.clear()
+        self.cache.clear()
+        group_rules.whitelisted_uri = "^f[a-zA-Z0-9/]+/sites/"
+        group_rules.save()
+        response = middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("503", smart_text(response.content))
+
+    def test_site_http_method_filter(self):
+        """"""
+        request = self.request_factory.request()
+        request.path_info = u'/admin/sites/site/'
+        request.site = get_current_site(request)
+        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        middleware = FirewallMiddleware()
+
+        site_rules = SiteRoutingRules.objects.get(site=request.site)
+        site_rules.allowed_method = ['GET', 'HEAD']
+        site_rules.save()
+        request.method = 'POST'
+        response = middleware.process_request(request)
+        # Should not be None
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 405)
+        self.assertIn(request.method, smart_text(response.content))
+
+        HACS_SITE_CACHE.clear()
+        request.META['HTTP_ACCEPT'] = "application/json, text/javascript, */*; q=0.01"
+        response = middleware.process_request(request)
+        self.assertEqual(405, response.status_code)
+        self.assertIsInstance(response, JsonResponse)
+        self.assertEqual(json.loads(smart_text(response.content))['meta']['status'], 405)
+
+        HACS_SITE_CACHE.clear()
+        request.method = 'GET'
+        response = middleware.process_request(request)
+        # Should be None
+        self.assertIsNone(response)
+
+    def test_contenttype_http_method_filter(self):
+        """"""
+        request = self.request_factory.request()
+        request.path_info = u'/admin/sites/site/'
+        request.site = get_current_site(request)
+        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+        middleware = FirewallMiddleware()
+
+        ##
+        # User Level Filter
+        ##
+        user_rules = ContentTypeRoutingRules.objects.get(
+            site=request.site,
+            content_type=ContentType.objects.get_for_model(UserModel),
+            object_id=user.pk
+        )
+        user_rules.allowed_method = ['GET', 'HEAD']
+        user_rules.save()
+        request.method = 'POST'
+        response = middleware.process_request(request)
+        # Should not be None
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 405)
+        self.assertIn(request.method, smart_text(response.content))
+
+        self.cache.clear()
+        request.session.clear()
+        request.method = 'HEAD'
+        response = middleware.process_request(request)
+        # Should be None
+        self.assertIsNone(response)
+
+        ##
+        # Group Level Filter
+        ##
+        user_rules.delete()
+        self.cache.clear()
+        request.session.clear()
+        clean_all_lru_caches()
+        group_rules = ContentTypeRoutingRules.objects.get(
+            site=request.site,
+            content_type=ContentType.objects.get_for_model(Group),
+            object_id=Group.objects.get(name='administrator').pk
+        )
+        group_rules.allowed_method = ['GET']
+        group_rules.save()
+
+        response = middleware.process_request(request)
+        # Should not be None
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 405)
+        self.assertIn(request.method, smart_text(response.content))
+        self.assertEqual(request.session['settings']['allowed_http_methods'], ['GET'])
+
+        self.cache.clear()
+        request.session.clear()
+        clean_all_lru_caches()
+        request.method = 'GET'
+        response = middleware.process_request(request)
+        self.assertIsNone(response)
+
 
     def tearDown(self):
 
