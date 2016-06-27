@@ -23,7 +23,7 @@ __all__ = [str(x) for x in (
 )]
 
 
-ERROR_405_TEMPLATE_NAME = '405.html'
+ERROR_405_TEMPLATE_NAME = 'hacs/errors/405.html'
 ERROR_404_TEMPLATE_NAME = '404.html'
 ERROR_403_TEMPLATE_NAME = '403.html'
 ERROR_400_TEMPLATE_NAME = '400.html'
@@ -80,7 +80,7 @@ def service_unavailable(request):
         data['contents'] = None
         return JsonResponse(data=data, status=503, reason=data['meta']['reason'])
 
-    data = render(request, ERROR_503_MAINTENANCE_MODE_TEMPLATE_NAME, data)
+    data = render(request, ERROR_503_TEMPLATE_NAME, data)
     return HttpResponse(content=data, status=503, reason=ugettext('service is not available'))
 
 
@@ -105,5 +105,5 @@ def http_method_not_permitted(request):
         return JsonResponse(data=data, status=405, reason=data['meta']['reason'])
 
     data['current_http_method'] = request.method
-    data = render(request, ERROR_503_MAINTENANCE_MODE_TEMPLATE_NAME, data)
-    return HttpResponse(content=data, status=503, reason=ugettext('method is not permitted'))
+    data = render(request, ERROR_405_TEMPLATE_NAME, data)
+    return HttpResponse(content=data, status=405, reason=ugettext('method is not permitted'))
