@@ -125,7 +125,7 @@ class FirewallMiddleware(object):
 
         # Let's check if HTTP Methods constraint is applicable
         if get_site_http_methods(get_current_site(request)):
-            if request.method not in get_site_http_methods():
+            if request.method not in get_site_http_methods(get_current_site(request)):
                 return http_method_not_permitted(request)
 
         if request.user.is_authenticated():
@@ -185,7 +185,7 @@ class FirewallMiddleware(object):
                 'urlconf': user_settings_cache.get('urlconf'),
                 'allowed_http_methods': user_settings_cache.get('allowed_http_methods'),
                 'blacklisted_uri': user_settings_cache.get('blacklisted_uri'),
-                'whitelisted_uri': user_settings_cache.get('blacklisted_uri'),
+                'whitelisted_uri': user_settings_cache.get('whitelisted_uri'),
                 'groups': user_settings_cache.get('groups')
             })
             return
