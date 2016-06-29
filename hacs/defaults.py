@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # ++ This file `defaults.py` is generated at 3/3/16 6:15 AM ++
+from __future__ import unicode_literals
 from django.apps import apps
 from django.conf import settings
 from django.utils._os import safe_join
@@ -13,3 +14,4 @@ HACS_GENERATED_URLCONF_DIR = safe_join(apps.get_app_config(HACS_APP_NAME).path, 
 HACS_SERIALIZED_ROUTING_DIR = None
 HACS_USER_OBJECT_QUERY_CALLABLE = "hacs.utils.get_user_object"
 HACS_DEVELOPMENT_MODE = False
+HACS_AUTO_DISCOVER_URL_MODULE = ["admin.site.urls", ]
