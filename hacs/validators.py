@@ -5,12 +5,15 @@ import ast
 import json
 import importlib
 from django.utils import six
+from django.conf import settings
 from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.utils.module_loading import import_string
 from django.contrib.contenttypes.models import ContentType
+
+from .defaults import HACS_AUTO_DISCOVER_URL_MODULE
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -58,7 +61,7 @@ class UrlModulesValidator(object):
             except ValueError:
                 try:
                     value = ast.literal_eval(value)
-                except ValueError:
+                except (ValueError, SyntaxError):
                     raise ValidationError(
                         message=_("%(value)s must be string from valid json or python list, dict"),
                         code=self.code,
@@ -70,9 +73,14 @@ class UrlModulesValidator(object):
                                   params={'value': value})
 
         for x in value:
+            url_module = x['url_module']
+            if isinstance(url_module, (list, tuple)):
+                url_module = url_module[0]
 
+            if url_module in getattr(settings, 'HACS_AUTO_DISCOVER_URL_MODULE', HACS_AUTO_DISCOVER_URL_MODULE):
+                continue
             try:
-                urlconf = _validate_importable(x['url_module'], False)
+                urlconf = _validate_importable(url_module, False)
             except ImportError:
                 raise ValidationError(message=_("Invalid url module `%(value)s`!, not importable."),
                                       code=self.code,
@@ -118,7 +126,7 @@ class HttpHandlerValidator(object):
             except ValueError:
                 try:
                     value = ast.literal_eval(value)
-                except ValueError:
+                except (ValueError, SyntaxError):
                     raise ValidationError(
                         message=_("%(value)s must be string from valid json or python dict"),
                         code=self.code,
