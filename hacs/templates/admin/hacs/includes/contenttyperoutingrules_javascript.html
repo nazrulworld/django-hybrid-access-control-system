@@ -13,8 +13,7 @@
          var $object_id_parent = $object_id.parent();
          var object_id_field = $object_id.attr('name');
          var object_id_value = $object_id.val();
-         var users_url = "{% url 'hacs_admin:select2_users' %}";
-         var groups_url = "{% url 'hacs_admin:select2_groups' %}";
+         var select2_url = "{% url 'hacs_admin:select2_contenttypes_list' content_type="contenttype" %}";
 
          // Make Input Element to Select Element
          if (!$content_type_value && !object_id_value){
@@ -30,7 +29,7 @@
              var _options = {
                  type: "GET",
                  cache: true,
-                 url:  'user' == $content_type_text.trim().toLowerCase()?users_url:groups_url,
+                 url:  select2_url.replace('contenttype', $content_type_text.trim().toLowerCase()),
                  data: {"pk": object_id_value}
              };
              $.ajax(_options).
@@ -53,11 +52,11 @@
              switch (label){
                  case 'group':
                          if ($select2) destroy_select2();
-                         init_select2(groups_url, {"placeholder": "type group name"});
+                         init_select2(select2_url.replace('contenttype', 'group'), {"placeholder": "type group name"});
                        break;
                  case 'user':
                          if ($select2) destroy_select2();
-                         init_select2(users_url, {"placeholder": "type username"});
+                         init_select2(select2_url.replace('contenttype', 'user'), {"placeholder": "type username"});
                         break;
                  default:
                        destroy_select2();
@@ -104,7 +103,7 @@
 
              $select2 = $object_id.select2(defaults);
 
-        };
+        }
      });
 })(jQuery);
 //]]>
