@@ -64,7 +64,9 @@
          });
 
          function destroy_select2() {
-             $object_id.select2('destroy');
+             // Let's clean
+             $("#id_object_id option").remove();
+             $("#id_object_id").select2('destroy');
              $select2 = null;
          }
          function init_select2(url, options){
@@ -101,7 +103,7 @@
             };
              if (typeof options == 'object') $.extend(defaults, options);
 
-             $select2 = $object_id.select2(defaults);
+             $select2 = $("#id_object_id").select2(defaults);
 
         }
      });
