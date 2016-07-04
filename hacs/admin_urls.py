@@ -7,7 +7,7 @@ from .views.admin import select2_contenttypes_view
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 urlpatterns = [
-    url(r'^admin/select2\-(?P<content_type>[a-z]+)\-list/$',
+    url(r'^select2\-(?P<content_type>[a-z]+)\-list/$',
         name='select2_contenttypes_list', view=select2_contenttypes_view)
 ]
 
