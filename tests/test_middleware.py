@@ -28,7 +28,6 @@ from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
 from hacs.globals import HACS_SITE_CACHE
 from hacs.utils import set_site_settings
-from hacs.utils import generate_urlconf_file
 from hacs.middleware import UserModel
 from hacs.middleware import FirewallMiddleware
 from hacs.models import ContentTypeRoutingRules
