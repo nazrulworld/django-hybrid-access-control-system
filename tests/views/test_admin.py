@@ -1,14 +1,19 @@
 # -*- coding: utf-8 -*-
 # ++ This file `test_admin.py` is generated at 6/29/16 8:25 PM ++
+from __future__ import unicode_literals
 import os
 import json
 import tempfile
 from django.utils.http import urlencode
 from django.test import TestCase
 from django.test import Client
+from django.utils import timezone
 from django.conf import settings
+from django.core.cache import caches
 from django.test import override_settings
 from django.test import modify_settings
+from django.contrib.sites.models import Site
+from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.utils.six.moves import range
 from django.utils.encoding import smart_text
@@ -20,12 +25,15 @@ from django.contrib.auth import get_user_model
 
 from hacs.utils import get_user_object
 from hacs.models import SiteRoutingRules
+from hacs.globals import HACS_SITE_CACHE
+from hacs.defaults import HACS_CACHE_SETTING_NAME
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 TEST_USER_NAME = 'test_user'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_ROUTE = "default-route"
+TEST_SITE = "testserver"
 CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
 TEST_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_fixture.json')
 
@@ -217,22 +225,86 @@ class TestSelect2ContentTypesViewFromBrowser(TestCase):
     """"""
     fixtures = (TEST_FIXTURE, )
 
+    def setUp(self):
+        """"""
+        super(TestSelect2ContentTypesViewFromBrowser, self).setUp()
+        self.cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
+        self.fix_password()
+        HACS_SITE_CACHE.clear()
+
+    def fix_password(self):
+        """
+        :return:
+        """
+        from django.contrib.auth.hashers import is_password_usable
+        for user in get_user_model().objects.all():
+            if not is_password_usable(user.password):
+                user.set_password(user.password)
+                user.save()
+
     def test_view(self):
         """"""
-        request = RequestFactory().request()
-        site = get_current_site(request)
-        site_rules = SiteRoutingRules.objects.get(site=site)
-        site_rules.route.urls.append({
-            "prefix": "hacs",
-            "url_module": "hacs.admin_urls",
-            "app_name": "hacs",
-            "namespace": "hacs_admin"
-        })
-        site_rules.route.save()
+        _url = reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "user"})
         browser = Client()
-        browser.get('/admin/')
+        response = browser.get(_url)
+        # Make sure authentication is required
+        self.assertEqual(302, response.status_code)
         browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
         # @TODO: need to full coverage
+        response = browser.get(_url)
+        # we have two users
+        self.assertEqual(2, len(json.loads(smart_text(response.content))['items']))
+        response = browser.get(reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "group"}))
+        # we should have 3 groups
+        self.assertEqual(3, len(json.loads(smart_text(response.content))['items']))
+
+        response = browser.get(reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "group"}),
+                               data={'q': "admin"})
+        # we should have 1 group matched
+        self.assertEqual(1, len(json.loads(smart_text(response.content))['items']))
+
+        response = browser.get(_url, data={'q': "naz"})
+        # we don't have any user name that contains naz
+        self.assertEqual(0, len(json.loads(smart_text(response.content))['items']))
+        self.assertTrue(json.loads(smart_text(response.content))['incomplete_results'])
+
+        # Test: pagination
+        for x in range(1, 59):
+            get_user_model().objects.create_user(
+                first_name="Nazrul_%s" % x,
+                username="nazrulworld_%s" % x,
+                email="nazrul_%s@fake.com" % x,
+                password="nazrul_%s" % x
+            )
+
+        self.assertEqual(60, len(get_user_model().objects.all()))
+
+        response = browser.get(_url, data={"max_records": 50})
+        content = json.loads(smart_text(response.content))
+        self.assertEqual(content['total_count'], 60)
+        self.assertEqual(50, len(content['items']))
+
+        response = browser.get(_url, data={"max_records": 50, "page": 2})
+        content = json.loads(smart_text(response.content))
+        # should 10 record in second page
+        self.assertEqual(10, len(content['items']))
+
+        # Test Single Record
+        response = browser.get(_url, data={"pk": get_user_model().objects.get(username=TEST_USER_NAME).pk})
+        content = json.loads(smart_text(response.content))
+        self.assertEqual(content['id'], get_user_model().objects.get(username=TEST_USER_NAME).pk)
+
+    def test_exception(self):
+        """"""
+        _url = reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "user"})
+        browser = Client()
+        browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
+        response = browser.get(_url, data={"pk": 999})
+        self.assertEqual(500, response.status_code)
+        self.assertEqual(500, json.loads(smart_text(response.content))['meta']['status'])
+        response = browser.post(_url, {"page": 1})
+        self.assertEqual(405, response.status_code)
+
 
     def tearDown(self):
         """
@@ -243,3 +315,6 @@ class TestSelect2ContentTypesViewFromBrowser(TestCase):
             for file_name in files:
                 if file_name.startswith('hacs'):
                     os.unlink(os.path.join(root, file_name))
+
+        HACS_SITE_CACHE.clear()
+        self.cache.clear()
