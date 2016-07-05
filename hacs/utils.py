@@ -15,7 +15,7 @@ from django.utils import six
 from django.conf import settings
 from django.utils import timezone
 from django.utils._os import safe_join
-from django.utils.encoding import smart_bytes
+from django.utils.encoding import smart_text
 from django.contrib.auth import get_user_model
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.module_loading import module_has_submodule
@@ -128,7 +128,6 @@ def get_site_whitelisted_uri(site):
     :param site
     """
     return get_site_settings(site)['whitelisted_uri']
-
 
 
 def site_in_maintenance_mode(site):
@@ -266,7 +265,7 @@ def generate_urlconf_file(filename, route):
                         if not url.get('namespace'):
                             url['namespace'] = url_module[2]
 
-                url_module = smart_bytes(url_module)
+                url_module = smart_text(url_module)
             else:
                 # `admin.site.urls` is kind of special case, i. admin autodiscover
                 if url_module != 'admin.site.urls':
