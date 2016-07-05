@@ -13,7 +13,7 @@
          var $object_id_parent = $object_id.parent();
          var object_id_field = $object_id.attr('name');
          var object_id_value = $object_id.val();
-         var select2_url = "{% url 'hacs_admin:select2_contenttypes_list' content_type="contenttype" %}";
+         var select2_url = "{% url 'hacs:select2_contenttypes_list' content_type="contenttype" %}";
 
          // Make Input Element to Select Element
          if (!$content_type_value && !object_id_value){
