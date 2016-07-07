@@ -1,11 +1,16 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 # ++ This file `release.py` is generated at 4/30/16 6:37 PM ++
+from __future__ import print_function
 import os
 import sys
 import shutil
 import argparse
 import subprocess
+
+PY3 = sys.version_info >= (3, 0)
+if not PY3:
+    input = raw_input
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -66,8 +71,19 @@ def main():
         help="If you want to release without confirmation prompt."
     )
     params = parser.parse_args()
-
     validate()
+
+    confirm = None
+    while True:
+        confirm = input('Before releasing, make sure minified assets are updated. are you sure?[yes/no]')
+        if not confirm or (confirm and confirm.lower() in ('y', 'yes', 'n', 'no')):
+            if confirm:
+                confirm = confirm.lower()
+            break
+    if confirm in ('n', 'no'):
+        print("Run: `./asset_compressor.py` and git commit for any changes.")
+        sys.exit()
+
     if not params.confirm_release:
         confirm = None
         while True:
@@ -78,16 +94,20 @@ def main():
                 break
 
         if confirm in ('n', 'no'):
-            print "Release process is halt due to user's  interruption."
+            print("Release process is halt due to user's  interruption.")
             sys.exit()
+
+    if confirm in ('n', 'no'):
+        print("Release process is halt due to user's  interruption.")
+        sys.exit()
 
     curdir = os.path.dirname(os.path.abspath(__file__))
 
     if subprocess.call(["python setup.py sdist bdist_wheel"], shell=True, cwd=curdir, **LOUD):
-        print "can't build! exiting.."
+        print("can't build! exiting...")
         sys.exit()
     if subprocess.call(["twine upload dist/*"], shell=True, cwd=curdir, **LOUD):
-        print "can't upload to PyPi server!"
+        print("can't upload to PyPi server!")
         clean(curdir)
         sys.exit()
 
@@ -100,13 +120,13 @@ def main():
         else:
             msg = "version: %s has been released" % get_version()
 
-        print " git tag -a %s -m '%s'" % (get_version(), msg)
+        print(" git tag -a %s -m '%s'" % (get_version(), msg))
         if subprocess.call(["git tag -a %s -m \"%s\"" % (get_version(),  msg)], shell=True, cwd=curdir, **LOUD):
-            print "Can't make a git tag, do this manually"
+            print("Can't make a git tag, do this manually")
 
-        print "git push --tags"
+        print("git push --tags")
         if subprocess.call(["git push --tags"], shell=True, cwd=curdir, **LOUD):
-            print "failed to push git server, do this manually"
+            print("failed to push git server, do this manually")
 
     else:
         print("You can also git tag the version automatically, by passing `--hook-git-tag or -t` argument")
