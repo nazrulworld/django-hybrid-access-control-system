@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "name": "Frontend Asset",
+    "description": null
+  },
+  "js": {
+    "dest": "static/hacs/js/hacs.min.js",
+    "source": [
+      "js/vendor/jquery-1.11.2.js",
+      "js/vendor/bootstrap.js",
+      "js/hacs.js"
+    ],
+    "copy": null
+  },
+  "css": {
+    "dest": "static/hacs/css/hacs.min.css",
+    "source": [
+      "css/bootstrap.css",
+      "css/hack.css",
+      "css/bootstrap-theme.css",
+      "css/hacs.css"
+    ],
+    "copy": {
+      "fonts": "static/hacs/fonts"
+    }
+  }
+
+}

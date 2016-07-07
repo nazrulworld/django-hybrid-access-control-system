@@ -1,3 +1,31 @@
 {
+  "meta": {
+    "name": "Admin Asset",
+    "description": null
+  },
+  "js": {
+    "dest": "static/admin/hacs/js/hacs.min.js",
+    "source": [
+      "js/lodash.4.13.1.js",
+      "js/jquery-2.2.4.js",
+      "js/jquery-ui.js",
+      "js/jqueryui-editable.js",
+      "js/select2.full.js",
+      "js/hacs.js"
+    ],
+    "copy": null
+  },
+  "css": {
+    "dest": "static/admin/hacs/css/hacs.min.css",
+    "source": [
+      "css/jquery-ui.css",
+      "css/jqueryui-editable.css",
+      "css/select2.css",
+      "css/hacs.css"
+    ],
+    "copy": {
+      "css/images": "static/admin/hacs/css/images"
+    }
+  }
 
 }
