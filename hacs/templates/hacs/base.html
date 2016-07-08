@@ -15,7 +15,7 @@
         {% endblock hacs_meta_extra %}
         {% include "hacs/includes/css.html" %}
         {% block hacs_css_extra %}{% endblock hacs_css_extra %}
-        <script src="{% if HACS_DEVELOPMENT_MODE %} {% static "hacs_assets/frontend/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js" %} {% else %}{% static "hacs/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js" %}{% endif %}"></script>
+        <script src="{% if HACS_DEVELOPMENT_MODE %} {% static "hacs_assets/frontend/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js" %} {% else %}{% static "hacs/js/modernizr-2.8.3-respond-1.4.2.min.js" %}{% endif %}"></script>
     </head>
     <body>
 
