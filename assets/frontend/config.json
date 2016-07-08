@@ -10,7 +10,9 @@
       "js/vendor/bootstrap.js",
       "js/hacs.js"
     ],
-    "copy": null
+    "copy": {
+      "js/vendor/modernizr-2.8.3-respond-1.4.2.min.js": "static/hacs/js/modernizr-2.8.3-respond-1.4.2.min.js"
+    }
   },
   "css": {
     "dest": "static/hacs/css/hacs.min.css",
