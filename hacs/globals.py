@@ -68,6 +68,13 @@ class HACSSiteCache(object):
         """
         self.__storage__[key] = value
 
+    def __delitem__(self, key):
+        """
+        :param key:
+        :return:
+        """
+        del self.__storage__[key]
+
     def __len__(self):
         """
         :return:
