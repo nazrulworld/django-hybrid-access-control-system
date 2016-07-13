@@ -38,11 +38,6 @@ def site_in_maintenance_mode(site):
 
 
 @lru_cache.lru_cache(maxsize=None)
-def get_group_key(request, group, prefix='hacl', suffix=None):
-    return utils_get_group_key(request, group, prefix, suffix)
-
-
-@lru_cache.lru_cache(maxsize=None)
 def get_site_http_methods(site):
     return utils_get_site_http_methods(site)
 
@@ -60,6 +55,11 @@ def get_site_blacklisted_uri(site):
 @lru_cache.lru_cache(maxsize=None)
 def get_site_whitelisted_uri(site):
     return utils_get_site_whitelisted_uri(site)
+
+
+@lru_cache.lru_cache(maxsize=None)
+def get_group_key(request, group, prefix='hacl', suffix=None):
+    return utils_get_group_key(request, group, prefix, suffix)
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -88,7 +88,7 @@ def clean_all_lru_caches():
     get_group_key.cache_clear()
     get_user_key.cache_clear()
     get_generated_urlconf_module.cache_clear()
-    get_generated_urlconf_module.cache_clear()
+    get_generated_urlconf_file.cache_clear()
     get_installed_apps_urlconf.cache_clear()
     get_site_blacklisted_uri.cache_clear()
     get_site_whitelisted_uri.cache_clear()
