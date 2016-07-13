@@ -230,7 +230,7 @@ class TestDynamicRouteMiddleware(TestCase):
         HACS_SITE_CACHE.clear()
 
 
-@override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
+@override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
 class TestDynamicRouteMiddlewareFromBrowser(TestCase):
 
     fixtures = (TEST_FIXTURE, )
@@ -300,7 +300,7 @@ class TestDynamicRouteMiddlewareFromBrowser(TestCase):
 
 ]})
 @override_settings(
-    HACS_GENERATED_URLCONF_DIR='/tmp',
+    HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir(),
     CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'hacs_middleware', }},
 )
 class TestFirewallMiddleware(TestCase):
@@ -353,14 +353,17 @@ class TestFirewallMiddleware(TestCase):
             object_id=test_user.pk,
             site=test_site
         )
+        request.user = test_user
+        request.path_info = '/admin/'
         user_settings = {
             'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(user_rules.route.route_name), False),
             'allowed_http_methods': user_rules.allowed_method,
             'blacklisted_uri': None,
-            'whitelisted_uri': None
+            'whitelisted_uri': None,
+            'has_own_rules': True
         }
 
-        result = middleware._calculate_user_urlconf('/admin/', user_settings)
+        result = middleware._calculate_user_urlconf(request, user_settings)
         expected_urlconf = get_generated_urlconf_module(get_generated_urlconf_file(TEST_USER_ROUTE_NAME), False)
 
         self.assertEqual(result, expected_urlconf)
@@ -370,6 +373,7 @@ class TestFirewallMiddleware(TestCase):
             object_id=test_user.pk,
             site=test_site
         ).delete()
+        user_settings['has_own_rules'] = False
         user_settings['urlconf'] = None
         user_settings['allowed_http_methods'] = None
         user_settings['groups'] = []
@@ -378,7 +382,7 @@ class TestFirewallMiddleware(TestCase):
             user_settings['groups'].append((get_group_key(request, group), group.natural_key()))
             # We will trigger auth group settings from here
             middleware.set_auth_group_settings(request, group, False)
-        result = middleware._calculate_user_urlconf('/admin/', user_settings)
+        result = middleware._calculate_user_urlconf(request, user_settings)
         expected_urlconf = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME), False)
 
         self.assertEqual(result, expected_urlconf)
@@ -389,47 +393,30 @@ class TestFirewallMiddleware(TestCase):
     def test_set_auth_user_settings(self):
         """"""
         request = self.request_factory.request()
-        request.path_info = u'/admin/'
+        request.path_info = '/admin/'
         request.site = get_current_site(request)
-        session = request.session = self.SessionStore(hashlib.md5(smart_bytes('hacs')).hexdigest())
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
 
         middleware = FirewallMiddleware()
-        request.session['settings'] = dict()
         middleware.set_auth_user_settings(request)
 
         user_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_USER_ROUTE_NAME))
 
-        # We Make sure session is updated
-        try:
-            self.assertEqual(session['settings']['urlconf'], user_urlconf_module)
-        except KeyError:
-            raise AssertionError("Code should not come here")
-
-        # Make sure cache is also updated
+        # Make sure cache is updated
         user_cache_key = get_user_key(request)
         self.assertEqual(self.cache.get(user_cache_key)['urlconf'], user_urlconf_module)
 
         ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
                                                object_id=user.id).delete()
-        request.session.clear()
-        request.session['settings'] = dict()
         self.cache.clear()
         middleware.set_auth_user_settings(request)
-
-        try:
-            # user's urlconf should be None, because user has no route
-            self.assertIsNone(session['settings']['urlconf'])
-        except KeyError:
-            raise AssertionError("Code should not come here")
-
-        # Make sure cache also be updated g
+        # Make sure cache be updated and should be None
         self.assertIsNone(self.cache.get(user_cache_key)['urlconf'])
 
     def test_process_request(self):
 
         request = self.request_factory.request()
-        request.path_info = u'/admin/'
+        request.path_info = '/admin/'
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
         request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
@@ -575,6 +562,7 @@ class TestFirewallMiddleware(TestCase):
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        user_key = get_user_key(request)
         request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
         user_rules = ContentTypeRoutingRules.objects.get(site=request.site, content_type=ContentType.objects.get_for_model(UserModel), object_id=user.pk)
         user_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
@@ -632,8 +620,8 @@ class TestFirewallMiddleware(TestCase):
         group_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
         group_rules.save()
         response = middleware.process_request(request)
-        self.assertIsNone(request.session['settings']['urlconf'])
-        self.assertEqual(request.session['settings']['blacklisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
+        self.assertIsNone(self.cache.get(user_key)['urlconf'])
+        self.assertEqual(self.cache.get(user_key)['blacklisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
         self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 503)
         self.assertIn("503", smart_text(response.content))
@@ -657,8 +645,8 @@ class TestFirewallMiddleware(TestCase):
         response = middleware.process_request(request)
         # Should be none as whitelisted not match
         self.assertIsNone(response)
-        self.assertIsNone(request.session['settings']['urlconf'])
-        self.assertEqual(request.session['settings']['whitelisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
+        self.assertIsNone(self.cache.get(user_key)['urlconf'])
+        self.assertEqual(self.cache.get(user_key)['whitelisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
 
         request.session.clear()
         self.cache.clear()
@@ -708,6 +696,7 @@ class TestFirewallMiddleware(TestCase):
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        user_key = get_user_key(request)
         request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
         request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
         middleware = FirewallMiddleware()
@@ -756,7 +745,7 @@ class TestFirewallMiddleware(TestCase):
         self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 405)
         self.assertIn(request.method, smart_text(response.content))
-        self.assertEqual(request.session['settings']['allowed_http_methods'], ['GET'])
+        self.assertEqual(self.cache.get(user_key)['allowed_http_methods'], ['GET'])
 
         self.cache.clear()
         request.session.clear()
@@ -814,6 +803,11 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
         ):
             browser = Client()
             response = browser.get('/admin/')
+            fake_request = RequestFactory().request()
+            fake_request.user = UserModel.objects.get(username=TEST_USER_NAME)
+            fake_request.site = Site.objects.get(domain=TEST_HOST_NAME)
+
+            user_key = get_user_key(fake_request)
             # AS anonymous user so urlconf module should default site
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
@@ -835,7 +829,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             # Make Session works, as we remove user's route but still should same
             response = browser.get('/admin/')
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
-            self.assertEqual(expected_module, response.wsgi_request.session['settings']['urlconf'])
+            self.assertEqual(expected_module, self.cache.get(user_key)['urlconf'])
 
             # Make sure caching works
             browser.logout()
