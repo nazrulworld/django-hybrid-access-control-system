@@ -129,37 +129,24 @@ class FirewallMiddleware(object):
                 return http_method_not_permitted(request)
 
         if request.user.is_authenticated():
-            try:
-                user_settings_session = request.session['settings']
-            except KeyError:
-                request.session['settings'] = dict()
-                user_settings_session = request.session['settings']
-            try:
-                user_settings_session['urlconf']
-            except KeyError:
-                # There is no urlconf set yet! now assigning
-                self.set_auth_user_settings(request)
-
-            user_urlconf = self._calculate_user_urlconf(request_path, user_settings_session)
+            user_settings = self.get_auth_user_settings(request)
+            user_urlconf = self._calculate_user_urlconf(request, user_settings)
             if user_urlconf:
                 # Now we are ready to check list
-                if user_settings_session['blacklisted_uri']:
-                    match = re.compile(smart_str(user_settings_session['blacklisted_uri']))
+                if user_settings['blacklisted_uri']:
+                    match = re.compile(smart_str(user_settings['blacklisted_uri']))
                     if match.match(request_path.lstrip('/')):
                         return service_unavailable(request)
 
-                if user_settings_session['whitelisted_uri']:
-                    match = re.compile(smart_str(user_settings_session['whitelisted_uri']))
+                if user_settings['whitelisted_uri']:
+                    match = re.compile(smart_str(user_settings['whitelisted_uri']))
                     if not match.match(request_path.lstrip('/')):
                         return service_unavailable(request)
 
                 # Let's check if HTTP Methods constraint is applicable
-                if user_settings_session['allowed_http_methods']:
-                    if request.method not in user_settings_session['allowed_http_methods']:
+                if user_settings['allowed_http_methods']:
+                    if request.method not in user_settings['allowed_http_methods']:
                         return http_method_not_permitted(request)
-
-            # lastly we are updating session
-            request.session['settings'].update(user_settings_session)
         else:
             # Anonymous User
             user_urlconf = self._calculate_anonymous_urlconf(request)
@@ -172,31 +159,35 @@ class FirewallMiddleware(object):
                 warnings.warn("urlconf is neither set by DynamicRoutingMiddleware nor from django settings.")
                 request.urlconf = getattr(settings, 'HACS_FALLBACK_URLCONF', HACS_FALLBACK_URLCONF)
 
-    def set_auth_user_settings(self, request):
+    def get_auth_user_settings(self, request, no_cache=False):
+        """"""
+        cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
+        user_settings_cache = cache.get(get_user_key(request), None)
+        if not user_settings_cache or no_cache:
+            self.set_auth_user_settings(request, True)
+            user_settings_cache = cache.get(get_user_key(request), None)
+
+        return user_settings_cache
+
+    def set_auth_user_settings(self, request, force_update=True):
         """
         :param request:
+        :param force_update:
         :return:
         """
         cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
         # Try from cache
         user_settings_cache = cache.get(get_user_key(request))
-        if user_settings_cache and user_settings_cache.get('urlconf', None):
-            request.session['settings'].update({
-                'urlconf': user_settings_cache.get('urlconf'),
-                'allowed_http_methods': user_settings_cache.get('allowed_http_methods'),
-                'blacklisted_uri': user_settings_cache.get('blacklisted_uri'),
-                'whitelisted_uri': user_settings_cache.get('whitelisted_uri'),
-                'groups': user_settings_cache.get('groups')
-            })
+        if user_settings_cache and not force_update:
             return
-
         # No cache
         initial_data = {
             'urlconf': None,
             'allowed_http_methods': None,
             'blacklisted_uri': None,
             'whitelisted_uri': None,
-            'groups': []
+            'groups': [],
+            'has_own_rules': None
         }
         for group in request.user.groups.all():
             initial_data['groups'].append((get_group_key(request, group), group.natural_key()))
@@ -213,7 +204,9 @@ class FirewallMiddleware(object):
 
         except ContentTypeRoutingRules.DoesNotExist:
             # User Has No Route Will use group's route rules if exist
-            pass
+            initial_data.update({
+                "has_own_rules": False
+            })
         else:
             # Check if urlconf file need to be created
             generate_urlconf_file_on_demand(user_route_rules.route)
@@ -223,11 +216,11 @@ class FirewallMiddleware(object):
                 'allowed_http_methods': user_route_rules.allowed_method,
                 'blacklisted_uri': user_route_rules.blacklisted_uri,
                 'whitelisted_uri': user_route_rules.whitelisted_uri,
-                'is_active': user_route_rules.is_active
+                'is_active': user_route_rules.is_active,
+                "has_own_rules": True
             })
 
-        # Update Session
-        request.session['settings'].update(initial_data)
+        # Update Cache
         user_settings_cache.update(initial_data)
         # Set Cache
         cache.set(get_user_key(request), user_settings_cache)
@@ -289,30 +282,48 @@ class FirewallMiddleware(object):
                                 self.name))
         return True
 
-    def _calculate_user_urlconf(self, request_path, user_settings_session):
+    def _calculate_user_urlconf(self, request, user_settings):
         """
-        :param request_path:
-        :param user_settings_session:
+        :param request:
+        :param user_settings:
         :return:
         """
         cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
+        if user_settings['urlconf'] and user_settings['has_own_rules']:
+            return user_settings['urlconf']
 
-        if user_settings_session['urlconf'] and isinstance(user_settings_session['urlconf'], six.string_types):
-            return user_settings_session['urlconf']
+        elif user_settings['groups']:
+            # Already inherited from group, let's check if is usable
+            # otherwise will be trying from other groups
+            if user_settings['urlconf']:
+                try:
+                    resolver = get_resolver(user_settings['urlconf'])
+                    resolver.resolve(request.path_info)
+                    return user_settings['urlconf']
+                except Resolver404:
+                    pass
 
-        elif user_settings_session['groups']:
             _temp = None
-            for group_cache_key, group_natural_key in user_settings_session['groups']:
+            for group_cache_key, group_natural_key in user_settings['groups']:
+
                 if not cache.get(group_cache_key, {}).get('urlconf', None):
                     continue
+
+                if cache.get(group_cache_key, {}).get('urlconf') == user_settings['urlconf']:
+                    # already failed, so need to go further
+                    continue
+
                 try:
                     resolver = get_resolver(cache.get(group_cache_key).get('urlconf'))
-                    resolver.resolve(request_path)
-                    user_settings_session.update({
+                    resolver.resolve(request.path_info)
+                    user_settings.update({
                         'allowed_http_methods': cache.get(group_cache_key).get('allowed_http_methods'),
                         'blacklisted_uri': cache.get(group_cache_key).get('blacklisted_uri'),
                         'whitelisted_uri': cache.get(group_cache_key).get('whitelisted_uri'),
                     })
+                    # Update User's cache
+                    cache.set(get_user_key(request), user_settings)
+
                     _temp = cache.get(group_cache_key).get('urlconf')
                     break
                 except Resolver404:
