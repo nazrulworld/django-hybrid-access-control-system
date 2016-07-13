@@ -10,13 +10,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-
 from .fields import DictField
 from .fields import SequenceField
-from .globals import HTTP_METHOD_LIST
 from .validators import UrlModulesValidator
 from .validators import HttpHandlerValidator
 from .validators import ContentTypeValidator
+
 
 if not apps.is_installed('django.contrib.admin'):
     # Fallback LogEntry Model, if admin app not installed
@@ -106,6 +105,7 @@ class SiteRoutingRulesManager(models.Manager):
         return self.get(site=site)
 
 
+@python_2_unicode_compatible
 class SiteRoutingRules(models.Model):
 
     """
@@ -122,8 +122,7 @@ class SiteRoutingRules(models.Model):
                              blank=False,
                              related_name='hacs_site_routes')
 
-    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True,
-                                   choices=[(x, x) for x in HTTP_METHOD_LIST])
+    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True)
     blacklisted_uri = models.CharField(
         _('blacklisted uri'),
         max_length=255,
@@ -169,6 +168,10 @@ class SiteRoutingRules(models.Model):
 
     natural_key.dependencies = ["hacs.RoutingTable", "sites.Site"]
 
+    def __str__(self):
+        """"""
+        return "%s's routing rules" % self.site.domain
+
 
 class ContentTypeRoutingRulesManager(models.Manager):
     """ """
@@ -205,7 +208,7 @@ class ContentTypeRoutingRulesManager(models.Manager):
             object_id=object_id
         )
 
-
+@python_2_unicode_compatible
 class ContentTypeRoutingRules(models.Model):
 
     """
@@ -226,8 +229,7 @@ class ContentTypeRoutingRules(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, validators=[ContentTypeValidator()])
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True,
-                                   choices=[(x, x) for x in HTTP_METHOD_LIST])
+    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True)
     blacklisted_uri = models.CharField(
         _('blacklisted uri'),
         max_length=255,
@@ -267,3 +269,8 @@ class ContentTypeRoutingRules(models.Model):
         return (site_natural_key, self.content_type.natural_key(), self.object_id, )
 
     natural_key.dependencies = ["hacs.RoutingTable", "sites.Site", "contenttypes.ContentType"]
+
+    def __str__(self):
+        """"""
+        return "%s:%s:%s's routing rules" % (self.site.domain, self.content_type.app_label + "." +
+                                             self.content_type.model, self.object_id)
