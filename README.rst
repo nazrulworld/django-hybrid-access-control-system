@@ -7,14 +7,19 @@ HACS(Hybrid Access Control System)
 .. image:: https://coveralls.io/repos/github/nazrulworld/django-hybrid-access-control-system/badge.svg?branch=master
     :target: https://coveralls.io/github/nazrulworld/django-hybrid-access-control-system?branch=master
 
-The full featured advanced `Access Control System` powered by `Django <https://www.djangoproject.com/>`_. ``HACS`` provides enterprise standard authorization system,
+The full featured advanced ``Access Control System`` powered by `Django <https://www.djangoproject.com/>`_. `HACS` provides enterprise standard authorization system,
 it also covers IAM(Identity and Access Management).
 
 Features
 --------
 1. **Django MultiSite:** Support to run `multiple sites <https://docs.djangoproject.com/en/1.9/ref/contrib/sites/#associating-content-with-multiple-sites>`_ with single config file(settings), this is dynamic process, so you can add unlimited sites.
 
-2. **Firewall/Access Control:** This is ``routing table`` instead of `IP Table <https://en.wikipedia.org/wiki/Iptables>`_ for your application. This firewall can analyzes whether a request has authorized request path else request is directly handled to http404 handler. For example your application has a url route ``/admin/user/create`` that is not assigned for anonymous user and an anonymous user requests with this url path, now in this case firewall simple halt further execution and transfer to http404 handler. This is pre-authorization process.
+2. **Firewall/Access Control:** Complete  firewall features for your application, almost similar fashion of `IP Table <https://en.wikipedia.org/wiki/Iptables>`_
+    a. Custom URL schema: applicable applicable on site, user & group's rules.
+    b. HTTP Methods filter: applicable on site, user & group's rules.
+    c. Maintenance Mode: applicable on only site's rules.
+    d. Regex patterned URL blacklist: applicable on site, user & group's rules.
+    e. Regex patterned URL whitelist: applicable on site, user & group's rules.
 
 3. **Advanced Authorization: (coming)** Committed to be more than combination of `Django Guardian <http://django-guardian.readthedocs.io/>`_ and `Django Authority <http://django-authority.readthedocs.io/en/latest/>`_ but definitely base idea could be from those.
 
@@ -23,13 +28,13 @@ Features
 Installation
 ------------
 
-Install `django-hacs <https://pypi.python.org/pypi/django-hacs/>`_, simply use `pip` or `easy_install` ::
+Install ``django-hacs``, simply use `pip` or `easy_install` ::
 
      ~$ pip install django-hacs
      or
      ~$ easy_install django-hacs
 
-Install most recent (dev) version of `django-hacs <https://pypi.python.org/pypi/django-hacs/>`_ ::
+Install most recent (dev) version of ``django-hacs`` ::
 
      ~$ git clone https://github.com/nazrulworld/django-hybrid-access-control-system.git django-hacs
      ~$ cd django-hacs
@@ -37,7 +42,7 @@ Install most recent (dev) version of `django-hacs <https://pypi.python.org/pypi/
 
 Configuration
 -------------
-Add `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_ at INSTALLED_APPS ::
+Add ``django-hacs`` at INSTALLED_APPS ::
 
     INSTALLED_APPS = (
         .................,
@@ -46,7 +51,7 @@ Add `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-sy
         'hacs'
     )
 
-Add middleware classes from `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_ and also make sure `django.contrib.sites.middleware.CurrentSiteMiddleware`
+Add middleware classes from ``django-hacs`` and also make sure `django.contrib.sites.middleware.CurrentSiteMiddleware`
 is added::
 
     MIDDLEWARE_CLASSES = [
@@ -60,7 +65,7 @@ Optionally define the writable location, where generated urlconf modules will be
 
     HACS_GENERATED_URLCONF_DIR = "your desired directory location"
 
-Initialize `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_ environment and this the starting point::
+Initialize ``django-hacs`` environment and this the starting point::
 
     ~$ python manage.py init_hacs
     >>> provide your information
@@ -76,11 +81,14 @@ Documentation
 Full documentation for end users can be found in the "docs" folder, and is also available online at http://django-hacs.readthedocs.org/
 
 
-Routing Management
-------------------
+Routing Rules Management
+------------------------
+We have two ways to do that.
+**Django Admin**
+1. Make sure ``admin`` app is installed and ``hacs.urls`` is added into ``urlconf``. i.e ``url(r'^hacs/', include(('hacs.urls', 'hacs'), namespace='hacs'))``
+2. Go to ``http://{host}/admin/hacs/``. From there you can manage (add, edit, delete). More details could be found at documentation.
 
-Right now we don't have any UI for routing management instead we have command tools for that, but will be integrated with `django admin` soon.
-
+**Django Management Tool**
 1. Download sample routing file from `https://github.com/nazrulworld/django-hybrid-access-control-system/blob/master/sample/routes-minimal.json <https://raw.githubusercontent.com/nazrulworld/django-hybrid-access-control-system/master/sample/routes-minimal.json>`_
 2. Fill with required information. You can just copy/paste and fill as much as you need, just make sure about valid json and all entries are under one list.
 3. Save the json file and keep in mind the location
@@ -88,8 +96,8 @@ Right now we don't have any UI for routing management instead we have command to
 
     ~$ python manage.py import_route -S <path to json file>
 
-Deploy `django-hacs <https://github.com/nazrulworld/django-hybrid-access-control-system>`_
-------------------------------------------------------------------------------------------
+Deploy ``django-hacs``
+----------------------
 
 1. You can either follow above instruction and create new routing schema.
 2. If you have already routing schema at local and that are ready for production.
