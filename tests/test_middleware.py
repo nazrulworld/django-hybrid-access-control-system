@@ -230,7 +230,9 @@ class TestDynamicRouteMiddleware(TestCase):
         HACS_SITE_CACHE.clear()
 
 
-@override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
+@override_settings(
+    HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir(),
+)
 class TestDynamicRouteMiddlewareFromBrowser(TestCase):
 
     fixtures = (TEST_FIXTURE, )
@@ -416,6 +418,7 @@ class TestFirewallMiddleware(TestCase):
     def test_process_request(self):
 
         request = self.request_factory.request()
+        request.urlconf = None
         request.path_info = '/admin/'
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
@@ -495,6 +498,7 @@ class TestFirewallMiddleware(TestCase):
         :return:
         """
         request = self.request_factory.request()
+        request.urlconf = None
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
@@ -561,6 +565,7 @@ class TestFirewallMiddleware(TestCase):
         request = self.request_factory.request()
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
+        request.urlconf = None
         user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
         user_key = get_user_key(request)
         request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
@@ -620,7 +625,8 @@ class TestFirewallMiddleware(TestCase):
         group_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
         group_rules.save()
         response = middleware.process_request(request)
-        self.assertIsNone(self.cache.get(user_key)['urlconf'])
+        # Should not None, as inherited from group
+        self.assertIsNotNone(self.cache.get(user_key)['urlconf'])
         self.assertEqual(self.cache.get(user_key)['blacklisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
         self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 503)
@@ -645,7 +651,7 @@ class TestFirewallMiddleware(TestCase):
         response = middleware.process_request(request)
         # Should be none as whitelisted not match
         self.assertIsNone(response)
-        self.assertIsNone(self.cache.get(user_key)['urlconf'])
+        self.assertIsNotNone(self.cache.get(user_key)['urlconf'])
         self.assertEqual(self.cache.get(user_key)['whitelisted_uri'], "^a[a-zA-Z0-9/]+/sites/")
 
         request.session.clear()
@@ -754,7 +760,6 @@ class TestFirewallMiddleware(TestCase):
         response = middleware.process_request(request)
         self.assertIsNone(response)
 
-
     def tearDown(self):
 
         super(TestFirewallMiddleware, self).tearDown()
@@ -804,6 +809,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             browser = Client()
             response = browser.get('/admin/')
             fake_request = RequestFactory().request()
+            fake_request.urlconf = None
             fake_request.user = UserModel.objects.get(username=TEST_USER_NAME)
             fake_request.site = Site.objects.get(domain=TEST_HOST_NAME)
 
