@@ -4,9 +4,7 @@ from __future__ import unicode_literals
 import re
 import logging
 import warnings
-from collections import defaultdict
 from django.apps import apps
-from django.utils import six
 from django.conf import settings
 from django.core.cache import caches
 from django.utils.encoding import smart_str
@@ -14,14 +12,16 @@ from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 try:
     # expect django version 1.10.x or higher
-    from django.urls import get_resolver, Resolver404
+    from django.urls import is_valid_path
 except ImportError:
-    from django.core.urlresolvers import get_resolver, Resolver404
+    from django.core.urlresolvers import is_valid_path
 from django.utils.functional import cached_property
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
+from django.middleware.common import CommonMiddleware
+
 from .globals import HACS_APP_NAME
 from .models import ContentTypeRoutingRules
 from .defaults import HACS_FALLBACK_URLCONF
@@ -57,10 +57,16 @@ class DynamicRouteMiddleware(object):
         """
         if self._validate:
             pass
-
+        _old_urlconf = getattr(request, 'urlconf', None)
         urlconf = get_site_urlconf(getattr(request, 'site', get_current_site(request)))
-
         request.urlconf = urlconf
+
+        if _old_urlconf != request.urlconf and request.urlconf is not None:
+            # We Re-run CommonMiddleware, as our urlconf changed.
+            response = CommonMiddleware().process_request(request)
+            # We are checking if redirect is required
+            if response is not None:
+                return response
 
     @cached_property
     def _validate(self):
@@ -104,6 +110,7 @@ class FirewallMiddleware(object):
         """
         if self._validate:
             pass
+        _old_urlconf = getattr(request, 'urlconf', None)
         # #################################
         # Maintenance Mode Checking Start #
         # #################################
@@ -158,6 +165,13 @@ class FirewallMiddleware(object):
             if not getattr(request, 'urlconf', None):
                 warnings.warn("urlconf is neither set by DynamicRoutingMiddleware nor from django settings.")
                 request.urlconf = getattr(settings, 'HACS_FALLBACK_URLCONF', HACS_FALLBACK_URLCONF)
+
+        if _old_urlconf != request.urlconf and request.urlconf is not None:
+            # We Re-run CommonMiddleware, as our urlconf changed.
+            response = CommonMiddleware().process_request(request)
+            # We are checking if redirect is required
+            if response is not None:
+                return response
 
     def get_auth_user_settings(self, request, no_cache=False):
         """"""
@@ -293,15 +307,14 @@ class FirewallMiddleware(object):
             return user_settings['urlconf']
 
         elif user_settings['groups']:
-            # Already inherited from group, let's check if is usable
-            # otherwise will be trying from other groups
+
             if user_settings['urlconf']:
-                try:
-                    resolver = get_resolver(user_settings['urlconf'])
-                    resolver.resolve(request.path_info)
+                # Already inherited from group, let's check if is usable
+                # otherwise will be trying from other groups
+                if is_valid_path(request.path_info, user_settings['urlconf']) or \
+                    (settings.APPEND_SLASH and not request.get_full_path().endswith('/') and
+                         is_valid_path(request.path_info, "%s/" % user_settings['urlconf'])):
                     return user_settings['urlconf']
-                except Resolver404:
-                    pass
 
             _temp = None
             for group_cache_key, group_natural_key in user_settings['groups']:
@@ -313,10 +326,11 @@ class FirewallMiddleware(object):
                     # already failed, so need to go further
                     continue
 
-                try:
-                    resolver = get_resolver(cache.get(group_cache_key).get('urlconf'))
-                    resolver.resolve(request.path_info)
+                if is_valid_path(request.path_info, cache.get(group_cache_key).get('urlconf')) or \
+                    (settings.APPEND_SLASH and not request.get_full_path().endswith('/') and
+                         is_valid_path(request.path_info, "%s/" % cache.get(group_cache_key).get('urlconf'))):
                     user_settings.update({
+                        'urlconf': cache.get(group_cache_key).get('urlconf'),
                         'allowed_http_methods': cache.get(group_cache_key).get('allowed_http_methods'),
                         'blacklisted_uri': cache.get(group_cache_key).get('blacklisted_uri'),
                         'whitelisted_uri': cache.get(group_cache_key).get('whitelisted_uri'),
@@ -326,7 +340,8 @@ class FirewallMiddleware(object):
 
                     _temp = cache.get(group_cache_key).get('urlconf')
                     break
-                except Resolver404:
+
+                else:
                     continue
             # @TODO: need some decision what should do if result is None
             return _temp
@@ -340,7 +355,7 @@ class FirewallMiddleware(object):
         cache_key = get_user_key(request)
         user_settings = cache.get(cache_key) or dict()
         try:
-            return user_settings['settings']['urlconf']
+            return user_settings['urlconf']
         except KeyError:
             try:
                 # The hacs convention anonymous user pk is 0
@@ -353,9 +368,7 @@ class FirewallMiddleware(object):
             except ContentTypeRoutingRules.DoesNotExist:
                 urlconf = None
 
-            if 'settings' not in user_settings.keys():
-                user_settings['settings'] = dict()
-            user_settings['settings']['urlconf'] = urlconf
+            user_settings['urlconf'] = urlconf
             # Update Cache
             cache.set(cache_key, user_settings, 3600 * 24)
 
