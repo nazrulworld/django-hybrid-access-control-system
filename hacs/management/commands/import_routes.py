@@ -293,8 +293,10 @@ class Command(BaseCommand):
         for entry in entries:
             if entry['model'].lower() in _allowed_models:
 
-                if isinstance(entry['fields']['site'], (list, tuple, )):
-                    entry['fields']['site'] = Site.objects.get(domain=entry['fields']['site'][0]).pk
+                # https://docs.djangoproject.com/en/1.10/releases/1.10/#django-contrib-sites
+                # From django 1.10 Site have natural key
+                # if isinstance(entry['fields']['site'], (list, tuple, )):
+                #     entry['fields']['site'] = Site.objects.get(domain=entry['fields']['site'][0]).pk
 
                 if entry['model'].lower() == _allowed_models[1]:
                     if isinstance(entry['fields']['object_id'], (list, tuple)):

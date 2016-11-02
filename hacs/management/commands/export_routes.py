@@ -163,7 +163,7 @@ class Command(BaseCommand):
                 with open(filename, 'r') as f:
                     objects = json.load(f, encoding=settings.DEFAULT_CHARSET)
                     self._wrap_extended_natural_keys(objects)
-
+                    
                     with open(filename + '.tmp', 'w') as fp:
                         json.dump(objects, fp=fp, cls=DjangoJSONEncoder)
 
@@ -332,7 +332,9 @@ class Command(BaseCommand):
 
             if entry['model'].lower() not in _allowed_models:
                 continue
-            entry['fields']['site'] = (Site.objects.get(pk=entry['fields']['site']).domain, )
+            # https://docs.djangoproject.com/en/1.10/releases/1.10/#django-contrib-sites
+            # From django 1.10 Site have natural key
+            # entry['fields']['site'] = (Site.objects.get(pk=entry['fields']['site']).domain, )
 
             if entry['model'].lower() == _allowed_models[1]:
                 # Check if for Auth User Model
