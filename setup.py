@@ -80,7 +80,7 @@ setup(
     packages=get_packages('hacs'),
     package_data=get_package_data('hacs'),
     install_requires=[
-        'django',
+        'Django>=1.10.3',
     ],
     extras_require={
         'test': ['pytest', 'pytest-django'],
