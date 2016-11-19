@@ -10,7 +10,6 @@ from django.db.models import Q
 from django.conf import settings
 from django.core import serializers
 from django.contrib.sites.models import Site
-from django.contrib.auth.models import Group
 from django.utils.encoding import smart_text
 from django.contrib.auth import get_user_model
 from django.core.management import BaseCommand
@@ -20,6 +19,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.serializers.json import DjangoJSONEncoder
 
 from hacs.models import RoutingTable
+from hacs.models import HacsGroupModel
 from hacs.models import SiteRoutingRules
 from hacs.models import ContentTypeRoutingRules
 from hacs.defaults import HACS_SERIALIZED_ROUTING_DIR
@@ -163,7 +163,7 @@ class Command(BaseCommand):
                 with open(filename, 'r') as f:
                     objects = json.load(f, encoding=settings.DEFAULT_CHARSET)
                     self._wrap_extended_natural_keys(objects)
-                    
+
                     with open(filename + '.tmp', 'w') as fp:
                         json.dump(objects, fp=fp, cls=DjangoJSONEncoder)
 
@@ -207,8 +207,8 @@ class Command(BaseCommand):
             exclude_groups = (exclude_groups,)
 
         if exclude_groups:
-            exclude_groups = [Group.objects.get_by_natural_key(x).pk for x in exclude_groups]
-            filter_arg = (Q(content_type=ContentType.objects.get_for_model(Group), object_id__in=exclude_groups), )
+            exclude_groups = [HacsGroupModel.objects.get_by_natural_key(x).pk for x in exclude_groups]
+            filter_arg = (Q(content_type=ContentType.objects.get_for_model(HacsGroupModel), object_id__in=exclude_groups), )
 
         exclude_users = kwargs['exclude_users']
         if exclude_users is not None and isinstance(exclude_users, six.string_types):
@@ -272,8 +272,8 @@ class Command(BaseCommand):
         if exclude_groups:
             for group in exclude_groups:
                 try:
-                    Group.objects.get_by_natural_key(group)
-                except Group.DoesNotExist:
+                    HacsGroupModel.objects.get_by_natural_key(group)
+                except HacsGroupModel.DoesNotExist:
                     raise CommandError("Specified group `%s` doesn't exists!" % group)
 
         exclude_users = kwargs['exclude_users']
@@ -343,6 +343,6 @@ class Command(BaseCommand):
                     entry['fields']['object_id'] = \
                     (getattr(UserModel.objects.get(pk=entry['fields']['object_id']), UserModel.USERNAME_FIELD), )
 
-                elif Group._meta.app_label in entry['fields']['content_type'] and Group._meta.model_name in \
+                elif HacsGroupModel._meta.app_label in entry['fields']['content_type'] and HacsGroupModel._meta.model_name in \
                     entry['fields']['content_type']:
-                    entry['fields']['object_id'] = Group.objects.get(pk=entry['fields']['object_id']).natural_key()
+                    entry['fields']['object_id'] = HacsGroupModel.objects.get(pk=entry['fields']['object_id']).natural_key()

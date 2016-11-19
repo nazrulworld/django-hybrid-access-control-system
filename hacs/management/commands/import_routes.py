@@ -8,7 +8,6 @@ from django.utils import six
 from django.apps import apps
 from django.conf import settings
 from django.core import serializers
-from django.contrib.auth.models import Group
 from django.utils.encoding import smart_text
 from django.contrib.sites.models import Site
 from django.contrib.auth import get_user_model
@@ -18,6 +17,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
+from hacs.models import HacsGroupModel
 from hacs.models import ContentTypeRoutingRules
 from hacs.defaults import HACS_SERIALIZED_ROUTING_DIR
 from hacs.defaults import HACS_USER_OBJECT_QUERY_CALLABLE
@@ -157,8 +157,8 @@ class Command(BaseCommand):
             exclude_groups = (exclude_groups, )
 
         if exclude_groups and isinstance(obj, ContentTypeRoutingRules):
-            content_type = ContentType.objects.get_for_model(Group)
-            if obj.content_type == content_type and Group.objects.get(pk=obj.object_id).name in exclude_groups:
+            content_type = ContentType.objects.get_for_model(HacsGroupModel)
+            if obj.content_type == content_type and HacsGroupModel.objects.get(pk=obj.object_id).name in exclude_groups:
                 return False
 
         exclude_users = kwargs['exclude_users']
@@ -212,8 +212,8 @@ class Command(BaseCommand):
         if exclude_groups:
             for group in exclude_groups:
                 try:
-                    Group.objects.get_by_natural_key(group)
-                except Group.DoesNotExist:
+                    HacsGroupModel.objects.get_by_natural_key(group)
+                except HacsGroupModel.DoesNotExist:
                     raise CommandError("Specified group `%s` doesn't exists!" % group)
 
         exclude_users = kwargs['exclude_users']
@@ -303,15 +303,16 @@ class Command(BaseCommand):
                         # Check if for Auth User Model
                         if UserModel._meta.app_label in entry['fields']['content_type'] and \
                                 UserModel._meta.model_name in entry['fields']['content_type']:
+
                             entry['fields']['object_id'] = import_string(getattr(settings,
                                                                                'HACS_USER_OBJECT_QUERY_CALLABLE',
                                                                                HACS_USER_OBJECT_QUERY_CALLABLE)
                                                                        )(*entry['fields']['object_id']).pk
 
-                        elif Group._meta.app_label in entry['fields']['content_type'] and Group._meta.model_name in \
+                        elif HacsGroupModel._meta.app_label in entry['fields']['content_type'] and HacsGroupModel._meta.model_name in \
                             entry['fields']['content_type']:
                             entry['fields']['object_id'] = \
-                                Group.objects.get_by_natural_key(*entry['fields']['object_id']).pk
+                                HacsGroupModel.objects.get_by_natural_key(*entry['fields']['object_id']).pk
 
 
 

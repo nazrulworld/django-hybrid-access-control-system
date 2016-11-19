@@ -162,7 +162,7 @@ class HttpHandlerValidator(object):
 @deconstructible
 class ContentTypeValidator(object):
     """"""
-    white_list = (("auth", "user"), ("auth", "group"), )
+    white_list = (("hacs", "hacsusermodel"), ("hacs", "hacsgroupmodel"), )
     black_list = ()
     code = "disallowed"
     message = _("Disallowed content type `%(value)s`")

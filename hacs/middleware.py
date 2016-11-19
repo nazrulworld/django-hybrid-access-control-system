@@ -8,7 +8,6 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import caches
 from django.utils.encoding import smart_str
-from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 try:
     # expect django version 1.10.x or higher
@@ -23,6 +22,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.middleware.common import CommonMiddleware
 
 from .globals import HACS_APP_NAME
+from .globals import HACS_ACCESS_CONTROL_LOCAL
 from .models import ContentTypeRoutingRules
 from .defaults import HACS_FALLBACK_URLCONF
 from .defaults import HACS_CACHE_SETTING_NAME
@@ -39,6 +39,7 @@ from .lru_wrapped import get_site_http_methods
 from .views.errors import maintenance_mode
 from .views.errors import service_unavailable
 from .views.errors import http_method_not_permitted
+from .models import HacsGroupModel
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -259,7 +260,7 @@ class FirewallMiddleware(object):
 
         try:
             group_route_rules = ContentTypeRoutingRules.objects.get(
-                content_type=ContentType.objects.get_for_model(Group), object_id=group.id, site=request.site)
+                content_type=ContentType.objects.get_for_model(HacsGroupModel), object_id=group.pk, site=request.site)
         except ContentTypeRoutingRules.DoesNotExist:
             # We do nothing
             pass
@@ -374,5 +375,18 @@ class FirewallMiddleware(object):
 
             return urlconf
 
+
+class AccessControlMiddleware(object):
+    """
+    """
+    name = 'hacs.middleware.AccessControlMiddleware'
+
+    def process_request(self, request):
+
+        HACS_ACCESS_CONTROL_LOCAL.__current_user = request.user
+
+    def process_response(self, request, response):
+
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
 
 __all__ = ("DynamicRouteMiddleware", "FirewallMiddleware", )

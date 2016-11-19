@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 """Installer for the django-hacs package."""
 import os
+import sys
 from setuptools import setup
+PY2 = sys.version_info[0] == 2
+PY34 = sys.version_info[0:2] >= (3, 4)
 
+requirements = [
+        'Django>=1.10.3',
+    ]
+if not PY34:
+    # we need backport of pathlib
+    requirements.append('pathlib2')
 
 def get_version():
     """"""
@@ -79,9 +88,7 @@ setup(
     license='GPL version 3',
     packages=get_packages('hacs'),
     package_data=get_package_data('hacs'),
-    install_requires=[
-        'Django>=1.10.3',
-    ],
+    install_requires=requirements,
     extras_require={
         'test': ['pytest', 'pytest-django'],
         'develop': ['jsmin', 'rcssmin']

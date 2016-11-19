@@ -66,7 +66,8 @@ DJANGO_SETTINGS= {
             },
         },
     ],
-    'STATIC_URL':  '/static/'
+    'STATIC_URL':  '/static/',
+    'AUTH_USER_MODEL': 'hacs.HacsUserModel'
 
 }
 

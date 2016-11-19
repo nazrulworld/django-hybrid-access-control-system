@@ -5,9 +5,10 @@ import json
 from django.utils import six
 from django.http import JsonResponse
 from django.utils.translation import ugettext
-from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.contrib.admin.views.decorators import staff_member_required
+
+from hacs.models import HacsGroupModel
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -31,7 +32,7 @@ def select2_contenttypes_view(request, content_type):
             'fields_map': {'id': 'pk', 'text': UserModel.USERNAME_FIELD}
         },
         'group': {
-            'model': Group,
+            'model': HacsGroupModel,
             'searchable': "name",
             'fields_map': {'id': 'pk', 'text': "name"}
         }

@@ -4,7 +4,6 @@ from __future__ import unicode_literals
 import logging
 from django.conf import settings
 from django.core.cache import caches
-from django.contrib.auth.models import Group
 
 from .globals import HACS_SITE_CACHE
 from .utils import set_site_settings
@@ -18,7 +17,7 @@ from .lru_wrapped import get_site_blacklisted_uri
 from .lru_wrapped import get_site_whitelisted_uri
 from .lru_wrapped import get_generated_urlconf_file
 from .lru_wrapped import get_generated_urlconf_module
-
+from hacs.models import HacsGroupModel
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -32,8 +31,6 @@ class DummyRequest(object):
         self.site = None
 
 # ******** EVENTS ********
-
-
 def post_save_routingtable_model(sender, **kwargs):
     """"""
     if not kwargs['created']:
@@ -59,18 +56,18 @@ def post_save_contenttyperoutingrules_model(sender, **kwargs):
     """"""
     cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
     is_group = (kwargs['instance'].content_type.app_label, kwargs['instance'].content_type.model, ) ==\
-               ("auth", "group", )
+               ("hacs", "hacsgroupmodel", )
     request = DummyRequest()
     request.site = kwargs['instance'].site
 
     if is_group:
-        group = Group.objects.get(pk=kwargs['instance'].object_id)
+        group = HacsGroupModel.objects.get(pk=kwargs['instance'].object_id)
         group_key = get_group_key(request, group)
         # Special Case: We have in cache, so need to be cleaned and recreate if exist or create
         if cache.get(group, None):
             cache.delete(group_key)
         # Invalid All user cache and group cache should be auto updated
-        for user in group.user_set.all():
+        for user in group.hacs_rlm_group_users.all():
             request.user = user
             user_key = get_user_key(request)
             if cache.get(user_key, None):
@@ -85,6 +82,12 @@ def post_save_contenttyperoutingrules_model(sender, **kwargs):
             # Just invalid user cache
             cache.delete(user_key)
     _invalidate_contenttype_lru()
+
+
+def post_save_container(sender, **kwargs):
+    pass
+
+# ********** END Events ***********
 
 
 def _invalidate_site_lru():
@@ -102,3 +105,8 @@ def _invalidate_contenttype_lru():
     get_user_key.cache_clear()
     get_generated_urlconf_module.cache_clear()
     get_generated_urlconf_file.cache_clear()
+
+
+
+
+

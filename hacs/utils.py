@@ -14,6 +14,7 @@ from django.apps import apps
 from django.utils import six
 from django.conf import settings
 from django.utils import timezone
+from django.utils.functional import SimpleLazyObject
 from django.utils._os import safe_join
 from django.utils.encoding import smart_text
 from django.contrib.auth import get_user_model
@@ -23,13 +24,13 @@ from django.utils.module_loading import module_has_submodule
 from .models import SiteRoutingRules
 from .globals import HACS_SITE_CACHE
 from .globals import HTTP_METHOD_LIST
+from .defaults import HACS_AC_BYPASS
+from .globals import HACS_ACCESS_CONTROL_LOCAL
 from .defaults import HACS_FALLBACK_URLCONF
 from .defaults import HACS_GENERATED_URLCONF_DIR
 from .globals import HACS_GENERATED_FILENAME_PREFIX
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
-
-UserModel = get_user_model()
 
 urlconf_template = """# -*- coding: utf-8 -*-
 from django.conf.urls import include
@@ -45,6 +46,7 @@ urlpatterns = [
 
 {handlers}
 """
+Empty = object()
 
 
 def set_site_settings(site, silent_if_not_exist=True):
@@ -355,6 +357,46 @@ def get_installed_apps_urlconf(pattern=r'*urls.py', to_json=False, exclude=()):
         return tuple(result)
 
 
+def get_current_user():
+    """
+    :return user object from cache:
+    """
+    # If Not user is added by Middleware should be None,
+    return getattr(HACS_ACCESS_CONTROL_LOCAL, '__current_user', None)
+
+
+def get_content_type_key(contenttype, prefix='hacl', suffix=None):
+    """
+    @Linked to `lru_wrapped`
+    :param contenttype:
+    :param prefix:
+    :param suffix:
+    :return:
+    """
+    if suffix is None:
+        suffix = ''
+    return "{prefix}:ConTyp_{id}{suffix}".\
+        format(prefix=prefix, id=contenttype.pk, suffix=suffix)
+
+
+class LazyUserModelLoad(SimpleLazyObject):
+    """
+    """
+    def __call__(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        if self._wrapped is Empty:
+            self._setup()
+        # AS wrapped is nothing but Class so class could be initialized
+        return self._wrapped(*args, **kwargs)
+
+
+user_model_lazy = LazyUserModelLoad(get_user_model)
+
+
 def get_user_object(username_or_email_or_mobile, silent=True):
     """
     :param
@@ -363,11 +405,12 @@ def get_user_object(username_or_email_or_mobile, silent=True):
     :return:
     """
     try:
-        return UserModel.objects.get(**{UserModel.USERNAME_FIELD: username_or_email_or_mobile})
-    except UserModel.DoesNotExist:
+        return user_model_lazy.objects.get(**{user_model_lazy.USERNAME_FIELD: username_or_email_or_mobile})
+    except user_model_lazy.DoesNotExist:
         if not silent:
             raise
         return None
+
 
 __all__ = [str(x) for x in (
     "set_site_settings",
@@ -385,6 +428,8 @@ __all__ = [str(x) for x in (
     "site_in_maintenance_mode",
     "get_site_http_methods",
     "get_site_blacklisted_uri",
-    "get_site_whitelisted_uri"
+    "get_site_whitelisted_uri",
+    "get_content_type_key",
+    "user_model_lazy",
 )]
 

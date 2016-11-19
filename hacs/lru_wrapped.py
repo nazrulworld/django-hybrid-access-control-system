@@ -14,6 +14,7 @@ from .utils import get_installed_apps_urlconf as utils_get_installed_apps_urlcon
 from .utils import get_generated_urlconf_module as utils_get_generated_urlconf_module
 from .utils import get_site_blacklisted_uri as utils_get_site_blacklisted_uri
 from .utils import get_site_whitelisted_uri as utils_get_site_whitelisted_uri
+from .utils import get_content_type_key as utils_get_content_type_key
 
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
@@ -77,6 +78,11 @@ def get_installed_apps_urlconf(pattern=r'*urls.py', to_json=False, exclude=()):
     return utils_get_installed_apps_urlconf(pattern, to_json, exclude)
 
 
+@lru_cache.lru_cache(maxsize=None)
+def get_content_type_key(contenttype, prefix='hacl', suffix=None):
+    return utils_get_content_type_key(contenttype, prefix, suffix)
+
+
 def clean_all_lru_caches():
     """
     :return:
@@ -92,3 +98,4 @@ def clean_all_lru_caches():
     get_installed_apps_urlconf.cache_clear()
     get_site_blacklisted_uri.cache_clear()
     get_site_whitelisted_uri.cache_clear()
+    get_content_type_key.cache_clear()
