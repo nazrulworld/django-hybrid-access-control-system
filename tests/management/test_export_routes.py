@@ -9,23 +9,24 @@ import tempfile
 from django.utils import six
 from django.test import TestCase
 from django.conf import settings
-from django.contrib.auth.models import Group
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.utils.encoding import smart_text
 from django.core.management import call_command
 from django.core.management import CommandError
 from django.contrib.contenttypes.models import ContentType
 
+from hacs.models import HacsGroupModel
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
 from hacs.models import ContentTypeRoutingRules
 
+from tests.path import FIXTURE_PATH
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_fixture.json')
-ROUTE_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_routing_fixture.json')
+
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
+ROUTE_FIXTURE = FIXTURE_PATH / 'testing_routing_fixture.json'
 
 
 class TestExportRoutes(TestCase):
@@ -35,8 +36,9 @@ class TestExportRoutes(TestCase):
     def setUp(self):
 
         super(TestCase, self).setUp()
+        self.user_model_cls = get_user_model()
         self.clean()
-        call_command('import_routes', source=ROUTE_FIXTURE)
+        call_command('import_routes', source=smart_text(ROUTE_FIXTURE))
 
     def clean(self):
         """ Cleaning all existing Routing records those are comes with fixture """
@@ -47,8 +49,8 @@ class TestExportRoutes(TestCase):
     def test_with_destination(self):
         """ """
 
-        _test_user = 'test_user'
-        _test_group = 'administrator'
+        _test_user = 'test_user@test.co'
+        _test_group = 'Administrators'
         _test_site = 'testserver'
         _test_route1 = 'test-route1'
 
@@ -68,13 +70,13 @@ class TestExportRoutes(TestCase):
         self.assertIsNotNone(SiteRoutingRules.objects.get(site=site))
         self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
-            content_type=ContentType.objects.get_for_model(Group),
-            object_id=Group.objects.get_by_natural_key(_test_group).pk
+            content_type=ContentType.objects.get_for_model(HacsGroupModel),
+            object_id=HacsGroupModel.objects.get_by_natural_key(_test_group).pk
         ))
         self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
-            content_type=ContentType.objects.get_for_model(User),
-            object_id=User.objects.get(username=_test_user).pk
+            content_type=ContentType.objects.get_for_model(self.user_model_cls),
+            object_id=self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: _test_user}).pk
         ))
 
         # Test: extended natural keys
@@ -312,8 +314,8 @@ class TestExportRoutes(TestCase):
 
     def test_exceptions(self):
         """ """
-        _test_user = 'test_user'
-        _test_group = 'administrator'
+        _test_user = 'test_user@test.co'
+        _test_group = 'Administrators'
         _test_site = 'testserver'
         _test_route1 = 'test-route1'
         # Test: validation error:: required param missing

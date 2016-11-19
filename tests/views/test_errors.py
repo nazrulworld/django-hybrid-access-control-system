@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # ++ This file `test_errors.py` is generated at 6/29/16 8:25 PM ++
-import os
 import json
-import tempfile
 from django.utils.encoding import smart_text
 from django.test import TestCase
 from django.test import RequestFactory
@@ -17,10 +15,11 @@ from hacs.views.errors import ERROR_500_TEMPLATE_NAME
 from hacs.views.errors import ERROR_400_TEMPLATE_NAME
 from hacs.views.errors import ERROR_503_MAINTENANCE_MODE_TEMPLATE_NAME
 
+from tests.path import FIXTURE_PATH
+
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_fixture.json')
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 
 class TestPageNotFound(TestCase):

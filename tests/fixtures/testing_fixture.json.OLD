@@ -16,99 +16,46 @@
     }
   },
   {
-    "model": "hacs.HacsRoleModel",
+    "model": "auth.Group",
     "pk": 1,
     "fields": {
-      "name": "Member"
+      "name": "administrator"
     }
   },
-
   {
-    "model": "hacs.HacsRoleModel",
+    "model": "auth.Group",
     "pk": 2,
     "fields": {
-      "name": "Contributor",
-      "parent": ["Member"]
+      "name": "manager"
     }
   },
   {
-      "model": "hacs.HacsRoleModel",
-      "pk": 3,
-      "fields": {
-        "name": "Editor",
-        "parent": ["Contributor"]
-      }
-    },
-  {
-    "model": "hacs.HacsRoleModel",
-    "pk": 4,
-    "fields": {
-      "name": "Manager",
-      "parent": ["Editor"]
-    }
-  },
-  {
-    "model": "hacs.HacsGroupModel",
-    "pk": 1,
-    "fields": {
-      "name": "Administrators",
-      "roles": [["Manager"]]
-    }
-  },
-  {
-    "model": "hacs.HacsGroupModel",
-    "pk": 2,
-    "fields": {
-      "name": "Managers",
-      "roles": [["Editor"]]
-    }
-  },
-  {
-    "model": "hacs.HacsGroupModel",
+    "model": "auth.Group",
     "pk": 3,
     "fields": {
-      "name": "Officers",
-      "roles": [["Contributor"]]
+      "name": "officer"
     }
   },
   {
-    "model": "hacs.HacsPermissionModel",
+    "model": "auth.User",
     "pk": 1,
     "fields": {
-      "name": "ManageContent",
-      "roles": [["Contributor"]]
-    }
-  },
-  {
-    "model": "hacs.HacsPermissionModel",
-    "pk": 2,
-    "fields": {
-      "name": "MangePortal",
-      "roles": [["Manager"]]
-    }
-  },
-  {
-    "model": "hacs.HacsUserModel",
-    "pk": 1,
-    "fields": {
-      "first_name": "Test user",
+      "username": "test_user",
       "email": "test_user@test.co",
       "password": "top_secret",
       "is_staff": true,
       "is_superuser": true,
-      "groups": [["Administrators" ]],
-      "roles": [["Manager"]]
+      "groups": [["administrator" ], ["manager"]]
     }
   },
   {
-    "model": "hacs.HacsUserModel",
+    "model": "auth.User",
     "pk": 2,
     "fields": {
-      "first_name": "Test User Normal",
+      "username": "test_user_normal",
       "email": "test_user_normal@test.co",
       "password": "top_secret",
-      "groups": [["Officers" ]],
-      "roles": [["Member"]]
+      "groups": [["officer" ]]
     }
   },
   {
@@ -205,7 +152,7 @@
     "fields": {
       "site": 2,
       "route": ["user-route"],
-      "content_type": ["hacs", "hacsusermodel"],
+      "content_type": ["auth", "user"],
       "object_id": 1
     }
   },
@@ -239,7 +186,7 @@
     "fields": {
       "site": 2,
       "route": ["group-route"],
-      "content_type": ["hacs", "hacsgroupmodel"],
+      "content_type": ["auth", "group"],
       "object_id": 1,
       "allowed_method": ["GET", "POST"]
     }

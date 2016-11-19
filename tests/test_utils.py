@@ -11,14 +11,16 @@ from importlib import import_module
 from django.test import RequestFactory
 from hacs.models import SiteRoutingRules
 from django.test import override_settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.sites.shortcuts import get_current_site
 from hacs.utils import *
 
-TEST_USER_NAME = 'test_user'
+from .path import FIXTURE_PATH
+
+TEST_USER_NAME = 'test_user@test.co'
 TEST_HOST_NAME = 'testserver'
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(CURRENT_PATH, 'fixtures', 'testing_fixture.json')
+
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -34,12 +36,13 @@ class UtilsTestCase(TestCase):
         """
         super(UtilsTestCase, self).setUp()
         self.request_factory = RequestFactory()
+        self.user_model_cls = get_user_model()
 
     def test_get_group_key(self):
         """
         :return:
         """
-        user = User.objects.get(username=TEST_USER_NAME)
+        user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         request = self.request_factory.request(user=user)
         request.site = get_current_site(request)
         group = user.groups.all()[0]
@@ -51,7 +54,7 @@ class UtilsTestCase(TestCase):
         :return:
         """
         request = self.request_factory.request()
-        request.user = user = User.objects.get(username=TEST_USER_NAME)
+        request.user = user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         request.site = get_current_site(request)
         result = get_user_key(request, prefix='hacs')
         self.assertEqual(result, 'hacs:site_%s:user_%s' % (request.site.id, user.id))

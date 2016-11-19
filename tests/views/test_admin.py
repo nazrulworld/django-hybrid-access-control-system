@@ -7,35 +7,32 @@ import tempfile
 from django.utils.http import urlencode
 from django.test import TestCase
 from django.test import Client
-from django.utils import timezone
 from django.conf import settings
 from django.core.cache import caches
 from django.test import override_settings
 from django.test import modify_settings
-from django.contrib.sites.models import Site
-from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.utils.six.moves import range
 from django.utils.encoding import smart_text
 from django.test import RequestFactory
-from django.contrib.auth.models import Group
 from hacs.views.admin import select2_contenttypes_view
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth import get_user_model
 
 from hacs.utils import get_user_object
-from hacs.models import SiteRoutingRules
 from hacs.globals import HACS_SITE_CACHE
 from hacs.defaults import HACS_CACHE_SETTING_NAME
+from hacs.models import HacsGroupModel
 
+from tests.path import FIXTURE_PATH
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-TEST_USER_NAME = 'test_user'
+TEST_USER_NAME = 'test_user@test.co'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_ROUTE = "default-route"
 TEST_SITE = "testserver"
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_fixture.json')
+
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 
 class TestSelect2ContentTypesView(TestCase):
@@ -106,7 +103,6 @@ class TestSelect2ContentTypesView(TestCase):
 
             get_user_model().objects.create_user(
                 first_name="Nazrul_%s" % x,
-                username="nazrulworld_%s" % x,
                 email="nazrul_%s@fake.com" % x,
                 password="nazrul_%s" % x
             )
@@ -161,13 +157,13 @@ class TestSelect2ContentTypesView(TestCase):
 
         # Test: for single entry for Group content type
         request.META['QUERY_STRING'] = urlencode({
-            'pk': Group.objects.get_by_natural_key('administrator').pk
+            'pk': HacsGroupModel.objects.get_by_natural_key('Administrators').pk
         }, doseq=True)
         del request.GET
 
         response = select2_contenttypes_view(request, 'group')
         content = json.loads(smart_text(response.content))
-        self.assertEqual(content['text'], 'administrator')
+        self.assertEqual(content['text'], 'Administrators')
 
         # Test: for single entry: with custom mapping
         request.META['QUERY_STRING'] = urlencode({
@@ -272,7 +268,6 @@ class TestSelect2ContentTypesViewFromBrowser(TestCase):
         for x in range(1, 59):
             get_user_model().objects.create_user(
                 first_name="Nazrul_%s" % x,
-                username="nazrulworld_%s" % x,
                 email="nazrul_%s@fake.com" % x,
                 password="nazrul_%s" % x
             )
@@ -290,9 +285,9 @@ class TestSelect2ContentTypesViewFromBrowser(TestCase):
         self.assertEqual(10, len(content['items']))
 
         # Test Single Record
-        response = browser.get(_url, data={"pk": get_user_model().objects.get(username=TEST_USER_NAME).pk})
+        response = browser.get(_url, data={"pk": get_user_model().objects.get(**{get_user_model().USERNAME_FIELD: TEST_USER_NAME}).pk})
         content = json.loads(smart_text(response.content))
-        self.assertEqual(content['id'], get_user_model().objects.get(username=TEST_USER_NAME).pk)
+        self.assertEqual(content['id'], get_user_model().objects.get(**{get_user_model().USERNAME_FIELD: TEST_USER_NAME}).pk)
 
     def test_exception(self):
         """"""

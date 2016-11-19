@@ -4,23 +4,24 @@ import os
 import shutil
 import tempfile
 from django.test import TestCase
-from django.contrib.auth.models import User
-from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.utils.encoding import smart_text
 from django.core.management import call_command
 from django.core.management import CommandError
 from django.contrib.contenttypes.models import ContentType
 
+from hacs.models import HacsGroupModel
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
 from hacs.models import ContentTypeRoutingRules
 
+from tests.path import FIXTURE_PATH
+
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_fixture.json')
-ROUTE_FIXTURE = os.path.join(os.path.dirname(CURRENT_PATH), 'fixtures', 'testing_routing_fixture.json')
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
+ROUTE_FIXTURE = FIXTURE_PATH / 'testing_routing_fixture.json'
 
 
 class TestImportRoutes(TestCase):
@@ -29,6 +30,7 @@ class TestImportRoutes(TestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
+        self.user_model_cls = get_user_model()
         self.clean()
 
     def clean(self):
@@ -39,9 +41,9 @@ class TestImportRoutes(TestCase):
 
     def test_with_source_file(self):
         """ """
-        call_command('import_routes', source=ROUTE_FIXTURE)
-        _test_user = 'test_user'
-        _test_group = 'administrator'
+        call_command('import_routes', source=smart_text(ROUTE_FIXTURE))
+        _test_user = 'test_user@test.co'
+        _test_group = 'Administrators'
         _test_site = 'testserver'
 
         # We just checking all entries are inserted from fixture
@@ -53,19 +55,19 @@ class TestImportRoutes(TestCase):
         self.assertIsNotNone(SiteRoutingRules.objects.get(site=site))
         self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
-            content_type=ContentType.objects.get_for_model(Group),
-            object_id=Group.objects.get_by_natural_key(_test_group).pk
+            content_type=ContentType.objects.get_for_model(HacsGroupModel),
+            object_id=HacsGroupModel.objects.get_by_natural_key(_test_group).pk
         ))
         self.assertIsNotNone(ContentTypeRoutingRules.objects.get(
             site=site,
-            content_type=ContentType.objects.get_for_model(User),
-            object_id=User.objects.get(username=_test_user).pk
+            content_type=ContentType.objects.get_for_model(self.user_model_cls),
+            object_id=self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: _test_user}).pk
         ))
 
         self.clean()
         # Test: site exclude
         # Let's omit Site
-        call_command('import_routes', source=ROUTE_FIXTURE, exclude_sites=[_test_site])
+        call_command('import_routes', source=smart_text(ROUTE_FIXTURE), exclude_sites=[_test_site])
         # Excluded site should not have any route
         try:
             SiteRoutingRules.objects.get(site=site)
@@ -78,12 +80,12 @@ class TestImportRoutes(TestCase):
 
         self.clean()
         # Test: group exclude
-        call_command('import_routes', source=ROUTE_FIXTURE, exclude_groups=[_test_group])
+        call_command('import_routes', source=smart_text(ROUTE_FIXTURE), exclude_groups=[_test_group])
         try:
             ContentTypeRoutingRules.objects.get(
                 site=site,
-                content_type=ContentType.objects.get_for_model(Group),
-                object_id=Group.objects.get_by_natural_key(_test_group).pk
+                content_type=ContentType.objects.get_for_model(HacsGroupModel),
+                object_id=HacsGroupModel.objects.get_by_natural_key(_test_group).pk
             )
             raise AssertionError("Code should not reach here!, because group object should not exist")
         except ContentTypeRoutingRules.DoesNotExist:
@@ -94,12 +96,12 @@ class TestImportRoutes(TestCase):
 
         self.clean()
         # Test: group exclude
-        call_command('import_routes', source=ROUTE_FIXTURE, exclude_users=[_test_user])
+        call_command('import_routes', source=smart_text(ROUTE_FIXTURE), exclude_users=[_test_user])
         try:
             ContentTypeRoutingRules.objects.get(
                 site=site,
-                content_type=ContentType.objects.get_for_model(User),
-                object_id=User.objects.get(username=_test_user).pk
+                content_type=ContentType.objects.get_for_model(self.user_model_cls),
+                object_id=self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: _test_user}).pk
             )
             raise AssertionError("Code should not reach here!, because object should not exist")
         except ContentTypeRoutingRules.DoesNotExist:
@@ -110,7 +112,7 @@ class TestImportRoutes(TestCase):
 
         self.clean()
         # Test: multi excluding
-        call_command('import_routes', source=ROUTE_FIXTURE, exclude_groups=_test_group, exclude_users=_test_user)
+        call_command('import_routes', source=smart_text(ROUTE_FIXTURE), exclude_groups=_test_group, exclude_users=_test_user)
         # As 2 + 2 entries are ignored, because those were related to exclude user and group
         self.assertEqual(3, len(ContentTypeRoutingRules.objects.all()))
 
@@ -120,7 +122,7 @@ class TestImportRoutes(TestCase):
 
         with self.settings(HACS_SERIALIZED_ROUTING_DIR=HACS_SERIALIZED_ROUTE_DIR_NAME):
             # Copy Test Route Fixture to tmp directory
-            shutil.copyfile(ROUTE_FIXTURE, os.path.join(HACS_SERIALIZED_ROUTE_DIR_NAME, os.path.split(ROUTE_FIXTURE)[1]))
+            shutil.copyfile(smart_text(ROUTE_FIXTURE), os.path.join(HACS_SERIALIZED_ROUTE_DIR_NAME, ROUTE_FIXTURE.parts[-1]))
             call_command('import_routes')
             # We just checking all entries are inserted from fixture
             self.assertEqual(4, len(RoutingTable.objects.all()))
@@ -131,8 +133,8 @@ class TestImportRoutes(TestCase):
 
     def test_exceptions(self):
         """"""
-        _test_user = 'test_user'
-        _test_group = 'administrator'
+        _test_user = 'test_user@test.co'
+        _test_group = 'Administrators'
         _test_site = 'testserver'
         _test_route1 = 'test-route1'
         # Test: validation error:: required param missing
@@ -184,7 +186,7 @@ class TestImportRoutes(TestCase):
         except CommandError as exc:
             self.assertIn('Invalid source path specified!', smart_text(exc))
         _temp_dir = tempfile.mkdtemp()
-        shutil.copyfile(TEST_FIXTURE, os.path.join(_temp_dir, 'test.json'))
+        shutil.copyfile(smart_text(TEST_FIXTURE), os.path.join(_temp_dir, 'test.json'))
 
         # Test: with `source` valid file but HACS_SERIALIZED_ROUTING_DIR is not set
         try:

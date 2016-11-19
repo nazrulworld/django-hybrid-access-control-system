@@ -18,17 +18,18 @@ from django.core.cache import caches
 from django.test import RequestFactory
 from django.test import override_settings
 from django.test import modify_settings
+from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
-from django.contrib.auth.models import Group
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
 
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
+from hacs.models import HacsGroupModel
 from hacs.globals import HACS_SITE_CACHE
 from hacs.utils import set_site_settings
-from hacs.middleware import UserModel
+
 from hacs.middleware import FirewallMiddleware
 from hacs.models import ContentTypeRoutingRules
 from hacs.middleware import DynamicRouteMiddleware
@@ -41,12 +42,14 @@ from hacs.lru_wrapped import clean_all_lru_caches
 from hacs.defaults import HACS_CACHE_SETTING_NAME
 from hacs.defaults import HACS_FALLBACK_URLCONF
 
+from .path import FIXTURE_PATH
+
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 if tempfile.gettempdir() not in sys.path:
     sys.path.append(tempfile.gettempdir())
 
-TEST_USER_NAME = 'test_user'
+TEST_USER_NAME = 'test_user@test.co'
 TEST_USER_EMAIL = 'test_user@test.co'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_HOST_NAME = 'testserver'
@@ -54,8 +57,8 @@ TEST_ROUTE_NAME = 'default-route'
 TEST_USER_ROUTE_NAME = 'user-route'
 TEST_GROUP_ROUTE_NAME = 'group-route'
 TEST_FALLBACK_URLCONF = 'hacs.urls'
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(CURRENT_PATH, 'fixtures', 'testing_fixture.json')
+
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 def clean_lru():
     get_site_urlconf.cache_clear()
@@ -243,6 +246,7 @@ class TestDynamicRouteMiddlewareFromBrowser(TestCase):
         self.request_factory = RequestFactory()
         clean_lru()
         HACS_SITE_CACHE.clear()
+        self.user_model_cls = get_user_model()
         self._refactor_fixture()
 
     def _refactor_fixture(self):
@@ -250,7 +254,7 @@ class TestDynamicRouteMiddlewareFromBrowser(TestCase):
         :return:
         """
         from django.contrib.auth.hashers import is_password_usable
-        for user in UserModel.objects.all():
+        for user in self.user_model_cls.objects.all():
             if not is_password_usable(user.password):
                 user.set_password(user.password)
                 user.save()
@@ -319,6 +323,7 @@ class TestFirewallMiddleware(TestCase):
         # Let's clear the lru cache, as this function wrapped by lru_cache decorator
         clean_lru()
         HACS_SITE_CACHE.clear()
+        self.user_model_cls = get_user_model()
 
     def test_validate(self):
 
@@ -330,10 +335,10 @@ class TestFirewallMiddleware(TestCase):
         """"""
         request = self.request_factory.request()
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         middleware = FirewallMiddleware()
-        middleware.set_auth_group_settings(request, user.groups.get(name='administrator'))
-        group_key = get_group_key(request, user.groups.get(name='administrator'))
+        middleware.set_auth_group_settings(request, user.groups.get(name='Administrators'))
+        group_key = get_group_key(request, user.groups.get(name='Administrators'))
         group_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
 
         # We make sure cache is updated and right values are assigned
@@ -347,11 +352,11 @@ class TestFirewallMiddleware(TestCase):
         """
         middleware = FirewallMiddleware()
         request = self.request_factory.request()
-        test_user = UserModel.objects.get(username=TEST_USER_NAME)
+        test_user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         test_site = Site.objects.get(domain=TEST_HOST_NAME)
         request.site = test_site
         user_rules = ContentTypeRoutingRules.objects.get(
-            content_type=ContentType.objects.get_for_model(UserModel),
+            content_type=ContentType.objects.get_for_model(self.user_model_cls),
             object_id=test_user.pk,
             site=test_site
         )
@@ -371,7 +376,7 @@ class TestFirewallMiddleware(TestCase):
         self.assertEqual(result, expected_urlconf)
         # we remove user's rules so should come from groups
         ContentTypeRoutingRules.objects.filter(
-            content_type=ContentType.objects.get_for_model(UserModel),
+            content_type=ContentType.objects.get_for_model(self.user_model_cls),
             object_id=test_user.pk,
             site=test_site
         ).delete()
@@ -384,6 +389,7 @@ class TestFirewallMiddleware(TestCase):
             user_settings['groups'].append((get_group_key(request, group), group.natural_key()))
             # We will trigger auth group settings from here
             middleware.set_auth_group_settings(request, group, False)
+
         result = middleware._calculate_user_urlconf(request, user_settings)
         expected_urlconf = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME), False)
 
@@ -397,7 +403,7 @@ class TestFirewallMiddleware(TestCase):
         request = self.request_factory.request()
         request.path_info = '/admin/'
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
 
         middleware = FirewallMiddleware()
         middleware.set_auth_user_settings(request)
@@ -408,7 +414,7 @@ class TestFirewallMiddleware(TestCase):
         user_cache_key = get_user_key(request)
         self.assertEqual(self.cache.get(user_cache_key)['urlconf'], user_urlconf_module)
 
-        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(self.user_model_cls),
                                                object_id=user.id).delete()
         self.cache.clear()
         middleware.set_auth_user_settings(request)
@@ -421,8 +427,8 @@ class TestFirewallMiddleware(TestCase):
         request.urlconf = None
         request.path_info = '/admin/'
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
-        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(getattr(user, user.USERNAME_FIELD))).hexdigest())
         middleware = FirewallMiddleware()
         middleware.process_request(request)
 
@@ -439,7 +445,7 @@ class TestFirewallMiddleware(TestCase):
         # Should be Fallback urlconf module
         self.assertEqual(request.urlconf, HACS_FALLBACK_URLCONF)
 
-        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(self.user_model_cls),
                                                object_id=user.id).delete()
         user_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME), validation=False)
         self.cache.clear()
@@ -450,7 +456,7 @@ class TestFirewallMiddleware(TestCase):
         # Make sure user's group's urlconf is assigned as user's routing is not available
         self.assertEqual(user_urlconf_module, request.urlconf)
 
-        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
+        ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(HacsGroupModel)).delete()
         self.cache.clear()
         request.session.clear()
         request.urlconf = None
@@ -467,8 +473,8 @@ class TestFirewallMiddleware(TestCase):
         request = self.request_factory.request()
         request.path_info = u'/admin/'
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
-        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(getattr(user, user.USERNAME_FIELD))).hexdigest())
         middleware = FirewallMiddleware()
         site_rules = SiteRoutingRules.objects.get(site=request.site)
         site_rules.maintenance_mode = True
@@ -501,8 +507,8 @@ class TestFirewallMiddleware(TestCase):
         request.urlconf = None
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
-        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(getattr(user, user.USERNAME_FIELD))).hexdigest())
         middleware = FirewallMiddleware()
         ##
         # Site Level URI Filter Test Start
@@ -566,10 +572,12 @@ class TestFirewallMiddleware(TestCase):
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
         request.urlconf = None
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         user_key = get_user_key(request)
-        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
-        user_rules = ContentTypeRoutingRules.objects.get(site=request.site, content_type=ContentType.objects.get_for_model(UserModel), object_id=user.pk)
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(getattr(user, user.USERNAME_FIELD))).hexdigest())
+        user_rules = ContentTypeRoutingRules.objects.get(
+            site=request.site,
+            content_type=ContentType.objects.get_for_model(self.user_model_cls), object_id=user.pk)
         user_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
         user_rules.save()
         middleware = FirewallMiddleware()
@@ -619,8 +627,8 @@ class TestFirewallMiddleware(TestCase):
         user_rules.delete()
         group_rules = ContentTypeRoutingRules.objects.get(
             site=request.site,
-            content_type=ContentType.objects.get_for_model(Group),
-            object_id=Group.objects.get(name='administrator').pk
+            content_type=ContentType.objects.get_for_model(HacsGroupModel),
+            object_id=HacsGroupModel.objects.get(name='Administrators').pk
         )
         group_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
         group_rules.save()
@@ -668,8 +676,8 @@ class TestFirewallMiddleware(TestCase):
         request = self.request_factory.request()
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
-        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(getattr(user, user.USERNAME_FIELD))).hexdigest())
         request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
         middleware = FirewallMiddleware()
 
@@ -701,9 +709,9 @@ class TestFirewallMiddleware(TestCase):
         request = self.request_factory.request()
         request.path_info = u'/admin/sites/site/'
         request.site = get_current_site(request)
-        user = request.user = UserModel.objects.get(username=TEST_USER_NAME)
+        user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         user_key = get_user_key(request)
-        request.session = self.SessionStore(hashlib.md5(smart_bytes(user.username)).hexdigest())
+        request.session = self.SessionStore(hashlib.md5(smart_bytes(getattr(user, user.USERNAME_FIELD))).hexdigest())
         request.META['HTTP_ACCEPT'] = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
         middleware = FirewallMiddleware()
 
@@ -712,7 +720,7 @@ class TestFirewallMiddleware(TestCase):
         ##
         user_rules = ContentTypeRoutingRules.objects.get(
             site=request.site,
-            content_type=ContentType.objects.get_for_model(UserModel),
+            content_type=ContentType.objects.get_for_model(self.user_model_cls),
             object_id=user.pk
         )
         user_rules.allowed_method = ['GET', 'HEAD']
@@ -740,8 +748,8 @@ class TestFirewallMiddleware(TestCase):
         clean_all_lru_caches()
         group_rules = ContentTypeRoutingRules.objects.get(
             site=request.site,
-            content_type=ContentType.objects.get_for_model(Group),
-            object_id=Group.objects.get(name='administrator').pk
+            content_type=ContentType.objects.get_for_model(HacsGroupModel),
+            object_id=HacsGroupModel.objects.get(name='Administrators').pk
         )
         group_rules.allowed_method = ['GET']
         group_rules.save()
@@ -778,6 +786,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
 
     def setUp(self):
         super(TestFirewallMiddlewareFromBrowser, self).setUp()
+        self.user_model_cls = get_user_model()
         self.request_factory = RequestFactory()
         self._refactor_fixture()
         engine = import_module(settings.SESSION_ENGINE)
@@ -792,7 +801,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
         :return:
         """
         from django.contrib.auth.hashers import is_password_usable
-        for user in UserModel.objects.all():
+        for user in self.user_model_cls.objects.all():
             if not is_password_usable(user.password):
                 user.set_password(user.password)
                 user.save()
@@ -810,7 +819,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             response = browser.get('/admin/')
             fake_request = RequestFactory().request()
             fake_request.urlconf = None
-            fake_request.user = UserModel.objects.get(username=TEST_USER_NAME)
+            fake_request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
             fake_request.site = Site.objects.get(domain=TEST_HOST_NAME)
 
             user_key = get_user_key(fake_request)
@@ -829,7 +838,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_USER_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
 
-            ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(UserModel),
+            ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(self.user_model_cls),
                                                    object_id=response.wsgi_request.user.id).delete()
 
             # Make Session works, as we remove user's route but still should same
@@ -852,7 +861,7 @@ class TestFirewallMiddlewareFromBrowser(TestCase):
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
 
-            ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(Group)).delete()
+            ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(HacsGroupModel)).delete()
 
             # Now we are cleaning session and cache as well, group's route also clened
             # so we expect urlconf should be like site urlconf

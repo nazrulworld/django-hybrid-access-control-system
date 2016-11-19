@@ -11,16 +11,18 @@ from django.test import override_settings
 from django.core.validators import ValidationError
 from django.utils.encoding import smart_text
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
 
 
 from hacs.models import RoutingTable
+from hacs.models import HacsGroupModel
 from hacs.validators import UrlModulesValidator
 from hacs.validators import HttpHandlerValidator
 from hacs.validators import ContentTypeValidator
 from hacs.utils import generate_urlconf_file_on_demand
+
+from .path import FIXTURE_PATH
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -30,8 +32,8 @@ if tempfile.gettempdir() not in sys.path:
 
 TEST_USER_NAME = 'test_user'
 TEST_ROUTE = "default-route"
-CURRENT_PATH = os.path.abspath(os.path.dirname(__file__))
-TEST_FIXTURE = os.path.join(CURRENT_PATH, 'fixtures', 'testing_fixture.json')
+
+TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 
 @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
@@ -222,13 +224,14 @@ class TestContentTypeValidator(TestCase):
         validator = ContentTypeValidator()
         # Test with User Content Type
         content_type = ContentType.objects.get_for_model(get_user_model())
+
         try:
             validator(content_type.pk)
         except ValidationError:
             raise AssertionError("Code should not come here, because should be valid")
 
         # Test with User Content Type
-        content_type = ContentType.objects.get_for_model(Group)
+        content_type = ContentType.objects.get_for_model(HacsGroupModel)
         try:
             validator(content_type.pk)
         except ValidationError:
@@ -265,7 +268,7 @@ class TestContentTypeValidator(TestCase):
             pass
 
         # Make sure blacklisted works as well
-        validator.black_list = (("auth", "user"), )
+        validator.black_list = (("hacs", "hacsusermodel"), )
         content_type = ContentType.objects.get_for_model(get_user_model())
         try:
             validator(content_type.pk)

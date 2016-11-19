@@ -118,8 +118,8 @@
     "fields": {
       "site": ["testserver"],
       "route": ["test-route3"],
-      "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Administrators"]
+      "content_type": ["auth", "group"],
+      "object_id": ["administrator"]
     }
   },
   {
@@ -127,8 +127,8 @@
     "fields": {
       "site": ["testserver"],
       "route": ["test-route4"],
-      "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Managers"]
+      "content_type": ["auth", "group"],
+      "object_id": ["manager"]
     }
   },
   {
@@ -136,8 +136,8 @@
     "fields": {
       "site": ["testserver"],
       "route": ["test-route2"],
-      "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Officers"]
+      "content_type": ["auth", "group"],
+      "object_id": ["officer"]
     }
   },
   {
@@ -145,8 +145,8 @@
     "fields": {
       "site": ["localhost"],
       "route": ["test-route1"],
-      "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Administrators"]
+      "content_type": ["auth", "group"],
+      "object_id": ["administrator"]
     }
   },
   {
@@ -154,8 +154,8 @@
     "fields": {
       "site": ["testserver"],
       "route": ["test-route1"],
-      "content_type": ["hacs", "hacsusermodel"],
-      "object_id": ["test_user@test.co"]
+      "content_type": ["auth", "user"],
+      "object_id": ["test_user"]
     }
   },
   {
@@ -163,8 +163,8 @@
     "fields": {
       "site": ["localhost"],
       "route": ["test-route1"],
-      "content_type": ["hacs", "hacsusermodel"],
-      "object_id": ["test_user@test.co"]
+      "content_type": ["auth", "user"],
+      "object_id": ["test_user"]
     }
   },
   {
@@ -172,8 +172,8 @@
     "fields": {
       "site": ["testserver"],
       "route": ["test-route2"],
-      "content_type": ["hacs", "hacsusermodel"],
-      "object_id": ["test_user_normal@test.co"]
+      "content_type": ["auth", "user"],
+      "object_id": ["test_user_normal"]
     }
   }
 ]
