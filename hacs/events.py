@@ -67,7 +67,7 @@ def post_save_contenttyperoutingrules_model(sender, **kwargs):
         if cache.get(group, None):
             cache.delete(group_key)
         # Invalid All user cache and group cache should be auto updated
-        for user in group.hacs_rlm_group_users.all():
+        for user in group.hacs_grp_users.all():
             request.user = user
             user_key = get_user_key(request)
             if cache.get(user_key, None):

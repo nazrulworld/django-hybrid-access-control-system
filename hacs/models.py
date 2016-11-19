@@ -58,8 +58,8 @@ class HacsRoleModel(HacsStaticModel):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name="hacs_rlm_role_children",
-        related_query_name="hacs_rlm_role_children_set"
+        related_name="hacs_rlm_children",
+        related_query_name="hacs_rlm_children_set"
     )
 
     class Meta:
@@ -79,8 +79,8 @@ class HacsGroupModel(HacsStaticModel):
     roles = models.ManyToManyField(
         "hacs.HacsRoleModel",
         db_constraint=False,
-        related_name="hacs_grp_role_groups",
-        related_query_name="hacs_grp_role_groups_set"
+        related_name="hacs_rlm_groups",
+        related_query_name="hacs_rlm_groups_set"
     )
 
     class Meta:
@@ -100,8 +100,8 @@ class HacsPermissionModel(HacsStaticModel):
     roles = models.ManyToManyField(
         "hacs.HacsRoleModel",
         db_constraint=False,
-        related_name="hacs_rlm_role_permissions",
-        related_query_name="hacs_rlm_role_permissions_set"
+        related_name="hacs_rlm_permissions",
+        related_query_name="hacs_rlm_permissions_set"
     )
 
     class Meta:
@@ -402,8 +402,6 @@ class SiteRoutingRules(models.Model):
          default=False,
          help_text=_('Firewall will only response maintenance view and prevent any further execution '
                      'for all request if it is on'))
-     created_on = models.DateTimeField(_('Created On'), blank=True, default=timezone.now)
-     updated_on = models.DateTimeField(_('Last updated'), null=True, blank=True)
 
      objects = SiteRoutingRulesManager()
 

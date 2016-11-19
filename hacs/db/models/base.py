@@ -5,11 +5,10 @@ import logging
 from django.utils import six
 from django.db import models
 from django.conf import settings
-from django.utils.functional import cached_property
+from django.utils import timezone
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-from hacs.fields import SequenceField
 from hacs.fields import DictField
 from hacs.fields import ForeignKey
 from hacs.fields import ManyToManyField
@@ -34,6 +33,8 @@ Hacs Model short name map:
 3. hacs_ctr = ContentType Model
 4. hacs_grp = HacsGroupModel
 5. hacs_rlm = HacsRoleModel
+6. hacs_prm = HacsPermissionModel
+7. hacs_cnr = HacsContainerModel
 """
 #################
 # MIXIN CLASSES #
@@ -45,15 +46,15 @@ class HacsUserFieldMixin(models.Model):
     """
     roles = models.ManyToManyField(
         'hacs.HacsRoleModel',
-        related_name="hacs_rlm_role_users",
-        related_query_name="hacs_rlm_role_users_set",
+        related_name="hacs_rlm_users",
+        related_query_name="hacs_rlm_users_set",
         blank=True,
         db_constraint=False
     )
     groups = models.ManyToManyField(
         'hacs.HacsGroupModel',
-        related_name="hacs_rlm_group_users",
-        related_query_name="hacs_rlm_group_users_set",
+        related_name="hacs_grp_users",
+        related_query_name="hacs_grp_users_set",
         blank=True,
         db_constraint=False
     )
@@ -87,9 +88,9 @@ class HacsBasicFieldMixin(models.Model):
         abstract = True
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False,unique=True, db_index=True)
-    name = models.CharField(max_length=127, null=False, blank=False)
-    slug = models.SlugField(max_length=127, null=True, blank=True, unique=True, db_index=True)
-    created_on = models.DateTimeField(auto_now_add=True, null=False, blank=True)
+    name = models.CharField(max_length=127, null=False, blank=True)
+    slug = models.SlugField(max_length=127, null=False, blank=True, unique=True, db_index=True)
+    created_on = models.DateTimeField(null=False, blank=True, default=timezone.now)
     created_by = ForeignKey(
         settings.AUTH_USER_MODEL,
         db_constraint=False,
@@ -128,7 +129,12 @@ class HacsUtilsFieldMixin(models.Model):
     class Meta:
         abstract = True
     # Only list of permissions, by default permission holder has all action permission
-    permissions = SequenceField(null=True, blank=True)
+    permissions = ManyToManyField(
+        'hacs.HacsPermissionModel',
+        db_constraint=False,
+        related_name="hacs_prm_{klass}_utilities",
+        related_query_name="hacs_prm_{klass}_utilities_set"
+    )
 
 
 class HacsSecurityFieldMixin(models.Model):
@@ -151,8 +157,8 @@ class HacsSecurityFieldMixin(models.Model):
     local_roles = ManyToManyField(
         'hacs.HacsRoleModel',
         db_constraint=False,
-        related_name="hacs_rlm_{klass}_lc_role_items",
-        related_query_name="hacs_rlm_{klass}_lc_role_items_set",
+        related_name="hacs_rlm_{klass}_lr_items",
+        related_query_name="hacs_rlm_{klass}_lr_items_set",
         blank=True)
 
     owner = ForeignKey(
@@ -272,8 +278,8 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
         on_delete=models.DO_NOTHING,
         null=True,
         blank=True,
-        related_name="hacs_wfl_{klass}_workflows",
-        related_query_name="hacs_wfl_{klass}_workflows_set"
+        related_name="hacs_wfl_{klass}_containers",
+        related_query_name="hacs_wfl_{klass}_containers_set"
     )
     # Container Relation Start
     # See: https://docs.djangoproject.com/en/1.10/ref/contrib/contenttypes/#generic-relations
@@ -283,8 +289,8 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
         validators=[],
         null=True,
         blank=True,
-        related_name="hacs_ctr_{klass}_children",
-        related_query_name="hacs_ctr_{klass}_children_set"
+        related_name="hacs_cnr_{klass}_children",
+        related_query_name="hacs_cnr_{klass}_children_set"
     )
     # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
     # it should not be empty
@@ -310,8 +316,8 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
         validators=[],
         null=True,
         blank=True,
-        related_name="hacs_ctr_{klass}_items",
-        related_query_name="hacs_ctr_{klass}_items_set"
+        related_name="hacs_cnr_{klass}_items",
+        related_query_name="hacs_cnr_{klass}_items_set"
     )
     # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
     # it should not be empty
