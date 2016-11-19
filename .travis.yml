@@ -1,11 +1,13 @@
 language: python
 sudo: false
 python:
+  - "2.7"
+  - "3.5"
   - "3.5.2"
+  - "pypi"
 env:
-  - TOX_ENV=py35-django110
-  - TOX_ENV=py34-django110
-  - TOX_ENV=py27-django110
+  - TOX_ENV="DJANGO_VERSION-110x"
+  - TOX_ENV="DJANGO_VERSION-1101"
 matrix:
   fast_finish: true
 
@@ -24,7 +26,7 @@ notifications:
 
 matrix:
   allow_failures:
-    - TOX_ENV=py34-django110
+    - TOX_ENV=DJANGO_VERSION-1101
 
 branches:
   only:
