@@ -2,7 +2,8 @@
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "test-route1",
+      "name": "test-route1",
+      "slug": "test-route1",
       "urls": [
         {
           "prefix": "admin",
@@ -21,13 +22,15 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "test-route2",
+      "name": "test-route2",
+      "slug": "test-route2",
       "urls": [
         {
           "prefix": "admin",
@@ -46,13 +49,15 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "test-route3",
+      "name": "test-route3",
+      "slug": "test-route3",
       "urls": [
         {
           "prefix": "admin",
@@ -71,13 +76,15 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "test-route4",
+      "name": "test-route4",
+      "slug": "test-route4",
       "urls": [
         {
           "prefix": "admin",
@@ -96,84 +103,112 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.SiteRoutingRules",
     "fields": {
+      "name": "testserver-test-router1",
+      "slug": "testserver-test-router1",
       "site": ["testserver"],
-      "route": ["test-route1"]
+      "route": ["test-route1"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.SiteRoutingRules",
     "fields": {
+      "name": "localhost-test-route2",
+      "slug": "localhost-test-route2",
       "site": ["localhost"],
-      "route": ["test-route2"]
+      "route": ["test-route2"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "testserver-test-route3",
+      "slug": "testserver-test-route3.Administrators",
       "site": ["testserver"],
       "route": ["test-route3"],
       "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Administrators"]
+      "object_id": ["Administrators"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "testserver-testroute4",
+      "slug": "testserver-testroute4.Managers",
       "site": ["testserver"],
       "route": ["test-route4"],
       "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Managers"]
+      "object_id": ["Managers"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "testserver-test-route2",
+      "slug": "testserver-test-route2.Officers",
       "site": ["testserver"],
       "route": ["test-route2"],
       "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Officers"]
+      "object_id": ["Officers"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "localhost-test-route1",
+      "slug": "localhost-test-route1.Administrators",
       "site": ["localhost"],
       "route": ["test-route1"],
       "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": ["Administrators"]
+      "object_id": ["Administrators"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "testserver-test-route1",
+      "slug": "testserver-test-route1-test_user.test.co",
       "site": ["testserver"],
       "route": ["test-route1"],
       "content_type": ["hacs", "hacsusermodel"],
-      "object_id": ["test_user@test.co"]
+      "object_id": ["test_user@test.co"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "localhost-test-route1",
+      "slug": "localhost-test-route1-test_user.test.co",
       "site": ["localhost"],
       "route": ["test-route1"],
       "content_type": ["hacs", "hacsusermodel"],
-      "object_id": ["test_user@test.co"]
+      "object_id": ["test_user@test.co"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "testserver-test-route2",
+      "slug": "testserver-test-route2-test_user_normal.test.co",
       "site": ["testserver"],
       "route": ["test-route2"],
       "content_type": ["hacs", "hacsusermodel"],
-      "object_id": ["test_user_normal@test.co"]
+      "object_id": ["test_user_normal@test.co"],
+      "created_by": ["test_user@test.co"]
     }
   }
 ]

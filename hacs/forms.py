@@ -22,7 +22,7 @@ class RoutingTableForm(forms.ModelForm):
     """"""
     class Meta:
         model = RoutingTable
-        fields = ('route_name', 'description', 'urls', 'handlers', 'is_active', )
+        fields = ('name', 'description', 'urls', 'handlers', 'is_active', )
 
 
 class RoutingTableAdminForm(RoutingTableForm):

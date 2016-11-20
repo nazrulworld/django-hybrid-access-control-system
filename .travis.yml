@@ -4,7 +4,6 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-  - "pypi"
 env:
   - TOX_ENV="DJANGO_VERSION-110x"
   - TOX_ENV="DJANGO_VERSION-1101"

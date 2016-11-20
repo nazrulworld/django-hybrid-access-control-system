@@ -213,21 +213,25 @@ class HacsModelSecurityMixin(models.Model):
         :param update_fields:
         :return:
         """
-        _insert = self.hacs_tracker.has_changed('uuid') and\
-                  self.hacs_tracker.previous('uuid') is None and\
-                  self.uuid is not None
         try:
-
-            if self.hacs_tracker.has_changed('state'):
-                # @TODO: permissions updated here
-                self.update_permissions()
-            permission_changed = self.hacs_tracker.has_changed('permissions_actions_map')
-
+            _insert = self.hacs_tracker.has_changed('uuid') and\
+                      self.hacs_tracker.previous('uuid') is None and\
+                      self.uuid is not None
         except FieldError:
+                raise
+        try:
             if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_STATIC:
                 # Simple Static Model Has no state or permissions
                 permission_changed = False
+            elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
+                permission_changed = False # self.hacs_tracker.has_changed('permissions')
             else:
+                if self.hacs_tracker.has_changed('state'):
+                    # @TODO: permissions updated here
+                    self.update_permissions()
+                permission_changed = self.hacs_tracker.has_changed('permissions_actions_map')
+
+        except FieldError:
                 raise
 
         ret = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,
@@ -260,7 +264,7 @@ class HacsUtilsModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsUtilsField
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_UTILS
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'permissions_actions_map',))
+    hacs_tracker = FieldTracker(fields=('uuid', ))
 
     class Meta:
         abstract = True

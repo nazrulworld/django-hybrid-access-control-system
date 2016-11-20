@@ -68,8 +68,8 @@ class UtilsTestCase(TestCase):
         site = get_current_site(request)
         site_route = SiteRoutingRules.objects.get(site=site)
 
-        result = get_generated_urlconf_file(site_route.route.route_name, prefix='hacs')
-        self.assertEqual(result, '/tmp/hacs_%s_urls.py' % sanitize_filename(site_route.route.route_name))
+        result = get_generated_urlconf_file(site_route.route.slug, prefix='hacs')
+        self.assertEqual(result, '/tmp/hacs_%s_urls.py' % sanitize_filename(site_route.route.slug))
 
     @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
     def test_generate_urlconf_file(self):
@@ -77,7 +77,7 @@ class UtilsTestCase(TestCase):
         request = self.request_factory.request()
         site = get_current_site(request)
         site_route = SiteRoutingRules.objects.get(site=site)
-        filename = get_generated_urlconf_file(site_route.route.route_name, prefix='hacs')
+        filename = get_generated_urlconf_file(site_route.route.slug, prefix='hacs')
         if os.path.exists(filename):
             os.unlink(filename)
 
@@ -92,7 +92,7 @@ class UtilsTestCase(TestCase):
         request = self.request_factory.request()
         site = get_current_site(request)
         site_route = SiteRoutingRules.objects.get(site=site)
-        filename = get_generated_urlconf_file(site_route.route.route_name, prefix='hacs')
+        filename = get_generated_urlconf_file(site_route.route.slug, prefix='hacs')
         generate_urlconf_file(filename, site_route.route)
         if tempfile.gettempdir() not in sys.path:
             sys.path.append(tempfile.gettempdir())

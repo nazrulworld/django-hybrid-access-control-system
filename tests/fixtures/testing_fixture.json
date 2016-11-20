@@ -114,7 +114,8 @@
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "default-route",
+      "name": "default-route",
+      "slug": "default-route",
       "urls": [
         {
           "prefix": "admin",
@@ -133,20 +134,25 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.SiteRoutingRules",
     "fields": {
+      "name": "2-default-route",
+      "slug": "2-default-route",
       "site": 2,
-      "route": ["default-route"]
+      "route": ["default-route"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "localhost-route",
+      "name": "localhost-route",
+      "slug": "localhost-route",
       "urls": [
         {
           "prefix": "admin",
@@ -165,20 +171,25 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.SiteRoutingRules",
     "fields": {
+      "name": "3-localhost-route",
+      "slug": "3-localhost-route",
       "site": 3,
-      "route": ["localhost-route"]
+      "route": ["localhost-route"],
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "user-route",
+      "name": "user-route",
+      "slug": "user-route",
       "urls": [
         {
           "prefix": "admin",
@@ -197,22 +208,27 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "2-user-route-1",
+      "slug": "2-user-route-1",
       "site": 2,
       "route": ["user-route"],
       "content_type": ["hacs", "hacsusermodel"],
-      "object_id": 1
+      "object_id": 1,
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.RoutingTable",
     "fields": {
-      "route_name": "group-route",
+      "name": "group-route",
+      "slug": "group-route",
       "urls": [
         {
           "prefix": "admin",
@@ -231,17 +247,20 @@
         "handler403": "hacs.views.errors.permission_denied",
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
-      }
+      },
+      "created_by": ["test_user@test.co"]
     }
   },
   {
     "model": "hacs.ContentTypeRoutingRules",
     "fields": {
+      "name": "2-group-route-1",
       "site": 2,
       "route": ["group-route"],
       "content_type": ["hacs", "hacsgroupmodel"],
       "object_id": 1,
-      "allowed_method": ["GET", "POST"]
+      "allowed_method": ["GET", "POST"],
+      "created_by": ["test_user@test.co"]
     }
   }
 ]

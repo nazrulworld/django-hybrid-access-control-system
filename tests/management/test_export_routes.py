@@ -125,9 +125,9 @@ class TestExportRoutes(TestCase):
                     continue
 
                 if entry['model'].lower() == _applicable_models[0]:
-                    if entry['fields']['route_name'] in exclude_routes:
+                    if entry['fields']['slug'] in exclude_routes:
                         raise AssertionError(
-                            "Code should not come here! this `%s` must be ignored" % entry['fields']['route_name'])
+                            "Code should not come here! this `%s` must be ignored" % entry['fields']['slug'])
                     continue
 
                 if entry['fields']['route'][0] in exclude_routes:

@@ -227,7 +227,7 @@ class FirewallMiddleware(object):
             generate_urlconf_file_on_demand(user_route_rules.route)
 
             initial_data.update({
-                'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(user_route_rules.route.route_name)),
+                'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(user_route_rules.route.slug)),
                 'allowed_http_methods': user_route_rules.allowed_method,
                 'blacklisted_uri': user_route_rules.blacklisted_uri,
                 'whitelisted_uri': user_route_rules.whitelisted_uri,
@@ -268,7 +268,7 @@ class FirewallMiddleware(object):
             # we are checking if file need to be created
             generate_urlconf_file_on_demand(group_route_rules.route)
             group_settings_cache.update({
-                'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(group_route_rules.route.route_name)),
+                'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(group_route_rules.route.slug)),
                 'route_id': group_route_rules.route.pk,
                 'allowed_http_methods': group_route_rules.allowed_method,
                 'blacklisted_uri': group_route_rules.blacklisted_uri,
@@ -365,7 +365,7 @@ class FirewallMiddleware(object):
                     content_type=ContentType.objects.get_for_model(UserModel),
                     object_id=0)
                 generate_urlconf_file_on_demand(user_route.route)
-                urlconf = get_generated_urlconf_module(get_generated_urlconf_file(user_route.route.route_name))
+                urlconf = get_generated_urlconf_module(get_generated_urlconf_file(user_route.route.slug))
             except ContentTypeRoutingRules.DoesNotExist:
                 urlconf = None
 

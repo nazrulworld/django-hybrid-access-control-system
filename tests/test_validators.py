@@ -48,7 +48,7 @@ class TestUrlModulesValidator(TestCase):
         result = validator(None)
         # No Values should be pass
         self.assertIsNone(result)
-        route = RoutingTable.objects.get(route_name=TEST_ROUTE)
+        route = RoutingTable.objects.get_by_natural_key(TEST_ROUTE)
         generate_urlconf_file_on_demand(route)
         try:
             validator(route.urls)
@@ -81,7 +81,7 @@ class TestUrlModulesValidator(TestCase):
         except ValidationError as exc:
             self.assertIn('Invalid JSON and Invalid python eval value', smart_text(exc))
 
-        route = RoutingTable.objects.get(route_name=TEST_ROUTE)
+        route = RoutingTable.objects.get_by_natural_key(TEST_ROUTE)
         # Test invalid data type
         try:
             validator({'fake': route.urls})
@@ -141,7 +141,7 @@ class TestHttpHandlerValidator(TestCase):
         result = validator(None)
         # No Values should be pass
         self.assertIsNone(result)
-        route = RoutingTable.objects.get(route_name=TEST_ROUTE)
+        route = RoutingTable.objects.get_by_natural_key(TEST_ROUTE)
         generate_urlconf_file_on_demand(route)
         try:
             validator(route.handlers)
@@ -174,7 +174,7 @@ class TestHttpHandlerValidator(TestCase):
         except ValidationError as exc:
             self.assertIn('Invalid JSON and Invalid python eval value', smart_text(exc))
 
-        route = RoutingTable.objects.get(route_name=TEST_ROUTE)
+        route = RoutingTable.objects.get_by_natural_key(TEST_ROUTE)
         # Test invalid data type
         try:
             validator((route.handlers, ))

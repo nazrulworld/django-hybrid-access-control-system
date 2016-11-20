@@ -184,13 +184,13 @@ class Command(BaseCommand):
         if exclude_routes is not None and isinstance(exclude_routes, six.string_types):
             exclude_routes = (exclude_routes,)
         if exclude_routes:
-            filters['route_name__in'] = exclude_routes
+            filters['slug__in'] = exclude_routes
 
         routing_table_queryset = RoutingTable.objects.exclude(**filters)
 
-        if filters.get('route_name__in', None):
-            filters['route__in'] = [RoutingTable.objects.get_by_natural_key(x) for x in filters.get('route_name__in')]
-            del filters['route_name__in']
+        if filters.get('slug__in', None):
+            filters['route__in'] = [RoutingTable.objects.get_by_natural_key(x) for x in filters.get('slug__in')]
+            del filters['slug__in']
 
         exclude_sites = kwargs['exclude_sites']
         if exclude_sites is not None and isinstance(exclude_sites, six.string_types):

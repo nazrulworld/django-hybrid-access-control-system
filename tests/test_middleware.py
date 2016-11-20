@@ -96,7 +96,7 @@ class TestMiddlewareFunction(TestCase):
         self.assertEqual(urlconf_file_creation_time, datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename)))
 
         site_route = SiteRoutingRules.objects.get(site=request.site)
-        site_route.route.updated_on = timezone.now()
+        site_route.route.modified_on = timezone.now()
         site_route.route.description = 'catch'
         site_route.route.save()
         set_site_settings(site=request.site)
@@ -124,7 +124,7 @@ class TestMiddlewareFunction(TestCase):
         urlconf_file_creation_time = datetime.datetime.fromtimestamp(os.path.getmtime(urlconf_filename))
 
         site_route = SiteRoutingRules.objects.get(site=request.site)
-        site_route.route.updated_on = timezone.now()
+        site_route.route.modified_on = timezone.now()
         site_route.route.save()
         get_site_urlconf(request.site)
 
@@ -343,7 +343,7 @@ class TestFirewallMiddleware(TestCase):
 
         # We make sure cache is updated and right values are assigned
         self.assertEqual(group_urlconf_module, self.cache.get(group_key)['urlconf'])
-        self.assertEqual(RoutingTable.objects.get(route_name=TEST_GROUP_ROUTE_NAME),
+        self.assertEqual(RoutingTable.objects.get_by_natural_key(TEST_GROUP_ROUTE_NAME),
                          RoutingTable.objects.get(pk=self.cache.get(group_key)['route_id']))
 
     def test_calculate_user_urlconf(self):
@@ -363,7 +363,7 @@ class TestFirewallMiddleware(TestCase):
         request.user = test_user
         request.path_info = '/admin/'
         user_settings = {
-            'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(user_rules.route.route_name), False),
+            'urlconf': get_generated_urlconf_module(get_generated_urlconf_file(user_rules.route.slug), False),
             'allowed_http_methods': user_rules.allowed_method,
             'blacklisted_uri': None,
             'whitelisted_uri': None,

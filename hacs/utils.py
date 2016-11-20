@@ -74,7 +74,7 @@ def set_site_settings(site, silent_if_not_exist=True):
     else:
         # we are checking if file need to be created
         generate_urlconf_file_on_demand(site_rules.route)
-        generated_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(site_rules.route.route_name))
+        generated_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(site_rules.route.slug))
 
         try:
             HACS_SITE_CACHE[site.domain].update({
@@ -223,19 +223,19 @@ def get_generated_urlconf_module(filename, validation=True):
 def generate_urlconf_file_on_demand(route):
     """
     """
-    generated_urlconf_file = get_generated_urlconf_file(route.route_name)
-    route_updated_on = route.updated_on
+    generated_urlconf_file = get_generated_urlconf_file(route.slug)
+    route_modified_on = route.modified_on
 
-    if route_updated_on:
+    if route_modified_on:
         # Making Native datetime from offset-aware datetime.
         # See http://goo.gl/eHOIe2
-        route_updated_on = route_updated_on.astimezone(timezone.utc).replace(tzinfo=None)
+        route_modified_on = route_modified_on.astimezone(timezone.utc).replace(tzinfo=None)
 
     # we are checking if file need to be created
     if not os.path.exists(generated_urlconf_file) or \
-        (os.path.exists(generated_urlconf_file) and route_updated_on and
+        (os.path.exists(generated_urlconf_file) and route_modified_on and
                  datetime.datetime.utcfromtimestamp(
-                     os.path.getmtime(generated_urlconf_file)) < route_updated_on):
+                     os.path.getmtime(generated_urlconf_file)) < route_modified_on):
         # OK: we need to generate the file
         generate_urlconf_file(generated_urlconf_file, route)
 
