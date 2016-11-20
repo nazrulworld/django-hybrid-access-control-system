@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 # ++ This file `init_hacs.py` is generated at 5/16/16 1:16 PM ++
 
+from django.utils import six
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
-
 from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
+if six.PY2:
+    input = raw_input
 
 class Command(BaseCommand):
     """
@@ -52,10 +55,12 @@ class Command(BaseCommand):
         :param options:
         :return:
         """
+        if not get_user_model().objects.filter(is_superuser=True).exists():
+            raise LookupError("Before Run This command, make sure a superuser is already created.")
         domain = options['domain_name']
         while True:
             if not domain:
-                domain = raw_input('Please provide domain name for site. [localhost]')
+                domain = input('Please provide domain name for site. [localhost]')
                 if not domain:
                     domain = 'localhost'
             else:
@@ -64,7 +69,7 @@ class Command(BaseCommand):
         urlconf = options['urlconf_module']
         while True:
             if not urlconf:
-                urlconf = raw_input('Please provide root urlconf [%s]' % settings.ROOT_URLCONF)
+                urlconf = input('Please provide root urlconf [%s]' % settings.ROOT_URLCONF)
                 if not urlconf:
                     urlconf = settings.ROOT_URLCONF
             else:
@@ -80,7 +85,8 @@ class Command(BaseCommand):
             route = RoutingTable.objects.get_by_natural_key(options['route_name'])
         except RoutingTable.DoesNotExist:
             route = RoutingTable(
-                route_name=options['route_name'],
+                name=options['route_name'],
+                slug=options['route_name'],
                 urls=[
                     {
                         "prefix": None,
@@ -94,11 +100,18 @@ class Command(BaseCommand):
                     "handler403": "hacs.views.errors.permission_denied",
                     "handler404": "hacs.views.errors.page_not_found",
                     "handler500": "hacs.views.errors.server_error"
-                }
+                },
+                created_by=get_user_model().objects.filter(is_superuser=True).first(),
             )
             route.save()
 
-        SiteRoutingRules(site=site, route=route).save()
-        self.stdout.write('>>> Django Hybrid Access Control System is initialized and ready to use!')
+        SiteRoutingRules(
+            name="%s-%s" % (site.domain, route.name),
+            slug="%s-%s" % (site.domain, route.name),
+            site=site,
+            route=route,
+            created_by=get_user_model().objects.filter(is_superuser=True).first()
+        ).save()
+        self.stdout.write('>>> Django Hybrid Access Control System is initialized and ready to use! <<<')
 
 
