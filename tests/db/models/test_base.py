@@ -29,6 +29,7 @@ def get_models():
         class Meta:
             app_label = "hacs"
             db_table = "test_base_container"
+            globally_allowed = True
 
     class TestItemModel(HacsItemModel):
         class Meta:

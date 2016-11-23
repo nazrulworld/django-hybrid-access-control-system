@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 # ++ This file `base.py` is generated at 10/24/16 6:16 PM ++
+from __future__ import unicode_literals
+# **** Monkey Patch! enable custom HACS options at Meta class
+import django.db.models.options
+django.db.models.options.DEFAULT_NAMES += ('globally_allowed', 'allowed_content_types', )
+# ************************************************************
 import uuid
 import logging
 from django.utils import six
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.contrib.auth.models import _user_has_perm
+from django.contrib.auth.models import _user_has_module_perms
+from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 
@@ -64,8 +72,7 @@ class HacsUserFieldMixin(models.Model):
         :param app_label:
         :return:
         """
-        # TODO: Need to attached with Security Manager, for now always true
-        return True
+        return _user_has_module_perms(self, app_label)
 
     def has_perm(self, perm, obj=None):
         """
@@ -73,9 +80,13 @@ class HacsUserFieldMixin(models.Model):
         :param obj:
         :return:
         """
-        # This method is required by Django Admin
-        return True
+        return _user_has_perm(self, perm, obj)
 
+    def get_all_permissions(self):
+        """
+        :return:
+        """
+        return _user_get_all_permissions(self)
 
     class Meta:
         abstract = True

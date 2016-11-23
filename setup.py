@@ -9,9 +9,12 @@ PY34 = sys.version_info[0:2] >= (3, 4)
 requirements = [
         'Django>=1.10.3',
     ]
+test_requirements = ['pytest', 'pytest-django']
 if not PY34:
     # we need backport of pathlib
     requirements.append('pathlib2')
+    test_requirements.append('mock')
+
 
 def get_version():
     """"""
@@ -90,7 +93,7 @@ setup(
     package_data=get_package_data('hacs'),
     install_requires=requirements,
     extras_require={
-        'test': ['pytest', 'pytest-django'],
+        'test': test_requirements,
         'develop': ['jsmin', 'rcssmin']
     }
 )

@@ -2,6 +2,8 @@
 from django.conf import settings
 from django.contrib import admin
 
+from .models import HacsPermissionModel
+from .models import HacsRoleModel
 from .models import RoutingTable
 from .models import SiteRoutingRules
 from .models import ContentTypeRoutingRules
@@ -12,6 +14,13 @@ from .forms import ContentTypeRoutingRulesAdminForm
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
+@admin.register(HacsRoleModel)
+class HacsRoleModelAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(HacsPermissionModel)
+class HacsPermissionModelAdmin(admin.ModelAdmin):
+    pass
 
 @admin.register(RoutingTable)
 class RoutingTableAdmin(admin.ModelAdmin):

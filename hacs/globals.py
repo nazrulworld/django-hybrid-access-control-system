@@ -73,6 +73,11 @@ HACS_ACTIONS = {
     },
 
 }
+DAJANGO_ADMIN_ACTIONS = (
+    "add",
+    "change",
+    "delete"
+)
 
 class Local(object):
     """
