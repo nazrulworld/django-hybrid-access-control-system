@@ -149,6 +149,7 @@ class TestMiddlewareFunction(TestCase):
 @override_settings(HACS_FALLBACK_URLCONF=TEST_FALLBACK_URLCONF)
 class TestMiddlewareFunctionException(TestCase):
 
+
     def setUp(self):
 
         super(TestMiddlewareFunctionException, self).setUp()
@@ -160,9 +161,8 @@ class TestMiddlewareFunctionException(TestCase):
     def test_set_site_settings(self):
 
         request = self.request_factory.request()
-        import  warnings
-        warnings.warn (request.get_host())
-        print (request.get_host())
+        # There is no site, only default site
+        request.META['SERVER_NAME'] = "example.com"
         request.site = get_current_site(request)
         set_site_settings(site=request.site)
         self.assertEqual(TEST_FALLBACK_URLCONF, HACS_SITE_CACHE[request.site.domain]['urlconf'])
