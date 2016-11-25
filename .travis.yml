@@ -1,7 +1,7 @@
 language: python
 sudo: false
 python:
-  - "2.7.9"
+  - "2.7"
   - "3.4"
   - "3.5"
 env:
@@ -11,8 +11,7 @@ matrix:
   fast_finish: true
 
 install:
-  - echo $TRAVIS_PYTHON_VERSION;
-  - if [[ $TRAVIS_PYTHON_VERSION == 2.7.9 ]]; then pip install mock pathlib2; fi
+  - pip install mock pathlib2;
   - pip install tox
   - pip install -U pytest
 script:
