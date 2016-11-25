@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # ++ This file `test_middleware.py` is generated at 3/7/16 6:11 PM ++
+from __future__ import print_function
 import os
 import sys
 import json
@@ -159,6 +160,9 @@ class TestMiddlewareFunctionException(TestCase):
     def test_set_site_settings(self):
 
         request = self.request_factory.request()
+        import  warnings
+        warnings.warn (request.get_host())
+        print (request.get_host())
         request.site = get_current_site(request)
         set_site_settings(site=request.site)
         self.assertEqual(TEST_FALLBACK_URLCONF, HACS_SITE_CACHE[request.site.domain]['urlconf'])
