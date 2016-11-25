@@ -352,7 +352,7 @@ class HacsStaticModel(HacsModelSecurityMixin):
     hacs_tracker = FieldTracker(fields=('uuid',))
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False,unique=True, db_index=True)
-    name = models.CharField(max_length=127, null=False, blank=False, unique=True)
+    name = models.CharField(max_length=127, null=False, blank=False, unique=True, db_index=True)
     description = models.TextField(null=True, blank=True)
 
     class Meta:

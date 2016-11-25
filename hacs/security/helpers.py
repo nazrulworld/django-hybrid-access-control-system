@@ -25,7 +25,7 @@ def get_cache_key(content_type, content_object):
     return CACHE_KEY_FORMAT.format(
         prefix=HACS_APP_NAME,
         content_type=content_type,
-        key="%s.%s" % (content_object.__class__, content_object.pk))
+        key="%s.%s" % (content_object.__class__.__name__, content_object.pk))
 
 
 def normalize_role(container, role):

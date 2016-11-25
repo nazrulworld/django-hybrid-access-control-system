@@ -11,3 +11,15 @@ from django.contrib.auth import get_user_model
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
+
+
+class TestSecurityManager(TestCase):
+    """"""
+
+    fixtures = (FIXTURE, )
+
+    def setUp(self):
+        """
+        :return:
+        """
+        return super(TestSecurityManager, self).setUp()

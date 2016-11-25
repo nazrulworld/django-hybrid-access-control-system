@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # ++ This file `backends.py` is generated at 11/22/16 6:05 PM ++
-from collections import deque
+from collections import defaultdict
 from django.conf import settings
 from django.core.cache import caches
 from django.apps import apps as global_apps
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from hacs.globals import HACS_APP_NAME
 from hacs.defaults import HACS_CACHE_SETTING_NAME
 
@@ -33,8 +34,8 @@ class HacsAuthorizerBackend(object):
         :return:
         """
         # @TODO: Need to take care if obj is not None
-        is_user = isinstance(user_or_group, self.user_cls)
-        cache_key = get_cache_key('user' and  is_user or 'group', user_or_group)
+        is_user = isinstance(user_or_group, self.user_cls) or isinstance(user_or_group, AnonymousUser)
+        cache_key = get_cache_key(is_user and 'user' or 'group', user_or_group)
         result = self.cache.get(cache_key)
         if result:
             try:
@@ -42,25 +43,27 @@ class HacsAuthorizerBackend(object):
             except KeyError:
                 pass
         else:
-            result = deque()
+            result = defaultdict()
 
         if is_user:
-            permissions = set()
+            permissions = set() # get_user_permissions(user_or_group)
             for group in user_or_group.groups.all():
                 _permissions = self.get_group_permissions(group)
                 if _permissions:
-                    permissions.union(_permissions)
+                    permissions = permissions.union(_permissions)
 
-            result['permissions'] = permissions
-            self.cache[cache_key] = result
+            _permissions = map(lambda x: x.name, get_user_permissions(user_or_group))
+            permissions = permissions.union(_permissions)
 
-            return permissions
+            result['permissions'] = tuple(permissions)
+            self.cache.set(cache_key, result)
+            return result['permissions']
 
         else:
             permissions = get_group_permissions(user_or_group)
-            result['permissions'] = permissions
-            self.cache[cache_key] = result
-            return permissions
+            result['permissions'] = tuple(map(lambda x: x.name, permissions))
+            self.cache.set(cache_key, result)
+            return result['permissions']
 
     def authenticate(self, username, password):
         """ HACS is doing anything with authentication  """
@@ -96,7 +99,7 @@ class HacsAuthorizerBackend(object):
             except KeyError:
                 pass
         else:
-            result = deque()
+            result = defaultdict()
 
         permissions = set()
 
@@ -109,9 +112,9 @@ class HacsAuthorizerBackend(object):
             if _permissions:
                 permissions.union(_permissions)
 
-        result['permissions'] = permissions
-        self.cache[cache_key] = result
-        return permissions
+        result['permissions'] = map(lambda x: x.name, permissions)
+        self.cache.set(cache_key, result)
+        return result['permissions']
 
     def has_module_perms(self, user, app_label):
         """
