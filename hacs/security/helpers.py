@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # ++ This file `helpers.py` is generated at 11/5/16 3:31 PM ++
+from django.utils import six
 from collections import deque
 from collections import defaultdict
 from django.conf import settings
@@ -15,17 +16,26 @@ CACHE_KEY_FORMAT = "{prefix}.sm.{content_type}.{key}"
 
 
 @lru_cache.lru_cache(maxsize=1024)
-def get_cache_key(content_type, content_object):
+def get_cache_key(content_type, content_object=None, klass=None, _id=None):
     """
     :param content_type: base type of content
     i.e user, container, content, utility
     :param content_object
+    :param klass
+    :param _id
     :return:
     """
+    klass = klass or content_object.__class__.__name__
+    if _id is None:
+        try:
+            _id = '.'.join(content_object.natural_key())
+        except AttributeError:
+            _id = content_object.pk
+
     return CACHE_KEY_FORMAT.format(
         prefix=HACS_APP_NAME,
         content_type=content_type,
-        key="%s.%s" % (content_object.__class__.__name__, content_object.pk))
+        key="%s.%s" % (klass, _id))
 
 
 def normalize_role(container, role):
@@ -93,7 +103,7 @@ def get_user_roles(user, normalized=False):
     # @TODO: need to something for special users. i.e system, anonymous
     roles = set()
 
-    if user.is_anonymous():
+    if user.is_anonymous:
         roles.add(get_anonymous_user_role())
         return roles
 
@@ -156,3 +166,27 @@ def get_django_custom_permissions():
 
     return permissions
 
+
+def get_role_permissions(role):
+    """
+    :param role: string(natural key value) or instance of HacsRoleModel
+    :return: list of HacsPermissionModel
+    """
+    role_cls = global_apps.get_model(HACS_APP_NAME, 'HacsRoleModel')
+
+    if isinstance(role, six.string_types):
+        role = role_cls.objects.get_by_natural_key(role)
+
+    if not isinstance(role, role_cls):
+        raise ValueError("%s must be instance of %s class" % (role, role_cls.__name__))
+
+    roles = set()
+    normalize_role(roles, role)
+
+    permissions = set()
+
+    for role in roles:
+        for permission in role.hacs_rlm_permissions.all():
+            permissions.add(permission)
+
+    return permissions

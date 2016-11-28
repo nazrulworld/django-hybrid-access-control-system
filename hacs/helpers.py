@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 # ++ This file `helpers.py` is generated at 10/26/16 6:25 PM ++
 from __future__ import unicode_literals
+from django.utils import lru_cache
+from django.apps import apps as global_apps
 from django.utils.functional import SimpleLazyObject
 from django.contrib.auth import get_user_model
+
+from .globals import HACS_APP_NAME
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -28,7 +32,51 @@ class LazyUserModelLoad(SimpleLazyObject):
 user_model_lazy = LazyUserModelLoad(get_user_model)
 
 
+@lru_cache.lru_cache(maxsize=None)
+def get_hacs_model(model_name):
+    """
+    :param model_name:
+    :return:
+    """
+    model_map = {
+        'role': "HacsRoleModel",
+        'group': "HacsGroupModel",
+        'permission': "HacsPermissionModel",
+        'workflow': "HacsWorkflowModel"
+    }
+    try:
+        return global_apps.get_model(HACS_APP_NAME, model_name)
+    except LookupError:
+        if model_name in model_map.keys():
+            return global_apps.get_model(HACS_APP_NAME, model_map.get(model_name))
+        raise
+
+
+def get_group_model():
+    """
+    :return:
+    """
+    return get_hacs_model('HacsGroupModel')
+
+
+def get_role_model():
+    """
+    :return:
+    """
+    return get_hacs_model('HacsRoleModel')
+
+
+def get_permission_model():
+    """
+    :return:
+    """
+    return get_hacs_model('HacsPermissionModel')
+
 __all__ = [str(x) for x in (
     "user_model_lazy",
+    "get_permission_model",
+    "get_role_model",
+    "get_group_model",
+    "get_group_model"
 )]
 

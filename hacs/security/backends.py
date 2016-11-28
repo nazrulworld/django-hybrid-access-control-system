@@ -4,15 +4,17 @@ from collections import defaultdict
 from django.conf import settings
 from django.core.cache import caches
 from django.apps import apps as global_apps
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from hacs.globals import HACS_APP_NAME
-from hacs.defaults import HACS_CACHE_SETTING_NAME
 
+from hacs.helpers import get_group_model
+from hacs.helpers import get_user_model
+from hacs.defaults import HACS_CACHE_SETTING_NAME
 from .helpers import get_cache_key
 from .helpers import get_group_permissions
 from .helpers import get_user_permissions
+from .helpers import get_role_permissions
 from .helpers import get_django_builtin_permissions
+
 
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
@@ -24,26 +26,17 @@ class HacsAuthorizerBackend(object):
     def __init__(self):
         """"""
         self.cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
-        self.group_cls = global_apps.get_model(HACS_APP_NAME, 'HacsGroupModel')
+        self.group_cls = get_group_model()
         self.user_cls = get_user_model()
 
     def get_group_permissions(self, user_or_group, obj=None):
         """
         :param user_or_group:
         :param obj:
-        :return:
+        :return: all permissions of a group or groups those belongs to certain user
         """
         # @TODO: Need to take care if obj is not None
         is_user = isinstance(user_or_group, self.user_cls) or isinstance(user_or_group, AnonymousUser)
-        cache_key = get_cache_key(is_user and 'user' or 'group', user_or_group)
-        result = self.cache.get(cache_key)
-        if result:
-            try:
-                return result['permissions']
-            except KeyError:
-                pass
-        else:
-            result = defaultdict()
 
         if is_user:
             permissions = set() # get_user_permissions(user_or_group)
@@ -52,14 +45,19 @@ class HacsAuthorizerBackend(object):
                 if _permissions:
                     permissions = permissions.union(_permissions)
 
-            _permissions = map(lambda x: x.name, get_user_permissions(user_or_group))
-            permissions = permissions.union(_permissions)
-
-            result['permissions'] = tuple(permissions)
-            self.cache.set(cache_key, result)
-            return result['permissions']
+            return tuple(permissions)
 
         else:
+            cache_key = get_cache_key(user_or_group.__hacs_base_content_type__, user_or_group)
+            result = self.cache.get(cache_key)
+            if result:
+                try:
+                    return result['permissions']
+                except KeyError:
+                    pass
+            else:
+                result = defaultdict()
+
             permissions = get_group_permissions(user_or_group)
             result['permissions'] = tuple(map(lambda x: x.name, permissions))
             self.cache.set(cache_key, result)
@@ -85,12 +83,12 @@ class HacsAuthorizerBackend(object):
 
     def get_all_permissions(self, user, obj=None):
         """
-        All permissions assigned to user
+        All permissions assigned to a user
         :param user:
         :param obj:
         :return:
         """
-        cache_key = get_cache_key('user', user)
+        cache_key = get_cache_key(user.__hacs_base_content_type__, user)
         result = self.cache.get(cache_key)
 
         if result:
@@ -105,12 +103,12 @@ class HacsAuthorizerBackend(object):
 
         _permissions = get_user_permissions(user)
         if _permissions:
-            permissions.union(_permissions)
+            permissions = permissions.union(_permissions)
 
         for group in user.groups.all():
-            _permissions = self.get_group_permissions(group)
+            _permissions = get_group_permissions(group)
             if _permissions:
-                permissions.union(_permissions)
+                permissions = permissions.union(_permissions)
 
         result['permissions'] = map(lambda x: x.name, permissions)
         self.cache.set(cache_key, result)
@@ -129,3 +127,24 @@ class HacsAuthorizerBackend(object):
 
         # TODO: Need to attached with Security Manager, for now always true
         return False
+
+    def get_role_permissions(self, role):
+        """
+        :param role:
+        :return:
+            list all permissions those are belongs to a certain role and also permissions from parent role if
+            applicable
+        """
+        cache_key = get_cache_key(role.__hacs_base_content_type__, role)
+        result = self.cache.get(cache_key)
+        if result:
+            try:
+                return result['permissions']
+            except KeyError:
+                pass
+        else:
+            result = defaultdict()
+
+        result['permissions'] = tuple(get_role_permissions(role))
+        self.cache.set(cache_key, result)
+        return result['permissions']

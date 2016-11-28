@@ -44,12 +44,12 @@ class TestHacsAuthorizerBackend(TestCase):
         """
         backend = HacsAuthorizerBackend()
         superuser = backend.user_cls.objects.filter(is_superuser=True).first()
+
         administrators_group = backend.group_cls.objects.get_by_natural_key('Administrators')
-        user_cache_key = get_cache_key('user', superuser)
-        group_cache_key = get_cache_key('group', administrators_group)
+        officers_group = backend.group_cls.objects.get_by_natural_key('Officers')
+        group_cache_key = get_cache_key(backend.group_cls.__hacs_base_content_type__, administrators_group)
 
         # Make sure no value in cache
-        self.assertIsNone(self.cache.get(user_cache_key))
         self.assertIsNone(self.cache.get(administrators_group))
 
         permissions = backend.get_group_permissions(superuser)
@@ -58,26 +58,57 @@ class TestHacsAuthorizerBackend(TestCase):
         self.assertEqual(len(permissions), HacsPermissionModel.objects.count())
 
         # Make cache is updated
-        self.assertIsNotNone(self.cache.get(user_cache_key))
         self.assertIsNotNone(self.cache.get(group_cache_key))
         self.cache.clear()
 
         # Make sure no value in cache
-        self.assertIsNone(self.cache.get(user_cache_key))
         self.assertIsNone(self.cache.get(administrators_group))
 
         permissions = backend.get_group_permissions(administrators_group)
         # Administrators Group have all permissions
         self.assertEqual(len(permissions), HacsPermissionModel.objects.count())
         # Make cache is updated
-        self.assertIsNone(self.cache.get(user_cache_key))
         self.assertIsNotNone(self.cache.get(group_cache_key))
 
-        anonymous_cache_key = get_cache_key('user', AnonymousUser())
+        permissions = backend.get_group_permissions(officers_group)
+
+        self.assertEqual(2, len(permissions))
+        # Cache Key with natural key
+        group_cache_key = get_cache_key(
+            backend.group_cls.__hacs_base_content_type__,
+            klass=backend.group_cls.__name__,
+            _id=officers_group.name)
+        self.assertIsNotNone(self.cache.get(group_cache_key))
+        # Symbolic User ContentType
         permissions = backend.get_group_permissions(AnonymousUser())
-        # Should Have only one permission
+        # Should Have no permission as anonymous user has no group
+        self.assertEqual(0, len(permissions))
+
+    def test_get_all_permissions(self):
+        """
+        :return:
+        """
+        backend = HacsAuthorizerBackend()
+        anonymous_cache_key = get_cache_key(backend.user_cls.__hacs_base_content_type__, AnonymousUser())
+
+        permissions = backend.get_all_permissions(AnonymousUser())
+        # Anonymous User should have one permission
         self.assertEqual(1, len(permissions))
-        # Make cache is updated
         self.assertIsNotNone(self.cache.get(anonymous_cache_key))
+
+        normaluser = get_user_model().objects.filter(is_superuser=False).first()
+        cache_key = get_cache_key(backend.user_cls.__hacs_base_content_type__, normaluser)
+        permissions = backend.get_all_permissions(normaluser)
+
+        self.assertEqual(2, len(permissions))
+        self.assertIsNotNone(self.cache.get(cache_key))
+
+        superuser = get_user_model().objects.filter(is_superuser=True).first()
+        cache_key = get_cache_key(backend.user_cls.__hacs_base_content_type__, superuser)
+        permissions = backend.get_all_permissions(superuser)
+        # super user should have all permission
+        self.assertEqual(len(HacsPermissionModel.objects.all()), len(permissions))
+
+
 
 

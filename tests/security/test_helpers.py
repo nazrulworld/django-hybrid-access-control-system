@@ -8,6 +8,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import get_user_model
 from hacs.security.helpers import *
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
+from hacs.globals import HACS_CONTENT_TYPE_USER
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 
@@ -17,6 +18,31 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 class TestHelpers(TestCase):
 
     fixtures = (FIXTURE, )
+
+    def test_get_cache_key(self):
+        """
+        :return:
+        """
+        # Logically AnonymousUser contains same as UserModel
+        anonymouse_user_key = get_cache_key(get_user_model().__hacs_base_content_type__, AnonymousUser())
+        self.assertEqual(CACHE_KEY_FORMAT.format(prefix="hacs", content_type=HACS_CONTENT_TYPE_USER, key='AnonymousUser.None'), anonymouse_user_key)
+        # Get Cache Key using object
+        superuser = get_user_model().objects.filter(is_superuser=True).first()
+        superuser_cache_key = get_cache_key(get_user_model().__hacs_base_content_type__, superuser)
+        self.assertEqual(superuser_cache_key,
+                         CACHE_KEY_FORMAT.format(prefix='hacs', content_type=HACS_CONTENT_TYPE_USER,
+                                                 key="%s.%s" % (get_user_model().__name__,
+                                                                getattr(superuser, get_user_model().USERNAME_FIELD))))
+        # Get Cache Key using natural key
+        superuser_cache_key = get_cache_key(
+            get_user_model().__hacs_base_content_type__,
+            klass=get_user_model().__name__,
+            _id=getattr(superuser, get_user_model().USERNAME_FIELD))
+
+        self.assertEqual(superuser_cache_key,
+                         CACHE_KEY_FORMAT.format(prefix='hacs', content_type=HACS_CONTENT_TYPE_USER,
+                                                 key="%s.%s" % (get_user_model().__name__,
+                                                                getattr(superuser, get_user_model().USERNAME_FIELD))))
 
     def test_get_django_custom_permissions(self):
         """
@@ -119,4 +145,14 @@ class TestHelpers(TestCase):
         permissions = get_group_permissions(office_group)
         # Should have also two permissions
         self.assertEqual(2, len(permissions))
+
+
+    def test_get_role_permissions(self):
+        """
+        :return:
+        """
+        # test using role natural key
+        permissions = get_role_permissions('Guest')
+        # Guest should have one permission
+        self.assertEqual(1, len(permissions))
 

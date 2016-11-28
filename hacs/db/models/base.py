@@ -7,7 +7,6 @@ django.db.models.options.DEFAULT_NAMES += ('globally_allowed', 'allowed_content_
 # ************************************************************
 import uuid
 import logging
-from django.utils import six
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -16,12 +15,14 @@ from django.contrib.auth.models import _user_has_module_perms
 from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.auth.models import AnonymousUser
 
 from hacs.fields import DictField
 from hacs.fields import ForeignKey
 from hacs.fields import ManyToManyField
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
+from hacs.globals import HACS_CONTENT_TYPE_USER
 from hacs.globals import HACS_CONTENT_TYPE_UTILS
 from hacs.globals import HACS_CONTENT_TYPE_STATIC
 from .manager import HacsBaseManager, \
@@ -32,6 +33,7 @@ from .tracker import FieldError
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
+AnonymousUser.__hacs_base_content_type__ = HACS_CONTENT_TYPE_USER
 logger = logging.getLogger("hacs.db.models.base")
 
 """
@@ -267,6 +269,8 @@ class HacsModelSecurityMixin(models.Model):
 class HacsAbstractUser(AbstractBaseUser, HacsUserFieldMixin):
     """
     """
+    __hacs_base_content_type__ = HACS_CONTENT_TYPE_USER
+
     class Meta:
         abstract = True
 
