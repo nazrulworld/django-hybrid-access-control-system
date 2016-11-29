@@ -3,6 +3,7 @@
 from collections import defaultdict
 from django.conf import settings
 from django.core.cache import caches
+from django.utils import six
 from django.apps import apps as global_apps
 from django.contrib.auth.models import AnonymousUser
 
@@ -14,6 +15,7 @@ from .helpers import get_group_permissions
 from .helpers import get_user_permissions
 from .helpers import get_role_permissions
 from .helpers import get_django_builtin_permissions
+from hacs.helpers import get_role_model
 
 
 
@@ -110,7 +112,7 @@ class HacsAuthorizerBackend(object):
             if _permissions:
                 permissions = permissions.union(_permissions)
 
-        result['permissions'] = map(lambda x: x.name, permissions)
+        result['permissions'] = tuple(map(lambda x: x.name, permissions))
         self.cache.set(cache_key, result)
         return result['permissions']
 
@@ -135,7 +137,12 @@ class HacsAuthorizerBackend(object):
             list all permissions those are belongs to a certain role and also permissions from parent role if
             applicable
         """
-        cache_key = get_cache_key(role.__hacs_base_content_type__, role)
+        if isinstance(role, six.string_types):
+            # OK role's natural key is provided
+            role_cls = get_role_model()
+            cache_key = get_cache_key(role_cls.__hacs_base_content_type__, klass=role_cls.__name__, _id=role)
+        else:
+            cache_key = get_cache_key(role.__hacs_base_content_type__, role)
         result = self.cache.get(cache_key)
         if result:
             try:
@@ -145,6 +152,6 @@ class HacsAuthorizerBackend(object):
         else:
             result = defaultdict()
 
-        result['permissions'] = tuple(get_role_permissions(role))
+        result['permissions'] = tuple(map(lambda x: x.name, get_role_permissions(role)))
         self.cache.set(cache_key, result)
         return result['permissions']

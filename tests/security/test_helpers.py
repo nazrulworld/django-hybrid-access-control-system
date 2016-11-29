@@ -9,6 +9,8 @@ from django.contrib.auth import get_user_model
 from hacs.security.helpers import *
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from hacs.globals import HACS_CONTENT_TYPE_USER
+from hacs.helpers import get_role_model
+from hacs.helpers import get_permission_model
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 
@@ -155,4 +157,10 @@ class TestHelpers(TestCase):
         permissions = get_role_permissions('Guest')
         # Guest should have one permission
         self.assertEqual(1, len(permissions))
+
+        # test using object
+        manager_role = get_role_model().objects.get_by_natural_key('Manager')
+        permissions = get_role_permissions(manager_role)
+
+        self.assertEqual(len(get_permission_model().objects.all()), len(permissions))
 

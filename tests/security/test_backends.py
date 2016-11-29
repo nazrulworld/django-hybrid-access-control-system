@@ -13,6 +13,7 @@ from django.contrib.auth.models import AnonymousUser
 from hacs.defaults import HACS_CACHE_SETTING_NAME
 from hacs.security.helpers import get_cache_key
 from hacs.security.backends import HacsAuthorizerBackend
+from hacs.helpers import get_role_model
 try:
     import unittest.mock as mock
 except ImportError:
@@ -109,6 +110,21 @@ class TestHacsAuthorizerBackend(TestCase):
         # super user should have all permission
         self.assertEqual(len(HacsPermissionModel.objects.all()), len(permissions))
 
+    def test_get_role_permissions(self):
+        """
+        :return:
+        """
+        backend = HacsAuthorizerBackend()
+        # Test Manager role with object
+        manager = get_role_model().objects.get_by_natural_key('Manager')
+        manager_cache_key = get_cache_key(manager.__hacs_base_content_type__, manager)
+        permissions = backend.get_role_permissions(manager)
+        # should have all permissions
+        self.assertEqual(len(HacsPermissionModel.objects.all()), len(permissions))
+        self.assertIsNotNone(self.cache.get(manager_cache_key))
 
-
-
+        # Test Guest Role with natural key
+        guest_cache_key = get_cache_key(get_role_model().__hacs_base_content_type__, klass=get_role_model().__name__, _id='Guest')
+        permissions = backend.get_role_permissions('Guest')
+        self.assertEqual(1, len(permissions))
+        self.assertEqual(1, len(self.cache.get(guest_cache_key)['permissions']))
