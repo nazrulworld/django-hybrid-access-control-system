@@ -17,7 +17,7 @@ from hacs.utils import *
 
 from .path import FIXTURE_PATH
 
-TEST_USER_NAME = 'test_user@test.co'
+TEST_USER_NAME = 'superuser@test.com'
 TEST_HOST_NAME = 'testserver'
 
 TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'

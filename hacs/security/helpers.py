@@ -9,10 +9,65 @@ from django.contrib.auth import get_permission_codename
 from hacs.globals import HACS_APP_NAME
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from django.apps import apps as global_apps
+from hacs.helpers import get_role_model
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 CACHE_KEY_FORMAT = "{prefix}.sm.{content_type}.{key}"
+STANDARD_PERMISSIONS = {
+    "hacs.PublicView": {
+        "title": "Public View",
+        "description": "viewable for all user including guest user!"
+    },
+    "hacs.AuthenticatedView": {
+        "title": "Authenticated View",
+        "description": "something like public view except guest user."
+    },
+    "hacs.ManagePortal": {
+        "title": "Manage Portal"
+    },
+    "hacs.ManageSystem": {
+        "title": "Manage System",
+        "description": "something like god mode, all object by default will have this permission"
+    },
+    "hacs.ManageUser": {
+        "title": "Manager User"
+    },
+    "hacs.CanIntrospect": {
+        "title": "Can Introspect"
+    },
+    "hacs.ViewContent": {
+
+    },
+    "hacs.AddContent": {
+
+    },
+    "hacs.ModifyContent":
+    {
+
+    },
+    "hacs.DeleteContent":
+    {
+
+    },
+    "hacs.ManageStaticContent": {
+
+    },
+    "hacs.ManageUtilsContent": {
+
+    },
+    "hacs.CanListObjects": {
+
+    },
+    "hacs.CanModifyObjects": {
+
+    },
+    "hacs.CanDeleteObjects": {
+
+    },
+    "hacs.CanTraverseContainer": {}
+
+}
 
 
 @lru_cache.lru_cache(maxsize=1024)
@@ -172,7 +227,7 @@ def get_role_permissions(role):
     :param role: string(natural key value) or instance of HacsRoleModel
     :return: list of HacsPermissionModel
     """
-    role_cls = global_apps.get_model(HACS_APP_NAME, 'HacsRoleModel')
+    role_cls = get_role_model()
 
     if isinstance(role, six.string_types):
         role = role_cls.objects.get_by_natural_key(role)
@@ -190,3 +245,4 @@ def get_role_permissions(role):
             permissions.add(permission)
 
     return permissions
+

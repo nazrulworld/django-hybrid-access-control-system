@@ -27,7 +27,7 @@ from hacs.models import HacsGroupModel
 from tests.path import FIXTURE_PATH
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-TEST_USER_NAME = 'test_user@test.co'
+TEST_USER_NAME = 'superuser@test.com'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_ROUTE = "default-route"
 TEST_SITE = "testserver"
@@ -58,16 +58,16 @@ class TestSelect2ContentTypesView(TestCase):
 
         response = select2_contenttypes_view(request, 'user')
         self.assertEqual(response.status_code, 200)
-        # we have two users only
-        self.assertEqual(json.loads(smart_text(response.content))['total_count'], 2)
+        # we have 5 users only
+        self.assertEqual(json.loads(smart_text(response.content))['total_count'], 5)
 
-        # Make sure Group Content Type works and we have 3 groups in total
+        # Make sure Group Content Type works and we have 4 groups in total
         response = select2_contenttypes_view(request, 'group')
-        self.assertEqual(json.loads(smart_text(response.content))['total_count'], 3)
+        self.assertEqual(json.loads(smart_text(response.content))['total_count'], 4)
 
         # Make sure filter works
         request.META['QUERY_STRING'] = urlencode({
-                'q': 'test_user_normal',
+                'q': 'member',
                 'max_records' : 50,
                 'page': 1
             }, doseq=True)
@@ -106,8 +106,8 @@ class TestSelect2ContentTypesView(TestCase):
                 email="nazrul_%s@fake.com" % x,
                 password="nazrul_%s" % x
             )
-
-        self.assertEqual(60, len(get_user_model().objects.all()))
+        # existing 5 + 58
+        self.assertEqual(63, len(get_user_model().objects.all()))
 
         request.META['QUERY_STRING'] = urlencode({
             'q': '',
@@ -118,7 +118,7 @@ class TestSelect2ContentTypesView(TestCase):
 
         response = select2_contenttypes_view(request, 'user')
         content = json.loads(smart_text(response.content))
-        self.assertEqual(content['total_count'], 60)
+        self.assertEqual(content['total_count'], 63)
         self.assertEqual(50, len(content['items']))
 
         request.META['QUERY_STRING'] = urlencode({
@@ -129,8 +129,8 @@ class TestSelect2ContentTypesView(TestCase):
         del request.GET
         response = select2_contenttypes_view(request, 'user')
         content = json.loads(smart_text(response.content))
-        # Second Page should have only 10 items
-        self.assertEqual(10, len(content['items']))
+        # Second Page should have only 13 items
+        self.assertEqual(13, len(content['items']))
 
         request.META['QUERY_STRING'] = urlencode({
             'q': '',
@@ -248,11 +248,11 @@ class TestSelect2ContentTypesViewFromBrowser(TestCase):
         browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
         # @TODO: need to full coverage
         response = browser.get(_url)
-        # we have two users
-        self.assertEqual(2, len(json.loads(smart_text(response.content))['items']))
+        # we have five users
+        self.assertEqual(5, len(json.loads(smart_text(response.content))['items']))
         response = browser.get(reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "group"}))
-        # we should have 3 groups
-        self.assertEqual(3, len(json.loads(smart_text(response.content))['items']))
+        # we should have 4 groups
+        self.assertEqual(4, len(json.loads(smart_text(response.content))['items']))
 
         response = browser.get(reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "group"}),
                                data={'q': "admin"})
@@ -271,18 +271,18 @@ class TestSelect2ContentTypesViewFromBrowser(TestCase):
                 email="nazrul_%s@fake.com" % x,
                 password="nazrul_%s" % x
             )
-
-        self.assertEqual(60, len(get_user_model().objects.all()))
+        # exiting 5 + 58 = 63
+        self.assertEqual(63, len(get_user_model().objects.all()))
 
         response = browser.get(_url, data={"max_records": 50})
         content = json.loads(smart_text(response.content))
-        self.assertEqual(content['total_count'], 60)
+        self.assertEqual(content['total_count'], 63)
         self.assertEqual(50, len(content['items']))
 
         response = browser.get(_url, data={"max_records": 50, "page": 2})
         content = json.loads(smart_text(response.content))
-        # should 10 record in second page
-        self.assertEqual(10, len(content['items']))
+        # should 13 record in second page
+        self.assertEqual(13, len(content['items']))
 
         # Test Single Record
         response = browser.get(_url, data={"pk": get_user_model().objects.get(**{get_user_model().USERNAME_FIELD: TEST_USER_NAME}).pk})

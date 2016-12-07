@@ -41,7 +41,7 @@
     "pk": 1,
     "fields": {
       "username": "test_user",
-      "email": "test_user@test.co",
+      "email": "superuser@test.com",
       "password": "top_secret",
       "is_staff": true,
       "is_superuser": true,

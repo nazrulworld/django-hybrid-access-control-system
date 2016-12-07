@@ -29,7 +29,7 @@ class TestHelpers(TestCase):
         anonymouse_user_key = get_cache_key(get_user_model().__hacs_base_content_type__, AnonymousUser())
         self.assertEqual(CACHE_KEY_FORMAT.format(prefix="hacs", content_type=HACS_CONTENT_TYPE_USER, key='AnonymousUser.None'), anonymouse_user_key)
         # Get Cache Key using object
-        superuser = get_user_model().objects.filter(is_superuser=True).first()
+        superuser = get_user_model().objects.get_by_natural_key("superuser@test.com")
         superuser_cache_key = get_cache_key(get_user_model().__hacs_base_content_type__, superuser)
         self.assertEqual(superuser_cache_key,
                          CACHE_KEY_FORMAT.format(prefix='hacs', content_type=HACS_CONTENT_TYPE_USER,
@@ -86,10 +86,10 @@ class TestHelpers(TestCase):
         # Should be 1 role, because normalization set to false
         self.assertEqual(1, len(roles))
 
-        normaluser = user_cls.objects.filter(is_superuser=False).first()
-        # Role chain: Guest -> Member -> Contributor
+        normaluser = user_cls.objects.get_by_natural_key("member@test.com")
+        # Role chain: Guest -> Member
         roles = get_user_roles(normaluser, True)
-        self.assertEqual(3, len(roles))
+        self.assertEqual(2, len(roles))
 
         # Anonymous User
         anonuser = AnonymousUser()
@@ -115,11 +115,11 @@ class TestHelpers(TestCase):
         # Should have all permissions
         self.assertEqual(len(permissions), all_permissions.count())
 
-        normaluser = user_cls.objects.filter(is_superuser=False).first()
+        normaluser = user_cls.objects.get_by_natural_key("member@test.com")
         permissions = get_user_permissions(normaluser)
 
-        # Should have two permissions
-        self.assertEqual(2, len(permissions))
+        # Should have three permissions
+        self.assertEqual(3, len(permissions))
 
         permissions = get_user_permissions(AnonymousUser())
         # Should have only one permission
@@ -138,15 +138,15 @@ class TestHelpers(TestCase):
         # Like SuperUser, should have all permissions
         self.assertEqual(len(permissions), all_permissions.count())
 
-        manager_group = group_cls.objects.get_by_natural_key("Managers")
-        permissions = get_group_permissions(manager_group)
-        # Should have two groups
-        self.assertEqual(2, len(permissions))
+        editor_group = group_cls.objects.get_by_natural_key("Editors")
+        permissions = get_group_permissions(editor_group)
+        # Should have should have ten permissions
+        self.assertEqual(10, len(permissions))
 
-        office_group = group_cls.objects.get_by_natural_key("Officers")
-        permissions = get_group_permissions(office_group)
-        # Should have also two permissions
-        self.assertEqual(2, len(permissions))
+        contributor_group = group_cls.objects.get_by_natural_key("Contributors")
+        permissions = get_group_permissions(contributor_group)
+        # Should have six permissions
+        self.assertEqual(6, len(permissions))
 
 
     def test_get_role_permissions(self):

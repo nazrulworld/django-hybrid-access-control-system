@@ -103,6 +103,14 @@ class HacsPermissionModel(HacsStaticModel):
         related_name="hacs_rlm_permissions",
         related_query_name="hacs_rlm_permissions_set"
     )
+    parent = models.ForeignKey(
+        'self',
+        db_constraint=False,
+        null=True,
+        blank=True,
+        related_name="hacs_prm_children",
+        related_query_name="hacs_prm_children_set"
+    )
 
     class Meta:
         app_label = "hacs"
@@ -200,10 +208,13 @@ class HacsContentType(HacsUtilsModel):
     """
     """
     objects = HacsContentTypeManager()
+
+    # Validators: only HacsContainer & HacsContent type are allowed
     content_type = models.OneToOneField(
         'contenttypes.ContentType',
         on_delete=models.CASCADE,
-        unique=True
+        unique=True,
+        validators=[]
     )
     # This could be applicable for Container or Item
     globally_allowed = models.BooleanField(blank=True, null=False)

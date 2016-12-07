@@ -8,7 +8,6 @@ from django.apps import apps
 from django.conf import settings
 from django.core.cache import caches
 from django.utils.encoding import smart_str
-from django.contrib.auth import get_user_model
 try:
     # expect django version 1.10.x or higher
     from django.urls import is_valid_path
@@ -21,6 +20,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.middleware.common import CommonMiddleware
 
+from .helpers import get_user_model
 from .globals import HACS_APP_NAME
 from .globals import HACS_ACCESS_CONTROL_LOCAL
 from .models import ContentTypeRoutingRules
@@ -383,7 +383,7 @@ class AccessControlMiddleware(object):
 
     def process_request(self, request):
 
-        HACS_ACCESS_CONTROL_LOCAL.__current_user = request.user
+        HACS_ACCESS_CONTROL_LOCAL.current_user = request.user
 
     def process_response(self, request, response):
 

@@ -10,6 +10,8 @@ from django.contrib.auth.models import AnonymousUser
 from hacs.helpers import get_group_model
 from hacs.helpers import get_user_model
 from hacs.defaults import HACS_CACHE_SETTING_NAME
+from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
+from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from .helpers import get_cache_key
 from .helpers import get_group_permissions
 from .helpers import get_user_permissions
@@ -90,19 +92,31 @@ class HacsAuthorizerBackend(object):
         :param obj:
         :return:
         """
+        local_role_permissions = set()
+
+        if obj and getattr(obj, "__hacs_base_content_type__", None) in (HACS_CONTENT_TYPE_CONTAINER,
+                                                                        HACS_CONTENT_TYPE_CONTENT):
+            if obj.local_roles:
+                try:
+                    roles = obj.local_roles[getattr(user, user.USERNAME_FIELD)]
+                    _permissions = self.get_roles_permissions(*roles)
+                    if _permissions:
+                        local_role_permissions = local_role_permissions.union(_permissions)
+                except KeyError:
+                    pass
+
         cache_key = get_cache_key(user.__hacs_base_content_type__, user)
         result = self.cache.get(cache_key)
 
         if result:
             try:
-                return result['permissions']
+                return local_role_permissions.union(result['permissions'])
             except KeyError:
                 pass
         else:
             result = defaultdict()
 
         permissions = set()
-
         _permissions = get_user_permissions(user)
         if _permissions:
             permissions = permissions.union(_permissions)
@@ -112,9 +126,9 @@ class HacsAuthorizerBackend(object):
             if _permissions:
                 permissions = permissions.union(_permissions)
 
-        result['permissions'] = tuple(map(lambda x: x.name, permissions))
+        result['permissions'] = set(map(lambda x: x.name, permissions))
         self.cache.set(cache_key, result)
-        return result['permissions']
+        return local_role_permissions.union(result['permissions'])
 
     def has_module_perms(self, user, app_label):
         """
@@ -152,6 +166,30 @@ class HacsAuthorizerBackend(object):
         else:
             result = defaultdict()
 
-        result['permissions'] = tuple(map(lambda x: x.name, get_role_permissions(role)))
+        result['permissions'] = set(map(lambda x: x.name, get_role_permissions(role)))
         self.cache.set(cache_key, result)
         return result['permissions']
+
+    def get_roles_permissions(self, *roles):
+        """
+        :param roles: list of natural key of HacsRoleModel or instance of HacsRoleModel
+        :return:
+        """
+        assert len(roles) > 1, "Number of arguments must be more that single, for single role, " \
+                               "`get_role_permissions` method could be used"
+        role_cls = get_role_model()
+        cache_key = get_cache_key(role_cls.__hacs_base_content_type__, klass=role_cls.__name__, _id=hash(roles))
+
+        permissions = self.cache.get(cache_key)
+        if permissions:
+            return permissions
+        else:
+            permissions = set()
+
+        for role in roles:
+            permissions = permissions.union(self.get_role_permissions(role))
+
+        permissions = set(permissions)
+        self.cache.set(cache_key, permissions)
+        return permissions
+

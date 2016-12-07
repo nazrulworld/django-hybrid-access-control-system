@@ -50,8 +50,8 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 if tempfile.gettempdir() not in sys.path:
     sys.path.append(tempfile.gettempdir())
 
-TEST_USER_NAME = 'test_user@test.co'
-TEST_USER_EMAIL = 'test_user@test.co'
+TEST_USER_NAME = 'superuser@test.com'
+TEST_USER_EMAIL = 'superuser@test.com'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_HOST_NAME = 'testserver'
 TEST_ROUTE_NAME = 'default-route'

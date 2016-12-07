@@ -47,7 +47,7 @@ class TestHacsAuthorizerBackend(TestCase):
         superuser = backend.user_cls.objects.filter(is_superuser=True).first()
 
         administrators_group = backend.group_cls.objects.get_by_natural_key('Administrators')
-        officers_group = backend.group_cls.objects.get_by_natural_key('Officers')
+        contributors_group = backend.group_cls.objects.get_by_natural_key('Contributors')
         group_cache_key = get_cache_key(backend.group_cls.__hacs_base_content_type__, administrators_group)
 
         # Make sure no value in cache
@@ -71,14 +71,15 @@ class TestHacsAuthorizerBackend(TestCase):
         # Make cache is updated
         self.assertIsNotNone(self.cache.get(group_cache_key))
 
-        permissions = backend.get_group_permissions(officers_group)
-
-        self.assertEqual(2, len(permissions))
+        permissions = backend.get_group_permissions(contributors_group)
+        # should have six: ('hacs.PublicView', 'hacs.AuthenticatedView', 'hacs.ViewContent', 'hacs.AddContent',
+        # 'hacs.CanListObjects', 'hacs.CanTraverseContainer')
+        self.assertEqual(6, len(permissions))
         # Cache Key with natural key
         group_cache_key = get_cache_key(
             backend.group_cls.__hacs_base_content_type__,
             klass=backend.group_cls.__name__,
-            _id=officers_group.name)
+            _id=contributors_group.name)
         self.assertIsNotNone(self.cache.get(group_cache_key))
         # Symbolic User ContentType
         permissions = backend.get_group_permissions(AnonymousUser())
@@ -97,11 +98,12 @@ class TestHacsAuthorizerBackend(TestCase):
         self.assertEqual(1, len(permissions))
         self.assertIsNotNone(self.cache.get(anonymous_cache_key))
 
-        normaluser = get_user_model().objects.filter(is_superuser=False).first()
+        normaluser = get_user_model().objects.get_by_natural_key("member@test.com")
         cache_key = get_cache_key(backend.user_cls.__hacs_base_content_type__, normaluser)
         permissions = backend.get_all_permissions(normaluser)
 
-        self.assertEqual(2, len(permissions))
+        # should be three ()
+        self.assertEqual(3, len(permissions))
         self.assertIsNotNone(self.cache.get(cache_key))
 
         superuser = get_user_model().objects.filter(is_superuser=True).first()
@@ -128,3 +130,39 @@ class TestHacsAuthorizerBackend(TestCase):
         permissions = backend.get_role_permissions('Guest')
         self.assertEqual(1, len(permissions))
         self.assertEqual(1, len(self.cache.get(guest_cache_key)['permissions']))
+
+    @mock.patch('hacs.security.helpers.get_role_permissions', return_value=None)
+    def test_get_roles_permissions(self, role_permissions_fn):
+        """
+        :param role_permissions_fn
+        :return:
+        """
+        backend = HacsAuthorizerBackend()
+        role_cls = get_role_model()
+        # Test by Using natural key
+        cache_key1 = get_cache_key(role_cls.__hacs_base_content_type__, klass=role_cls.__name__,
+                                  _id=hash(('Guest', 'Manager')))
+        permissions = backend.get_roles_permissions('Guest', 'Manager')
+        self.assertEqual(HacsPermissionModel.objects.count(), len(permissions))
+
+        self.assertEqual(HacsPermissionModel.objects.count(), len(self.cache.get(cache_key1)))
+
+        # Test by Using instance
+        cache_key2 = get_cache_key(
+            role_cls.__hacs_base_content_type__,
+            klass=role_cls.__name__,
+            _id=hash((role_cls.objects.get_by_natural_key('Guest'), role_cls.objects.get_by_natural_key('Manager'))))
+
+        self.assertNotEqual(cache_key1, cache_key2)
+
+        permissions = backend.get_roles_permissions(role_cls.objects.get_by_natural_key('Guest'), role_cls.objects.get_by_natural_key('Manager'))
+        self.assertEqual(HacsPermissionModel.objects.count(), len(permissions))
+        self.assertEqual(HacsPermissionModel.objects.count(), len(self.cache.get(cache_key2)))
+
+        # Test Mix with natural key and instance
+        cache_key3 = get_cache_key(
+            role_cls.__hacs_base_content_type__,
+            klass=role_cls.__name__, _id=hash(('Guest', role_cls.objects.get_by_natural_key('Manager'))))
+        permissions = backend.get_roles_permissions('Guest', role_cls.objects.get_by_natural_key('Manager'))
+        self.assertEqual(HacsPermissionModel.objects.count(), len(permissions))
+        self.assertEqual(HacsPermissionModel.objects.count(), len(self.cache.get(cache_key3)))

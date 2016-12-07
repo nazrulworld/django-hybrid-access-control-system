@@ -67,7 +67,7 @@
     "model": "hacs.HacsGroupModel",
     "pk": 2,
     "fields": {
-      "name": "Managers",
+      "name": "Editors",
       "roles": [["Editor"]]
     }
   },
@@ -75,15 +75,24 @@
     "model": "hacs.HacsGroupModel",
     "pk": 3,
     "fields": {
-      "name": "Officers",
+      "name": "Contributors",
       "roles": [["Contributor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsGroupModel",
+    "pk": 4,
+    "fields": {
+      "name": "Members",
+      "roles": [["Member"]]
     }
   },
   {
     "model": "hacs.HacsPermissionModel",
     "pk": 1,
     "fields": {
-      "name": "GuestView",
+      "name": "hacs.PublicView",
+      "is_system": true,
       "roles": [["Guest"]]
     }
   },
@@ -91,24 +100,120 @@
     "model": "hacs.HacsPermissionModel",
     "pk": 2,
     "fields": {
-      "name": "ManageContent",
-      "roles": [["Contributor"]]
+      "name": "hacs.AuthenticatedView",
+      "roles": [["Member"]]
     }
   },
   {
     "model": "hacs.HacsPermissionModel",
     "pk": 3,
     "fields": {
-      "name": "MangePortal",
+      "name": "hacs.ManagePortal",
       "roles": [["Manager"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 4,
+    "fields": {
+      "name": "hacs.ManageUser",
+      "roles": [["Manager"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 5,
+    "fields": {
+      "name": "hacs.CanIntrospect",
+      "roles": [["Manager"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 6,
+    "fields": {
+      "name": "hacs.ViewContent",
+      "roles": [["Contributor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 7,
+    "fields": {
+      "name": "hacs.AddContent",
+      "roles": [["Contributor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 8,
+    "fields": {
+      "name": "hacs.ModifyContent",
+      "roles": [["Editor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 9,
+    "fields": {
+      "name": "hacs.DeleteContent",
+      "roles": [["Editor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 10,
+    "fields": {
+      "name": "hacs.ManageStaticContent",
+      "roles": [["Manager"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 11,
+    "fields": {
+      "name": "hacs.ManageUtilsContent",
+      "roles": [["Manager"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 12,
+    "fields": {
+      "name": "hacs.CanListObjects",
+      "roles": [["Contributor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 13,
+    "fields": {
+      "name": "hacs.CanModifyObjects",
+      "roles": [["Editor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 14,
+    "fields": {
+      "name": "hacs.CanDeleteObjects",
+      "roles": [["Editor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsPermissionModel",
+    "pk": 15,
+    "fields": {
+      "name": "hacs.CanTraverseContainer",
+      "roles": [["Member"]]
     }
   },
   {
     "model": "hacs.HacsUserModel",
     "pk": 1,
     "fields": {
-      "first_name": "Test user",
-      "email": "test_user@test.co",
+      "first_name": "Test super user",
+      "email": "superuser@test.com",
       "password": "top_secret",
       "is_staff": true,
       "is_superuser": true,
@@ -120,11 +225,44 @@
     "model": "hacs.HacsUserModel",
     "pk": 2,
     "fields": {
-      "first_name": "Test User Normal",
-      "email": "test_user_normal@test.co",
+      "first_name": "Test Member User",
+      "email": "member@test.com",
       "password": "top_secret",
-      "groups": [["Officers" ]],
+      "groups": [["Members" ]],
       "roles": [["Member"]]
+    }
+  },
+  {
+    "model": "hacs.HacsUserModel",
+    "pk": 3,
+    "fields": {
+      "first_name": "Test Contributor User",
+      "email": "contributor@test.com",
+      "password": "top_secret",
+      "groups": [["Contributors" ]],
+      "roles": [["Contributor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsUserModel",
+    "pk": 4,
+    "fields": {
+      "first_name": "Test Editor User",
+      "email": "editor@test.com",
+      "password": "top_secret",
+      "groups": [["Editors" ]],
+      "roles": [["Editor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsUserModel",
+    "pk": 5,
+    "fields": {
+      "first_name": "Test Manager User",
+      "email": "manager@test.com",
+      "password": "top_secret",
+      "groups": [["Administrators" ]],
+      "roles": [["Manager"]]
     }
   },
   {
@@ -151,7 +289,7 @@
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
       },
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -161,7 +299,7 @@
       "slug": "2-default-route",
       "site": 2,
       "route": ["default-route"],
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -188,7 +326,7 @@
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
       },
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -198,7 +336,7 @@
       "slug": "3-localhost-route",
       "site": 3,
       "route": ["localhost-route"],
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -225,7 +363,7 @@
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
       },
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -237,7 +375,7 @@
       "route": ["user-route"],
       "content_type": ["hacs", "hacsusermodel"],
       "object_id": 1,
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -264,7 +402,7 @@
         "handler404": "hacs.views.errors.page_not_found",
         "handler500": "hacs.views.errors.server_error"
       },
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   },
   {
@@ -276,7 +414,7 @@
       "content_type": ["hacs", "hacsgroupmodel"],
       "object_id": 1,
       "allowed_method": ["GET", "POST"],
-      "created_by": ["test_user@test.co"]
+      "created_by": ["manager@test.com"]
     }
   }
 ]

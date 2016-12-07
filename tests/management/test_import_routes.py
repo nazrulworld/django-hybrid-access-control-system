@@ -42,7 +42,7 @@ class TestImportRoutes(TestCase):
     def test_with_source_file(self):
         """ """
         call_command('import_routes', source=smart_text(ROUTE_FIXTURE))
-        _test_user = 'test_user@test.co'
+        _test_user = 'superuser@test.com'
         _test_group = 'Administrators'
         _test_site = 'testserver'
 
@@ -133,7 +133,7 @@ class TestImportRoutes(TestCase):
 
     def test_exceptions(self):
         """"""
-        _test_user = 'test_user@test.co'
+        _test_user = 'superuser@test.com'
         _test_group = 'Administrators'
         _test_site = 'testserver'
         _test_route1 = 'test-route1'

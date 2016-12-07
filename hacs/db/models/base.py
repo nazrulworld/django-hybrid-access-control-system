@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 # **** Monkey Patch! enable custom HACS options at Meta class
 import django.db.models.options
-django.db.models.options.DEFAULT_NAMES += ('globally_allowed', 'allowed_content_types', )
+django.db.models.options.DEFAULT_NAMES += ('globally_allowed', 'allowed_content_types', 'hacs_default_permissions')
 # ************************************************************
 import uuid
 import logging
@@ -16,6 +16,7 @@ from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.contenttypes.models import ContentType
 
 from hacs.fields import DictField
 from hacs.fields import ForeignKey
@@ -84,11 +85,12 @@ class HacsUserFieldMixin(models.Model):
         """
         return _user_has_perm(self, perm, obj)
 
-    def get_all_permissions(self):
+    def get_all_permissions(self, obj=None):
         """
+        :param obj
         :return:
         """
-        return _user_get_all_permissions(self)
+        return _user_get_all_permissions(self, obj)
 
     class Meta:
         abstract = True
@@ -129,12 +131,6 @@ class HacsBasicFieldMixin(models.Model):
         """
         return (self.slug, )
 
-    def __hash__(self):
-        """
-        :return:
-        """
-        return hash(self.id)
-
 
 class HacsUtilsFieldMixin(models.Model):
     """
@@ -166,13 +162,12 @@ class HacsSecurityFieldMixin(models.Model):
     # Might need clean cache, as well child object cache also
     permissions_actions_map = DictField(null=True, blank=True)
     #
-    # Local Roles
-    local_roles = ManyToManyField(
-        'hacs.HacsRoleModel',
-        db_constraint=False,
-        related_name="hacs_rlm_{klass}_lr_items",
-        related_query_name="hacs_rlm_{klass}_lr_items_set",
-        blank=True)
+    # Local Roles: {userid: (role1, role2, role3)}
+    # user natural key as key and list of role's natural key
+    # This attribute is also be tracked!, will be merged with parent local roles if enabled
+    # dict update will be happened from top, child will always be win.
+    # i.e parent local role: user1: (Manager,) but child has user1: (Editor) so child will be winner
+    local_roles = DictField(null=True, blank=True)
 
     owner = ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -238,17 +233,19 @@ class HacsModelSecurityMixin(models.Model):
                 permission_changed = False
             elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
                 permission_changed = False # self.hacs_tracker.has_changed('permissions')
-            else:
+            elif self.__hacs_base_content_type__ in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
                 if self.hacs_tracker.has_changed('state'):
                     # @TODO: permissions updated here
                     self.update_permissions()
                 permission_changed = self.hacs_tracker.has_changed('permissions_actions_map')
 
+                if self.hacs_tracker.has_changed('local_roles') and self.acquire_parent:
+                    self.update_local_roles_with_parent()
+
         except FieldError:
                 raise
 
-        ret = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,
-                                                               force_update, using, update_fields)
+        ret = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,force_update, using, update_fields)
         if permission_changed:
             # Send Signal Here
             pass
@@ -260,6 +257,28 @@ class HacsModelSecurityMixin(models.Model):
         """
         # Access HacsContentTypeClass
         content_type_cls = self._meta.base_manager._security_manager().content_type_cls
+
+    def update_local_roles_with_parent(self):
+        """
+        :param:
+        :return:
+        """
+        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+            parent_field = 'parent_container_id'
+        elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
+            parent_field = 'container_id'
+
+        # @TODO: Not sure `GenericForeignKey` immediately available!
+        if not getattr(self, parent_field):
+            return
+        parent = self.container_content_type.get_object_for_this_type(pk=getattr(self, parent_field))
+        if parent.local_roles:
+            if self.local_roles:
+                self.local_roles.update(parent.local_roles)
+            else:
+                self.local_roles = parent.local_roles
+
+
 
 
 
@@ -283,13 +302,14 @@ class HacsUtilsModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsUtilsField
 
     class Meta:
         abstract = True
+        hacs_default_permissions = ('hacs.ManageUtilsContent', )
 
 
 class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFieldMixin, HacsSecurityFieldMixin):
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTAINER
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'permissions_actions_map',))
+    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map',))
     # If need other than custom ContentType\s workflow
     workflow = ForeignKey(
         "hacs.HacsWorkflowModel",
@@ -313,7 +333,7 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
     )
     # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
     # it should not be empty
-    parent_container_id = models.UUIDField(null=True, blank=True)
+    parent_container_id = models.PositiveIntegerField(null=True, blank=True)
     parent_container_object = GenericForeignKey('container_content_type', 'parent_container_id', )
     # Container Relation End
     # This field will be effective for state of shared, locked
@@ -321,13 +341,28 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
 
     class Meta:
         abstract = True
+        hacs_default_permissions = (
+            ('object.view', ('hacs.ViewContent',)),
+            ('object.create', ('hacs.AddContent',)),
+            ('object.edit', ('hacs.ModifyContent',)),
+            ('object.delete', ('hacs.DeleteContent',)),
+            ('list.traverse', ("hacs.CanTraverseContainer", )),
+            ('list.view', ("hacs.CanTraverseContainer", "hacs.CanListObjects", ))
+        )
+
+    def update_children_local_roles(self):
+        """
+        :return:
+        """
+        # @TODO: this is complicated need to define easy way. could be time consuming task.
+        # Have to search all children
 
 
 class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFieldMixin, HacsSecurityFieldMixin):
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTENT
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'permissions_actions_map',))
+    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map',))
     # Container Relation Start
     container_content_type = ForeignKey(
         "contenttypes.ContentType",
@@ -340,12 +375,18 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
     )
     # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
     # it should not be empty
-    container_id = models.UUIDField(null=True, blank=True)
+    container_id = models.PositiveIntegerField(null=True, blank=True)
     container_object = GenericForeignKey('container_content_type', 'container_id',)
     # Container Relation End
 
     class Meta:
         abstract = True
+        hacs_default_permissions = (
+            ('object.view', ('hacs.ViewContent', )),
+            ('object.create', ('hacs.AddContent', )),
+            ('object.edit', ('hacs.ModifyContent', )),
+            ('object.delete', ('hacs.DeleteContent', )),
+        )
 
 
 class HacsStaticModel(HacsModelSecurityMixin):
@@ -358,10 +399,13 @@ class HacsStaticModel(HacsModelSecurityMixin):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False,unique=True, db_index=True)
     name = models.CharField(max_length=127, null=False, blank=False, unique=True, db_index=True)
     description = models.TextField(null=True, blank=True)
+    # This field will be defined, if current object is hacs default, that is non removal
+    is_system = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
         default_manager_name = "objects"
+        hacs_default_permissions = ('hacs.ManageStaticContent', )
 
     def natural_key(self):
         """
