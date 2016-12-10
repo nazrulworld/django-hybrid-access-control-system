@@ -1,0 +1,55 @@
+APT_PACKAGES:
+ - {name: "build-essential", state: present, force: no}
+ - {name: "python-software-properties", state: present, force: no}
+ - {name: 'libsasl2-2', state: present, force: no }
+ - {name: 'libsasl2-modules', state: present, force: no}
+ - {name: "libssl-dev", state: present, force: no}
+ - {name: "libyaml-dev", state: present, force: no}
+ - {name: "libsqlite3-dev", state: present, force: no}
+ - {name: "libcurl4-openssl-dev", state: present, force: no}
+ - {name: "git-core", state: present, force: no}
+ - {name: 'ca-certificates', state: present, force: no}
+ - {name: 'heirloom-mailx', state: present, force: no}
+ - {name: 'mailutils', state: present, force: no}
+ - {name: 'postfix', state: present, force: no}
+ - {name: 'zip', state: present, force: no}
+ - {name: "sysstat", state: present, force: no}
+ - {name: "libfreetype6", state: present, force: no}
+ - {name: "libfreetype6-dev", state: present, force: no}
+ - {name: "libjpeg8", state: present, force: no}
+ - {name: "libjpeg-dev", state: present, force: no}
+ - {name: "libldap2-dev", state: present, force: no}
+ - {name: "libpng-dev", state: present, force: no}
+ - {name: "libpng3", state: present, force: no}
+ - {name: "libpng3-dev", state: present, force: no}
+ - {name: "libsasl2-dev", state: present, force: no}
+ - {name: "libssl-dev", state: present, force: no}
+ - {name: "libxml2-dev", state: present, force: no}
+ - {name: "libxslt1-dev", state: present, force: no}
+ - {name: "python-dev", state: present, force: no}
+ - {name: "python-ldap", state: present, force: no}
+ - {name: "python-libxml2", state: present, force: no}
+ - {name: "python-lxml", state: present, force: no}
+ - {name: "python-pylibmc", state: present, force: no}
+ - {name: "python-setuptools", state: present, force: no}
+ - {name: "python-distutils-extra", state: present, force: no}
+ - {name: "python-virtualenv", state: present, force: no}
+ - {name: "python-pip", state: present, force: no}
+ - {name: "python-psycopg2", state: present, force: no}
+ - {name: "python-pycurl", state: present, force: no}
+ - {name: "libyaml-dev", state: present, force: no}
+ - {name: "libgmp-dev", state: present, force: no}
+ - {name: "libffi-dev", state: present, force: no}
+ - {name: "curl", state: present, force: no}
+ - {name: "libcurl4-openssl-dev", state: present, force: no}
+ - {name: "libreadline-dev", state: present, force: no}
+ - {name: "ttf-mscorefonts-installer", state: present, force: no}
+ - {name: "redis-server", state: present, force: no}
+ - {name: "postgresql-{{ postgresql_version }}", state: present, force: no}
+ - {name: "postgresql-contrib-{{ postgresql_version }}", state: present, force: no}
+ - {name: "postgresql-client-{{ postgresql_version }}", state: present, force: no}
+
+
+
+
+

@@ -1,0 +1,4 @@
+- name: add apt ppa from list
+  apt_repository: repo={{ item.repo }} state={{ item.state }} validate_certs={{ item.validate_certs }}
+  with_items: "{{ APT_PPA }}"
+  when: APT_PPA

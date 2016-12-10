@@ -44,6 +44,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+pytestdebug.log
 
 # Translations
 *.mo
@@ -73,3 +74,5 @@ target/
 
 # IDE
 .idea
+# Vagrant
+.vagrant

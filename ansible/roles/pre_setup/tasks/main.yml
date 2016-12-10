@@ -1,0 +1,7 @@
+- include: add_apt_key.yml
+- include: add_apt_ppa.yml
+
+- name: update apt cache
+  apt: update_cache=yes
+
+

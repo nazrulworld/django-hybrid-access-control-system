@@ -1,0 +1,4 @@
+- name: installing apt packages
+  apt: name={{ item.name }} state={{ item.state }} force={{ item.force }}
+  with_items: "{{ APT_PACKAGES }}"
+  when: APT_PACKAGES
