@@ -1,2 +1,4 @@
 postgresql_version: "9.4"
 postgresql_admin_user: "postgres"
+known_hosts:
+ - "github.com"

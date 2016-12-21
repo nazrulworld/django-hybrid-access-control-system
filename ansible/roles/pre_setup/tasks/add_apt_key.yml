@@ -1,4 +1,4 @@
 - name: adding apt keys from list
-  apt_key: id={{ item.id }} file= {{ item.file }} keyserver={{ item.keyserver }} url={{ item.url }} state={{ item.state }}
-  with_items: "{{ APT_KEYS}}"
+  apt_key: url={{ item.url }} state={{ item.state }}
+  with_items: "{{ APT_KEYS }}"
   when: APT_KEYS

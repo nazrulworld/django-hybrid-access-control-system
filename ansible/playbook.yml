@@ -1,14 +1,13 @@
 ---
 # This playbook constructs the whole application stack, to make developer ready.
 - name: Construct HACS application stack
-  hosts: dev
+  hosts: hacs-dev
   become: true
   vars_files:
-    - ../../global_vars/common.yml
-    - ../../global_vars/dpkg/BACKEND_packages.yml
-    - ../../global_vars/apt_repositories/M103_apt_repositories.yml
-    - ../../global_vars/apt_keys/M103_apt_keys.yml
-    - ../../global_vars/pip/M103_pip_packages.yml
+    - ./vars/common.yml
+    - ./vars/apt_packages.yml
+    - ./vars/apt_ppa.yml
+    - ./vars/apt_keys.yml
 
   roles:
     - {role: pre_setup, tags: ["hacs_pre_setup"]}

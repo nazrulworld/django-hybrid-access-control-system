@@ -1,5 +1,23 @@
+---
+# Pre Setup Tasks
+
 - include: add_apt_key.yml
 - include: add_apt_ppa.yml
+
+- name: generate pub keys
+  become: false
+  shell: "ssh-keyscan {{ item }} > /tmp/{{ item }}_host_key.pub"
+  with_items: "{{ known_hosts }}"
+  when: known_hosts
+
+- name: add known hosts (might be required for outer communication)
+  become: false,
+  known_hosts:
+    name: "{{ item }}"
+    key: "{{ lookup('file', '/tmp/{{ item }}_host_key.pub') }}"
+    state: present
+  with_items: "{{ known_hosts }}"
+  when: known_hosts
 
 - name: update apt cache
   apt: update_cache=yes
