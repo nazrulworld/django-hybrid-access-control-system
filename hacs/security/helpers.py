@@ -10,6 +10,11 @@ from hacs.globals import HACS_APP_NAME
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from django.apps import apps as global_apps
 from hacs.helpers import get_role_model
+from hacs.helpers import get_contenttype_model
+from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
+
+# Proxy Translation: @TODO: could be used django translation
+_ = lambda x: x
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -36,39 +41,64 @@ STANDARD_PERMISSIONS = {
     "hacs.CanIntrospect": {
         "title": "Can Introspect"
     },
-    "hacs.ViewContent": {
-
-    },
-    "hacs.AddContent": {
-
-    },
-    "hacs.ModifyContent":
-    {
-
-    },
-    "hacs.DeleteContent":
-    {
-
-    },
-    "hacs.ManageStaticContent": {
-
-    },
-    "hacs.ManageUtilsContent": {
-
-    },
-    "hacs.CanListObjects": {
-
-    },
-    "hacs.CanModifyObjects": {
-
-    },
-    "hacs.CanDeleteObjects": {
-
-    },
-    "hacs.CanTraverseContainer": {}
+    "hacs.ManageContent": {},
+    "hacs.ViewContent": {},
+    "hacs.AddContent": {},
+    "hacs.ModifyContent": {},
+    "hacs.DeleteContent": {},
+    "hacs.ManageStaticContent": {},
+    "hacs.ManageUtilsContent": {},
+    "hacs.CanListObjects": {},
+    "hacs.CanModifyObjects": {},
+    "hacs.CanDeleteObjects": {},
+    "hacs.CanTraverseContainer": {},
+    "hacs.ManageLocalRole": {},
+    "hacs.ManageContentState": {}
 
 }
 
+# Actions Definition
+HACS_ACTIONS = {
+    'list.traverse': {
+      "title": _("List: Traverse"),
+      "description": "Special action type, just like `execute` permission on directory on UNIX."
+                     "This is very important action for child operation!. If"
+                     "any user don't have this action permission, she cant do anything with child object even she "
+                     "might have local permission"
+    },
+    'list.view': {
+        'title': _("List: View"),
+        'description': "In Django ORM sense `query`."
+    },
+    'list.update': {
+        'title': _("List: Update"),
+        'description': "In Django ORM sense `update` from QuerySet"
+    },
+    'list.delete': {
+        'title': _("List: View"),
+        'description': "In Django ORM sense `delete` from QuerySet"
+    },
+    'object.view': {
+        'title': _("Individual Object View")
+    },
+    'object.create': {
+        'title': _("Create")
+    },
+    'object.edit': {
+        'title': _("Edit")
+    },
+    'object.delete': {
+        'title': _("Delete"),
+    },
+    'object.manage_state': {
+        'title': _("Manage State"),
+    },
+    'share': {
+        'title': "Share",
+        "description": "Share means assigning Local Roles"
+    },
+
+}
 
 @lru_cache.lru_cache(maxsize=1024)
 def get_cache_key(content_type, content_object=None, klass=None, _id=None):
@@ -246,3 +276,15 @@ def get_role_permissions(role):
 
     return permissions
 
+
+def get_container_workflow(container_obj):
+    """
+    :param container_obj:
+    :return:
+    """
+    assert container_obj.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER, "Instance must be derived from " \
+                                                                                    "HacsContainerModel"
+    if container_obj.workflow:
+        return container_obj.workflow
+
+    hct = get_contenttype_model().objects.get_for_model(container_obj.__class__)

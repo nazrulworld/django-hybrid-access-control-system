@@ -23,3 +23,6 @@ default_app_config = 'hacs.apps.HACSConfig'
 
 __version__ = get_version(VERSION)
 
+from hacs.patches import apply_model_option_monkey_patch
+apply_model_option_monkey_patch()
+

@@ -1,31 +1,31 @@
 # -*- coding: utf-8 -*-
 # ++ This file `base.py` is generated at 10/24/16 6:16 PM ++
 from __future__ import unicode_literals
-# **** Monkey Patch! enable custom HACS options at Meta class
-import django.db.models.options
-django.db.models.options.DEFAULT_NAMES += ('globally_allowed', 'allowed_content_types', 'hacs_default_permissions')
-# ************************************************************
 import uuid
 import logging
+from django.utils import six
+from django.dispatch import receiver
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from collections import defaultdict
+from django.db.models.signals import class_prepared
 from django.contrib.auth.models import _user_has_perm
 from django.contrib.auth.models import _user_has_module_perms
 from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.auth.models import AnonymousUser
-from django.contrib.contenttypes.models import ContentType
 
 from hacs.fields import DictField
 from hacs.fields import ForeignKey
-from hacs.fields import ManyToManyField
+from hacs.fields import SequenceField
+from hacs.fields import GenericRelation
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_USER
 from hacs.globals import HACS_CONTENT_TYPE_UTILS
 from hacs.globals import HACS_CONTENT_TYPE_STATIC
+from hacs.helpers import get_contenttype_model
 from .manager import HacsBaseManager, \
     HacsModelManager, \
     HacsStaticModelManager
@@ -34,8 +34,46 @@ from .tracker import FieldError
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-AnonymousUser.__hacs_base_content_type__ = HACS_CONTENT_TYPE_USER
+
 logger = logging.getLogger("hacs.db.models.base")
+
+
+@receiver(class_prepared)
+def apply_default_permissions(sender, **kwargs):
+    """
+    :param sender:
+    :param kwargs:
+    :return:
+    """
+    # We are ignoring non HACS models
+    if getattr(sender, '__hacs_base_content_type__', None) is None:
+        return
+
+    if sender._meta.abstract:
+        return
+
+    try:
+        logging.debug("User defined permissions %s found! \n Respect it! no overwrite." % sender._meta.hacs_default_permissions)
+    except AttributeError:
+        if sender.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
+            sender._meta.hacs_default_permissions = (
+                ('object.view', ('hacs.ViewContent', )),
+                ('object.create', ('hacs.AddContent', )),
+                ('object.edit', ('hacs.ModifyContent', )),
+                ('object.delete', ('hacs.DeleteContent', )),
+            )
+        elif sender.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+            sender._meta.hacs_default_permissions = (
+                ('object.view', ('hacs.ViewContent',)),
+                ('object.create', ('hacs.AddContent',)),
+                ('object.edit', ('hacs.ModifyContent',)),
+                ('object.delete', ('hacs.DeleteContent',)),
+                ('list.traverse', ("hacs.CanTraverseContainer", )),
+                ('list.view', ("hacs.CanTraverseContainer", "hacs.CanListObjects", ))
+            )
+        elif sender.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
+            sender._meta.hacs_default_permissions = ('hacs.ManageUtilsContent', )
+
 
 """
 Hacs Model short name map:
@@ -138,12 +176,7 @@ class HacsUtilsFieldMixin(models.Model):
     class Meta:
         abstract = True
     # Only list of permissions, by default permission holder has all action permission
-    permissions = ManyToManyField(
-        'hacs.HacsPermissionModel',
-        db_constraint=False,
-        related_name="hacs_prm_{klass}_utilities",
-        related_query_name="hacs_prm_{klass}_utilities_set"
-    )
+    permissions = SequenceField(null=True, blank=True, validators=[])
 
 
 class HacsSecurityFieldMixin(models.Model):
@@ -231,16 +264,59 @@ class HacsModelSecurityMixin(models.Model):
             if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_STATIC:
                 # Simple Static Model Has no state or permissions
                 permission_changed = False
+
             elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
-                permission_changed = False # self.hacs_tracker.has_changed('permissions')
-            elif self.__hacs_base_content_type__ in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
-                if self.hacs_tracker.has_changed('state'):
-                    # @TODO: permissions updated here
+                if self.permissions is None and _insert:
                     self.update_permissions()
+                permission_changed = self.hacs_tracker.has_changed('permissions')
+
+            elif self.__hacs_base_content_type__ in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
+
+                hacs_ct = get_contenttype_model().objects.get_for_model(self._meta.model)
+                if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+                    parent_container = getattr(self, 'parent_container_object')
+                elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
+                    parent_container = getattr(self, 'container_object')
+
+                if self.hacs_tracker.has_changed('acquire_parent') and not _insert:
+                    # Only Applicable on Update
+                    self.apply_aquire_parent_changed()
+
+                _workflow = None
+                if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+                    # Try From Container Default
+                    _workflow = self.workflow
+
+                if _workflow is None:
+                    # Try From content type
+                    _workflow = hacs_ct.workflow
+
+                if _workflow is None and self.acquire_parent and parent_container is not None:
+                    # We respect parent settings (allow acquiring)
+
+                    if parent_container.recursive:
+                        _workflow = parent_container.workflow
+
+                if _insert and _workflow is not None and self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+                    # Set workflow
+                    self.workflow = _workflow
+
+                if _insert and self.state is None:
+                    if _workflow:
+                        self.state = _workflow.default_state
+
+                if self.hacs_tracker.has_changed('state') or _insert:
+                    # @TODO: permissions updated here
+                    self.update_permissions(_workflow, hacs_ct)
+
                 permission_changed = self.hacs_tracker.has_changed('permissions_actions_map')
 
-                if self.hacs_tracker.has_changed('local_roles') and self.acquire_parent:
+                if (self.hacs_tracker.has_changed('local_roles') or _insert) and self.acquire_parent:
                     self.update_local_roles_with_parent()
+
+                if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+                    if self.hacs_tracker.has_changed('recursive') and not _insert:
+                        self.apply_recursive_changed()
 
         except FieldError:
                 raise
@@ -251,12 +327,61 @@ class HacsModelSecurityMixin(models.Model):
             pass
         return ret
 
-    def update_permissions(self):
+    def update_permissions(self, workflow=None, hacs_contenttype=None):
         """
+        :param workflow
+        :param hacs_contenttype
         :return:
         """
-        # Access HacsContentTypeClass
-        content_type_cls = self._meta.base_manager._security_manager().content_type_cls
+        if hacs_contenttype is None:
+            # yep! utils model
+            permissions = set()
+            for permission in tuple(self._meta.hacs_default_permissions) + tuple(self._meta.permissions or []):
+                if isinstance(permission, six.string_types):
+                    permissions.add(permission)
+
+                elif isinstance(permission, (tuple, list)):
+                    # we will catch action
+                    if isinstance(permission[1], six.string_types):
+                        permissions.add(permission[1])
+                    elif isinstance(permission[1], (list, tuple)):
+                        permissions = permissions.union(permission[1])
+
+            self.permissions = tuple(permissions)
+            return
+
+        if workflow:
+            try:
+                self.permissions_actions_map = workflow.states_permissions_map[self.state]
+            except KeyError:
+                # @TODO: need to meaningful error
+                raise
+        else:
+            permissions = defaultdict()
+            # No workflow! we are going to search from default
+            for permission in self._meta.hacs_default_permissions:
+
+                if isinstance(permission, six.string_types) or (isinstance(permission, (tuple, list)) and
+                                                                        2 != len(permission)):
+                    # We don't accept invalid permission format for this contenttype
+                    continue
+
+                permissions[permission[0]] = permission[1]
+
+            for permission in self._meta.permissions or []:
+
+                if isinstance(permission, six.string_types) or (isinstance(permission, (tuple, list)) and
+                                                                        2 != len(permission)):
+                    # We don't accept invalid permission format for this contenttype
+                    continue
+                try:
+                    # Trying to combine with default
+                    temp = set(permissions[permission[0]])
+                    permissions[permission[0]] = temp.union(permission[1])
+                except KeyError:
+                    permissions[permission[0]] = permission[1]
+
+            self.permissions_actions_map = permissions
 
     def update_local_roles_with_parent(self):
         """
@@ -278,9 +403,15 @@ class HacsModelSecurityMixin(models.Model):
             else:
                 self.local_roles = parent.local_roles
 
+    def apply_aquire_parent_changed(self):
+        """
+        :return:
+        """
 
-
-
+    def apply_recursive_changed(self):
+        """
+        :return:
+        """
 
 ######################
 # PUBLIC CLASS       #
@@ -298,18 +429,18 @@ class HacsUtilsModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsUtilsField
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_UTILS
-    hacs_tracker = FieldTracker(fields=('uuid', ))
+    hacs_tracker = FieldTracker(fields=('uuid', 'permissions', ))
 
     class Meta:
         abstract = True
-        hacs_default_permissions = ('hacs.ManageUtilsContent', )
 
 
 class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFieldMixin, HacsSecurityFieldMixin):
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTAINER
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map',))
+    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map', 'workflow',
+                                        'acquire_parent', 'recursive'))
     # If need other than custom ContentType\s workflow
     workflow = ForeignKey(
         "hacs.HacsWorkflowModel",
@@ -341,14 +472,6 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
 
     class Meta:
         abstract = True
-        hacs_default_permissions = (
-            ('object.view', ('hacs.ViewContent',)),
-            ('object.create', ('hacs.AddContent',)),
-            ('object.edit', ('hacs.ModifyContent',)),
-            ('object.delete', ('hacs.DeleteContent',)),
-            ('list.traverse', ("hacs.CanTraverseContainer", )),
-            ('list.view', ("hacs.CanTraverseContainer", "hacs.CanListObjects", ))
-        )
 
     def update_children_local_roles(self):
         """
@@ -362,7 +485,7 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTENT
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map',))
+    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map', 'acquire_parent', ))
     # Container Relation Start
     container_content_type = ForeignKey(
         "contenttypes.ContentType",
@@ -381,12 +504,6 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
 
     class Meta:
         abstract = True
-        hacs_default_permissions = (
-            ('object.view', ('hacs.ViewContent', )),
-            ('object.create', ('hacs.AddContent', )),
-            ('object.edit', ('hacs.ModifyContent', )),
-            ('object.delete', ('hacs.DeleteContent', )),
-        )
 
 
 class HacsStaticModel(HacsModelSecurityMixin):

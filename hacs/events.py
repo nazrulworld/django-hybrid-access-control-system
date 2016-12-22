@@ -3,7 +3,12 @@
 from __future__ import unicode_literals
 import logging
 from django.conf import settings
+from django.dispatch import receiver
 from django.core.cache import caches
+from django.db.models.signals import post_save
+from django.db.models.signals import pre_delete
+from django.apps import apps as django_apps
+from django.contrib.contenttypes.models import ContentType
 
 from .globals import HACS_SITE_CACHE
 from .utils import set_site_settings
@@ -18,6 +23,8 @@ from .lru_wrapped import get_site_whitelisted_uri
 from .lru_wrapped import get_generated_urlconf_file
 from .lru_wrapped import get_generated_urlconf_module
 from hacs.models import HacsGroupModel
+from hacs.globals import HACS_CONTENT_TYPE_CONTENT
+from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -29,8 +36,27 @@ class DummyRequest(object):
     def __init__(self):
         """"""
         self.site = None
-
+###########################
 # ******** EVENTS ********
+###########################
+@receiver(pre_delete, dispatch_uid="hacs.events.pre_delete_hacs_model")
+def pre_delete_hacs_model(sender, instance, **kwargs):
+    """
+    :param sender:
+    :param instance:
+    :param kwargs:
+    :return:
+    """
+    base_contenttype = getattr(sender, '__hacs_base_content_type__', None)
+    if base_contenttype is None:
+        return
+
+    if base_contenttype == HACS_CONTENT_TYPE_CONTAINER:
+        _pre_delete_hacs_container(sender, instance)
+
+
+
+@receiver(post_save, sender='hacs.routingtable', dispatch_uid="hacs.events.post_save_routingtable_model")
 def post_save_routingtable_model(sender, **kwargs):
     """"""
     if not kwargs['created']:
@@ -38,6 +64,7 @@ def post_save_routingtable_model(sender, **kwargs):
         get_generated_urlconf_module.cache_clear()
 
 
+@receiver(post_save, sender='hacs.siteroutingrules', dispatch_uid="hacs.post_save_siteroutingrules_model")
 def post_save_siteroutingrules_model(sender, **kwargs):
     """"""
     instance = kwargs['instance']
@@ -52,7 +79,8 @@ def post_save_siteroutingrules_model(sender, **kwargs):
     _invalidate_site_lru()
 
 
-def post_save_contenttyperoutingrules_model(sender, **kwargs):
+@receiver(post_save, sender='hacs.contenttyperoutingrules', dispatch_uid="hacs.events.post_save_ct_routingrules_model")
+def post_save_ct_routingrules_model(sender, **kwargs):
     """"""
     cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
     is_group = (kwargs['instance'].content_type.app_label, kwargs['instance'].content_type.model, ) ==\
@@ -89,7 +117,9 @@ def post_save_container(sender, **kwargs):
 
 # ********** END Events ***********
 
-
+#######################################
+# Private/Helper Functions            #
+#######################################
 def _invalidate_site_lru():
     """"""
     get_site_urlconf.cache_clear()
@@ -107,6 +137,29 @@ def _invalidate_contenttype_lru():
     get_generated_urlconf_file.cache_clear()
 
 
+def _pre_delete_hacs_container(model, instance):
+    """
+    :param model:
+    :param instance:
+    :return:
+    """
+    hacs_models = [m for m in django_apps.get_models() if getattr(m, '__hacs_base_content_type__', None) in
+                           (HACS_CONTENT_TYPE_CONTENT, HACS_CONTENT_TYPE_CONTAINER) and m != model]
+
+    if not len(hacs_models):
+        # No Models We do nothing
+        return
+    content_type = ContentType.objects.get_for_model(model)
+
+    for model_cls in hacs_models:
+        filters = {"container_content_type": content_type}
+        if model_cls.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+            filters["parent_container_id"] = instance.pk
+        else:
+            # Content
+            filters["container_id"] = instance.pk
+        # Delete All Child records
+        model_cls.objects.filter(**filters).delete()
 
 
 

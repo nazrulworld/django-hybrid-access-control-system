@@ -35,45 +35,7 @@ HTTP_METHOD_LIST = (
     'DELETE',
     'OPTIONS'
 )
-# Actions Definition
-HACS_ACTIONS = {
-    'list.traverse': {
-      "title": _("List: Traverse"),
-      "description": "Special action type, just like `execute` permission on directory on UNIX."
-                     "This is very important action for child operation!. If"
-                     "any user don't have this action permission, she cant do anything with child object even she "
-                     "might have local permission"
-    },
-    'list.view': {
-        'title': _("List: View"),
-        'description': "In Django ORM sense `query`."
-    },
-    'list.update': {
-        'title': _("List: Update"),
-        'description': "In Django ORM sense `update` from QuerySet"
-    },
-    'list.delete': {
-        'title': _("List: View"),
-        'description': "In Django ORM sense `delete` from QuerySet"
-    },
-    'object.view': {
-        'title': _("Individual Object View")
-    },
-    'object.create': {
-        'title': _("Create")
-    },
-    'object.edit': {
-        'title': _("Edit")
-    },
-    'object.delete': {
-        'title': _("Delete"),
-    },
-    'share': {
-        'title': "Share",
-        "description": "Share means assigning Local Roles"
-    },
 
-}
 DAJANGO_ADMIN_ACTIONS = (
     "add",
     "change",

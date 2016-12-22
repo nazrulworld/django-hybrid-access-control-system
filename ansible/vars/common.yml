@@ -1,4 +1,10 @@
 postgresql_version: "9.4"
+postgresql_encoding: 'UTF-8'
 postgresql_admin_user: "postgres"
+postgresql_service_name: "postgres"
+postgresql_port: 5432
+
+postgresql_databases:
+  - {"name": "hacs_db", "password": "hacs_secret"}
 known_hosts:
  - "github.com"

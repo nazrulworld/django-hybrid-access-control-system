@@ -24,35 +24,19 @@ class HACSConfig(AppConfig):
         """
         :return:
         """
+        # Apply patches
+        from hacs.patches import apply_anonymous_user_monkey_patch
+        apply_anonymous_user_monkey_patch()
+        # Patch Done
+        # Register events
+        from hacs import events
+
         _path = getattr(settings, 'HACS_GENERATED_URLCONF_DIR', safe_join(self.path, 'generated'))
         if not os.path.exists(_path):
             os.mkdir(_path)
 
         if _path not in sys.path:
             sys.path = sys.path[:] + [_path]
-
-        # ********* SUBSCRIBE EVENTS ****************
-        from django.db.models.signals import post_save
-        from .events import post_save_routingtable_model
-        from .events import post_save_siteroutingrules_model
-        from .events import post_save_contenttyperoutingrules_model
-
-        post_save.connect(
-            post_save_routingtable_model,
-            sender='hacs.routingtable',
-            dispatch_uid="hacs_routingtable_post_save")
-
-        post_save.connect(
-            post_save_siteroutingrules_model,
-            sender='hacs.siteroutingrules',
-            dispatch_uid="hacs_siteroutingrules_post_save"
-        )
-
-        post_save.connect(
-            post_save_contenttyperoutingrules_model,
-            sender='hacs.contenttyperoutingrules',
-            dispatch_uid="hacs_contenttyperoutingrules_post_save"
-        )
 
         return super(HACSConfig, self).ready()
 

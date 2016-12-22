@@ -2,7 +2,7 @@
 from django.db import models
 from django.apps import apps
 from django.utils import six
-from django.utils import timezone
+from django.conf import settings
 from collections import defaultdict
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import AnonymousUser
@@ -22,6 +22,7 @@ from hacs.db.models import HacsUtilsModel
 from hacs.db.models import BaseUserManager
 from hacs.db.models.base import HacsAbstractUser
 from hacs.db.models import HacsStaticModel
+from hacs.defaults import HACS_DEFAULT_STATE
 
 if not apps.is_installed('django.contrib.admin'):
     # Fallback LogEntry Model, if admin app not installed
@@ -148,7 +149,7 @@ class HacsContentTypeManager(HacsModelManager):
         except KeyError:
             ct = ContentType.objects.get_by_natural_key(app_label, model)
             hacs_ct = self.select_related('content_type', 'workflow').\
-                prefetch_related('allowed_content_types', 'local_roles').get(content_type=ct)
+                prefetch_related('allowed_content_types').get(content_type=ct)
             # now are caching
             self._add_to_cache(self.db, hacs_ct)
 
@@ -166,7 +167,7 @@ class HacsContentTypeManager(HacsModelManager):
             hacs_ct = self._cache[self.db][(ct.app_label, ct.model)]
         except KeyError:
             hacs_ct = self.select_related('content_type', 'workflow').\
-                prefetch_related('allowed_content_types', 'local_roles').get(content_type=ct)
+                prefetch_related('allowed_content_types').get(content_type=ct)
             self._add_to_cache(self.db, hacs_ct)
 
         return hacs_ct
@@ -181,7 +182,7 @@ class HacsContentTypeManager(HacsModelManager):
         except KeyError:
             ct = ContentType.objects.get_for_id(id)
             hacs_ct = self.select_related('content_type', 'workflow').\
-                prefetch_related('allowed_content_types', 'local_roles').get(content_type=ct)
+                prefetch_related('allowed_content_types').get(content_type=ct)
             self._add_to_cache(self.db, hacs_ct)
 
         return hacs_ct
@@ -271,6 +272,13 @@ class HacsWorkflowModel(HacsUtilsModel):
     # Which object states will be handled by this workflow. Also will be used as validator while applied this workflow
     # on specified content type.
     states = SequenceField(null=True, blank=True)
+
+    # Targeted state after object is created
+    default_state = models.CharField(
+        max_length=64,
+        null=False,
+        blank=True,
+        default=getattr(settings, 'HACS_DEFAULT_STATE', HACS_DEFAULT_STATE))
 
     # This the important for object guard. Security Manger actually lookup with this.
     # Validation Rule: if one state has no requested action by default will be rejected even if Manager User.

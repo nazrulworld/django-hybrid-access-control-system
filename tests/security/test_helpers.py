@@ -140,8 +140,8 @@ class TestHelpers(TestCase):
 
         editor_group = group_cls.objects.get_by_natural_key("Editors")
         permissions = get_group_permissions(editor_group)
-        # Should have should have ten permissions
-        self.assertEqual(10, len(permissions))
+        # Should have should have thirteen permissions
+        self.assertEqual(13, len(permissions))
 
         contributor_group = group_cls.objects.get_by_natural_key("Contributors")
         permissions = get_group_permissions(contributor_group)

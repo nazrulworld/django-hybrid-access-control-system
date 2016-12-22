@@ -72,11 +72,27 @@ def get_permission_model():
     """
     return get_hacs_model('HacsPermissionModel')
 
+
+def get_workflow_model():
+    """
+    :return:
+    """
+    return get_hacs_model('HacsWorkflowModel')
+
+
+def get_contenttype_model():
+    """
+    :return:
+    """
+    return get_hacs_model('HacsContentType')
+
 __all__ = [str(x) for x in (
     "user_model_lazy",
     "get_permission_model",
     "get_role_model",
     "get_group_model",
-    "get_group_model"
+    "get_group_model",
+    "get_workflow_model",
+    "get_contenttype_model"
 )]
 

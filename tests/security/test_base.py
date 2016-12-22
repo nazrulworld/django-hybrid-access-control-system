@@ -3,15 +3,16 @@
 import pytest
 import logging
 import warnings
-from collections import defaultdict
 from tests.path import FIXTURE_PATH
 from django.test import TestCase
-from django.db import connection
-from hacs.db.models.base import HacsItemModel, HacsContainerModel, HacsUtilsModel
 from django.contrib.auth import get_user_model
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.models import HacsSystemUser
+from hacs.db.models import HacsItemModel
+from hacs.db.models import HacsContainerModel
 from hacs.security.base import SecurityManager
+
+from tests.fixture import ModelFixture
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 
@@ -27,7 +28,10 @@ class TestSecurityManager(TestCase):
         """
         :return:
         """
-        return super(TestSecurityManager, self).setUp()
+        super(TestSecurityManager, self).setUp()
+        # Test Fixtures
+        self.model_fixture = ModelFixture()
+        self.model_fixture.init_data()
 
     def test_check(self):
         """
@@ -57,6 +61,31 @@ class TestSecurityManager(TestCase):
             self.assertTrue(security_manager._check('hacs.ManagePortal'))
             new_warns = filter(lambda x: issubclass(x.category, UserWarning), warns)
             # Should not any warnings
-            # System User is set! (usally should done by `AccessControlMiddleware`)
+            # System User is set! (usually should done by `AccessControlMiddleware`)
 
             self.assertEqual(0, len(tuple(new_warns)))
+            # Let's clean up user
+            HACS_ACCESS_CONTROL_LOCAL.__release_local__()
+            # Test If Release local is working
+            try:
+                HACS_ACCESS_CONTROL_LOCAL.current_user
+            except AttributeError:
+                pass
+            else:
+                AssertionError("Code should not come here! as should raise attribute error after release local")
+
+        superuser = get_user_model().objects.get_by_natural_key('superuser@test.com')
+        memberuser = get_user_model().objects.get_by_natural_key('member@test.com')
+
+        HACS_ACCESS_CONTROL_LOCAL.current_user = superuser
+        # Test superuser has permissions
+        self.assertTrue(security_manager._check('hacs.ManagePortal'))
+        HACS_ACCESS_CONTROL_LOCAL.current_user = memberuser
+        # Test member user has no permissions of course
+        self.assertFalse(security_manager._check('hacs.ManagePortal'))
+
+        # Test with multiple permissions
+        # Test member user should have permission now
+        self.assertTrue(security_manager._check(('hacs.ManagePortal', 'hacs.AuthenticatedView',)))
+
+

@@ -17,3 +17,7 @@ HACS_DEVELOPMENT_MODE = False
 HACS_AUTO_DISCOVER_URL_MODULE = ["admin.site.urls", ]
 HACS_AC_BYPASS = 0
 HACS_ANONYMOUS_ROLE_NAME = "Guest"
+HACS_DEFAULT_STATE = "draft"
+HACS_DEFAULT_STATES = (
+    "published", "internally_published", "draft", "private"
+)

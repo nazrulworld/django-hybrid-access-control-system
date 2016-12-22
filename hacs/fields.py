@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 # ++ This file `fields.py` is generated at 3/4/16 5:54 PM ++
@@ -9,9 +10,25 @@ from django.utils.encoding import smart_text
 from django.utils.translation import ugettext_lazy as _
 from django.db.models.fields.related import ForeignKey as DFK
 from django.db.models.fields.related import ManyToManyField as DM2M
+from django.contrib.contenttypes.fields import GenericRelation as CTGenericRelation
 from django.core.serializers.json import DjangoJSONEncoder
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
+
+
+class GenericRelation(CTGenericRelation):
+    """"""
+
+    def contribute_to_class(self, cls, name, **kwargs):
+        """
+        :param cls:
+        :param name:
+        :param kwargs:
+        :return:
+        """
+        import pytest;pytest.set_trace()
+        super(GenericRelation, self).contribute_to_class(cls, name, **kwargs)
+
 
 
 class ManyToManyField(DM2M):
@@ -194,4 +211,4 @@ class SequenceField(JsonSequenceField):
         super(SequenceField, self).__init__(*args, **kwargs)
 
 
-__all__ = ('JsonField', 'JsonDictField', 'JsonSequenceField', 'DictField', 'SequenceField')
+__all__ = [str(x) for x in ('JsonField', 'JsonDictField', 'JsonSequenceField', 'DictField', 'SequenceField', 'GenericRelation')]

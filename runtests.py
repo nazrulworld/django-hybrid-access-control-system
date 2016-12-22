@@ -67,8 +67,11 @@ DJANGO_SETTINGS= {
         },
     ],
     'STATIC_URL':  '/static/',
-    'AUTH_USER_MODEL': 'hacs.HacsUserModel'
-
+    'AUTH_USER_MODEL': 'hacs.HacsUserModel',
+    'AUTHENTICATION_BACKENDS': (
+        'django.contrib.auth.backends.ModelBackend', # default
+        'hacs.security.backends.HacsAuthorizerBackend',
+    )
 }
 
 def setup_django_env():
