@@ -50,14 +50,14 @@ class TestHacsContainerModel(TestCase):
 
         news_folder = news_folder_cls(**data)
         news_folder.save()
-
+        local_roles = {"contributor@test.com": ["Editor", ]}
         date_folder_cls = self.model_fixture.models.get('date_folder_cls')
         data = {
             "name": "2016-12-12",
             "slug": "2016-12-12",
             "description": "12th December, 2016",
             "created_by": superuser,
-            "local_roles": {"contributor@test.com": ("Editor", )},
+            "local_roles": local_roles,
             "owner": superuser,
             "acquire_parent": True,
             "workflow": None,
@@ -100,6 +100,9 @@ class TestHacsContainerModel(TestCase):
         self.assertEqual(news_folder.workflow, date_folder.workflow)
         # News Item workflow must be different
         self.assertNotEqual(news_item_ct.workflow, date_folder.workflow)
+
+        # Test Local Roles inherit from DateFolder
+        self.assertEqual(local_roles, news_item.local_roles)
         # Let's clean all
         news_folder.delete()
 

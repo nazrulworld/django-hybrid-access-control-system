@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from .globals import HACS_APP_NAME
 from .globals import HACS_APP_LABEL
+from hacs.patches import apply_anonymous_user_monkey_patch
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -25,7 +26,6 @@ class HACSConfig(AppConfig):
         :return:
         """
         # Apply patches
-        from hacs.patches import apply_anonymous_user_monkey_patch
         apply_anonymous_user_monkey_patch()
         # Patch Done
         # Register events

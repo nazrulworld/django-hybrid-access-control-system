@@ -4,8 +4,19 @@ HACS(Hybrid Access Control System)
     :target: https://pypi.python.org/pypi/django-hacs/
 .. image:: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system.svg?branch=master
     :target: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system
+.. image:: https://ci.appveyor.com/api/projects/status/github/audreyr/cookiecutter?branch=master
+        :target: https://ci.appveyor.com/project/nazrulworld/django-hybrid-access-control-system/branch/master
 .. image:: https://coveralls.io/repos/github/nazrulworld/django-hybrid-access-control-system/badge.svg?branch=master
     :target: https://coveralls.io/github/nazrulworld/django-hybrid-access-control-system?branch=master
+.. image:: https://readthedocs.org/projects/django-hacs/badge/?version=latest
+        :target: https://readthedocs.org/projects/django-hacs/?badge=latest
+        :alt: Documentation Status
+.. image:: https://landscape.io/github/nazrulworld/django-hybrid-access-control-system/master/landscape.svg?style=flat
+   :target: https://landscape.io/github/nazrulworld/django-hybrid-access-control-system/master
+   :alt: Code Health
+.. image:: https://img.shields.io/scrutinizer/g/nazrulworld/django-hybrid-access-control-system.svg
+        :target: https://scrutinizer-ci.com/g/nazrulworld/django-hybrid-access-control-system/?branch=master
+        :alt: Scrutinizer Code Quality
 
 The full featured advanced ``Access Control System`` powered by `Django <https://www.djangoproject.com/>`_. `HACS` provides enterprise standard authorization system,
 it also covers IAM(Identity and Access Management).

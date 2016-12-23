@@ -20,4 +20,7 @@ def apply_anonymous_user_monkey_patch():
     from django.contrib.auth.models import AnonymousUser
     AnonymousUser.__hacs_base_content_type__ = HACS_CONTENT_TYPE_USER
 
+# Applied
+apply_model_option_monkey_patch()
+
 __all__ = [lambda x: str(x), ("apply_model_option_monkey_patch", "apply_anonymous_user_monkey_patch",)]

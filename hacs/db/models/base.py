@@ -58,7 +58,6 @@ def apply_default_permissions(sender, **kwargs):
         if sender.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
             sender._meta.hacs_default_permissions = (
                 ('object.view', ('hacs.ViewContent', )),
-                ('object.create', ('hacs.AddContent', )),
                 ('object.edit', ('hacs.ModifyContent', )),
                 ('object.delete', ('hacs.DeleteContent', )),
             )
@@ -389,14 +388,14 @@ class HacsModelSecurityMixin(models.Model):
         :return:
         """
         if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-            parent_field = 'parent_container_id'
+            parent = getattr(self, 'parent_container_object')
         elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
-            parent_field = 'container_id'
+            parent = getattr(self, 'container_object')
 
         # @TODO: Not sure `GenericForeignKey` immediately available!
-        if not getattr(self, parent_field):
+        if parent is None:
             return
-        parent = self.container_content_type.get_object_for_this_type(pk=getattr(self, parent_field))
+
         if parent.local_roles:
             if self.local_roles:
                 self.local_roles.update(parent.local_roles)
