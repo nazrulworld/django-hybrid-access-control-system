@@ -58,6 +58,7 @@ def apply_default_permissions(sender, **kwargs):
         if sender.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
             sender._meta.hacs_default_permissions = (
                 ('object.view', ('hacs.ViewContent', )),
+                ('object.create', ('hacs.AddContent',)),
                 ('object.edit', ('hacs.ModifyContent', )),
                 ('object.delete', ('hacs.DeleteContent', )),
             )

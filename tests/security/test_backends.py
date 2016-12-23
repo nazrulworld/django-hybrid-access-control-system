@@ -143,7 +143,7 @@ class TestHacsAuthorizerBackend(TestCase):
         self.assertEqual(len(permissions), len(permissions3))
         # Second Contributor user also should have normal permissions for `news_item_2` as no local role for
         # this user!
-        self.assertEqual(len(permissions3), len())
+        self.assertEqual(len(permissions3), len(permissions4))
 
     def test_get_role_permissions(self):
         """

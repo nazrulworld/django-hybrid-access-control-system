@@ -22,7 +22,9 @@ from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 from hacs.globals import HACS_CONTENT_TYPE_USER
 from hacs.globals import HACS_CONTENT_TYPE_STATIC
 from .backends import HacsAuthorizerBackend
-
+from .helpers import HACS_STATIC_CONTENT_PERMISSION
+from .helpers import HACS_PORTAL_MANAGER_PERMISSION
+from .helpers import HacsSecurityException
 # from hacs.lru_wrapped import get_content_type_key
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
@@ -67,7 +69,11 @@ class SecurityManager(object):
         :param action
         :return:
         """
-        return self._check_object(obj, action)
+        try:
+            return self._check_object(obj, action)
+        except HacsSecurityException as exc:
+            logging.info(str(exc))
+            return False
 
     def check_obj_permission(self, obj, action=None):
         """
@@ -76,27 +82,12 @@ class SecurityManager(object):
         :return:
         """
         # @TODO: required to make meaningful debug message
-        if not self._check_object(obj, action):
-            # @TODO: more meaning full message
-            raise PermissionDenied
-
-    def check_model_permission(self, model, action):
-        """
-        :param model:
-        :param action:
-        :return:
-        """
-        # hacs_ct = self.content_type_cls.objects.get_for_model(model)
-        # # get cache key
-        # key = get_content_type_key(hacs_ct.content_type, suffix='permission')
-        # self.cache.get(key)
-
-    def has_model_permission(self, model, action):
-        """
-        :param model:
-        :param action:
-        :return:
-        """
+        try:
+            if not self._check_object(obj, action):
+                # @TODO: more meaning full message
+                raise PermissionDenied
+        except HacsSecurityException as exc:
+            raise PermissionDenied(exc)
 
     def get_ac_user(self):
         """
@@ -137,27 +128,12 @@ class SecurityManager(object):
         for backend in get_backends():
             if not isinstance(backend, HacsAuthorizerBackend):
                 # @TODO: for we are accepting only HacsAuthorizerBackend, but will accept all later
-                # which backend is complience with HACS standard
+                # which backend is compliance with HACS standard
                 continue
             if hasattr(backend, 'get_all_permissions'):
                 user_permissions = user_permissions.union(getattr(backend, 'get_all_permissions')(user, obj))
 
         return len(user_permissions.intersection(permissions)) > 0
-
-    def _check_model(self, action, model=None, container=None, raise_exception=False):
-        """
-        :param action:
-        :param raise_exception:
-        :return:
-        Cache Key Format:
-            1. Model Permission: {app namespace}.sm.{model ID}.{action}
-            2. User Permission: {app namespace}.sm.{user ID}.permissions
-            2. Container Permission: {app namespace}.sm.container.{user ID}.permissions
-        """
-        model = model or self.model
-        assert action == 'object.create' and container is not None and getattr(model, '__hacs_base_content_type__', None) == HACS_CONTENT_TYPE_CONTENT, ""
-
-        content_type = self.content_type_cls.objects.get_for_model(model)
 
     def _check_object(self, obj, action=None):
         """
@@ -171,20 +147,42 @@ class SecurityManager(object):
 
         if base_type in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
             assert action is not None, "Action is required for %s, %s type Model"
-            parent_obj = base_type == HACS_CONTENT_TYPE_CONTAINER and getattr(obj, 'parent_container_object', None) or\
+            container_obj = base_type == HACS_CONTENT_TYPE_CONTAINER and getattr(obj, 'parent_container_object', None) or\
                          getattr(obj, 'container_object', None)
 
-            if parent_obj:
-                if not self._check(parent_obj.permissions_actions_map['list.traverse'], parent_obj):
+            if container_obj:
+                if not self._check(container_obj.permissions_actions_map['list.traverse'], container_obj):
                     warnings.warn("Any action denied! because user don't have hacs.CanTraverseContainer parent "
                                     "container ")
                     return False
+            if action == "object.create":
+                object_ct = self.content_type_cls.objects.get_for_model(obj.__class__)
+                if not object_ct.globally_allowed and container_obj is None:
+                    raise HacsSecurityException("", 9901)
+
+                if container_obj:
+                    container_ct = self.content_type_cls.objects.get_for_model(container_obj.__class__)
+                    if object_ct.content_type not in container_ct.allowed_content_types.all():
+                        raise HacsSecurityException("", 9902)
+            else:
+                # Other than create/insert action, owner must be respected
+                if self.get_ac_user() == obj.owner:
+                    return True
 
             obj_permissions = obj.permissions_actions_map[action]
 
-        elif base_type in (HACS_CONTENT_TYPE_UTILS, HACS_CONTENT_TYPE_STATIC):
+        elif base_type == HACS_CONTENT_TYPE_UTILS:
             # @TODO: may be should use cache or list of permissions string
             obj_permissions = [x.name for x in obj.permissions.all()]
+        elif base_type == HACS_CONTENT_TYPE_STATIC:
+            obj_permissions = HACS_STATIC_CONTENT_PERMISSION
+
+        elif base_type == HACS_CONTENT_TYPE_USER:
+            # @TODO: Need to plan, what should be
+            obj_permissions = "hacs.ManageUser"
+        else:
+            # Default Must Be Super User
+            obj_permissions = HACS_PORTAL_MANAGER_PERMISSION
 
         return self._check(obj_permissions, obj)
 
@@ -201,5 +199,5 @@ class SecurityManager(object):
         """
         :return: hacs.models.HacsContentType
         """
-        from django.apps import apps
-        return apps.get_registered_model(HACS_APP_LABEL, "HacsContentType")
+        from hacs.helpers import get_contenttype_model
+        return get_contenttype_model()

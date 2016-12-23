@@ -19,6 +19,8 @@ _ = lambda x: x
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 CACHE_KEY_FORMAT = "{prefix}.sm.{content_type}.{key}"
+HACS_STATIC_CONTENT_PERMISSION = "hacs.ManageStaticContent"
+HACS_PORTAL_MANAGER_PERMISSION = "hacs.ManagePortal"
 STANDARD_PERMISSIONS = {
     "hacs.PublicView": {
         "title": "Public View",
@@ -28,7 +30,7 @@ STANDARD_PERMISSIONS = {
         "title": "Authenticated View",
         "description": "something like public view except guest user."
     },
-    "hacs.ManagePortal": {
+    HACS_PORTAL_MANAGER_PERMISSION: {
         "title": "Manage Portal"
     },
     "hacs.ManageSystem": {
@@ -46,7 +48,7 @@ STANDARD_PERMISSIONS = {
     "hacs.AddContent": {},
     "hacs.ModifyContent": {},
     "hacs.DeleteContent": {},
-    "hacs.ManageStaticContent": {},
+    HACS_STATIC_CONTENT_PERMISSION: {},
     "hacs.ManageUtilsContent": {},
     "hacs.CanListObjects": {},
     "hacs.CanModifyObjects": {},
@@ -99,6 +101,19 @@ HACS_ACTIONS = {
     },
 
 }
+
+
+class HacsSecurityException(Exception):
+    """
+    """
+    def __init__(self, message, code=None):
+        """
+        :param message:
+        :param code:
+        """
+        super(HacsSecurityException, self).__init__(code, message)
+        self.code = code
+
 
 @lru_cache.lru_cache(maxsize=1024)
 def get_cache_key(content_type, content_object=None, klass=None, _id=None):

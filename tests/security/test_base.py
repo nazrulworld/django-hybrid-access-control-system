@@ -99,3 +99,7 @@ class TestSecurityManager(TestCase):
         # As `news_item_2` has local roles for contributor, so should have editor permission for this object
         self.assertTrue(security_manager._check('hacs.ManageContent', news_item_2))
 
+    def test__check_object(self):
+        """
+        :return:
+        """
