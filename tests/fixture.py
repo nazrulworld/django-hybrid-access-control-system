@@ -144,7 +144,7 @@ class ModelFixture(object):
             "slug": "2016-10-10",
             "description": "10th December, 2016",
             "created_by": self.superuser,
-            "local_roles": {"contributor@test.com": ("Editor",)},
+            "local_roles": None,
             "owner": self.superuser,
             "acquire_parent": True,
             "workflow": None,
@@ -170,6 +170,20 @@ class ModelFixture(object):
         news_item = news_item_cls(**data)
         news_item.save()
 
+        data2 = {
+            "name": "news two with local roles",
+            "slug": "news-two-with-local-roles",
+            "description": "news of HACS with local roles",
+            "created_by": self.editoruser,
+            "owner": self.editoruser,
+            "local_roles": {"contributor@test.com": ("Editor",)},
+            "acquire_parent": True,
+            "container_content_type": ContentType.objects.get_for_model(date_folder_cls),
+            "container_id": date_folder.pk
+        }
+        news_item2 = news_item_cls(**data2)
+        news_item2.save()
+
     @cached_property
     def models(self):
         """
@@ -183,6 +197,13 @@ class ModelFixture(object):
         :return:
         """
         return get_user_model().objects.get_by_natural_key("manager@test.com")
+
+    @cached_property
+    def editoruser(self):
+        """
+        :return:
+        """
+        return get_user_model().objects.get_by_natural_key("editor@test.com")
 
     @cached_property
     def contributoruser(self):

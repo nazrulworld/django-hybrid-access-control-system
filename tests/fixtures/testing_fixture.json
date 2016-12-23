@@ -300,6 +300,28 @@
     }
   },
   {
+    "model": "hacs.HacsUserModel",
+    "pk": 6,
+    "fields": {
+      "first_name": "Test Contributor User 2",
+      "email": "contributor2@test.com",
+      "password": "top_secret",
+      "groups": [["Contributors" ]],
+      "roles": [["Contributor"]]
+    }
+  },
+  {
+    "model": "hacs.HacsUserModel",
+    "pk": 7,
+    "fields": {
+      "first_name": "Test Member User 2",
+      "email": "member2@test.com",
+      "password": "top_secret",
+      "groups": [["Members" ]],
+      "roles": [["Member"]]
+    }
+  },
+  {
     "model": "hacs.RoutingTable",
     "fields": {
       "name": "default-route",

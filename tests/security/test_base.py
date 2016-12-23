@@ -23,6 +23,7 @@ class TestSecurityManager(TestCase):
     """"""
 
     fixtures = (FIXTURE, )
+    model_fixture = ModelFixture()
 
     def setUp(self):
         """
@@ -30,7 +31,6 @@ class TestSecurityManager(TestCase):
         """
         super(TestSecurityManager, self).setUp()
         # Test Fixtures
-        self.model_fixture = ModelFixture()
         self.model_fixture.init_data()
 
     def test_check(self):
@@ -88,4 +88,14 @@ class TestSecurityManager(TestCase):
         # Test member user should have permission now
         self.assertTrue(security_manager._check(('hacs.ManagePortal', 'hacs.AuthenticatedView',)))
 
+        # Test with object and local roles
+        HACS_ACCESS_CONTROL_LOCAL.current_user = self.model_fixture.contributoruser
+        news_item_1 = self.model_fixture.models.get('news_item_cls').objects.get_by_natural_key('news-one')
+        news_item_2 = self.model_fixture.models.get('news_item_cls'). \
+            objects.get_by_natural_key('news-two-with-local-roles')
+
+        # Contributor should not have Editor permission
+        self.assertFalse(security_manager._check('hacs.ManageContent', news_item_1))
+        # As `news_item_2` has local roles for contributor, so should have editor permission for this object
+        self.assertTrue(security_manager._check('hacs.ManageContent', news_item_2))
 

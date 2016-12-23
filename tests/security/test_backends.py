@@ -20,6 +20,7 @@ except ImportError:
     import mock
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
+from tests.fixture import ModelFixture
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -27,10 +28,12 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 class TestHacsAuthorizerBackend(TestCase):
     """"""
     fixtures = (FIXTURE, )
+    model_fixture = ModelFixture()
 
     def setUp(self):
         """"""
         super(TestHacsAuthorizerBackend, self).setUp()
+        self.model_fixture.init_data()
         self.cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
 
     @mock.patch('hacs.security.helpers.get_user_permissions', return_value=None)
@@ -111,6 +114,36 @@ class TestHacsAuthorizerBackend(TestCase):
         permissions = backend.get_all_permissions(superuser)
         # super user should have all permission
         self.assertEqual(len(HacsPermissionModel.objects.all()), len(permissions))
+
+        # Test with local_roles and object
+        news_item_1 = self.model_fixture.models.get('news_item_cls').objects.get_by_natural_key('news-one')
+        news_item_2 = self.model_fixture.models.get('news_item_cls').\
+            objects.get_by_natural_key('news-two-with-local-roles')
+        contributor1 = self.model_fixture.contributoruser
+        contributor2 = get_user_model().objects.get_by_natural_key('contributor2@test.com')
+        # First `Contributor` user who has local roles for `news_item_2`
+        permissions  = backend.get_all_permissions(contributor1)
+        permissions1 = backend.get_all_permissions(contributor1, news_item_1)
+        permissions2 = backend.get_all_permissions(contributor1, news_item_2)
+
+        # Second `Contributor User` that has no local_roles each object
+        permissions3 = backend.get_all_permissions(contributor2, news_item_1)
+        permissions4 = backend.get_all_permissions(contributor2, news_item_2)
+
+        # Editor permission without obj (although will be same with `news_item_2`)
+        permissions5 = backend.get_all_permissions(get_user_model().objects.get_by_natural_key('editor@test.com'))
+
+        # Should same number of permissions of Editor(`permissions5`) and First Contributor with `news_item_2`
+        # (as local role `Editor` assigned in this object)
+        self.assertEqual(len(permissions2), len(permissions5))
+        # For `news_item_1` object first `Contributor` should have normal permissions for any Contributor
+        self.assertEqual(len(permissions), len(permissions1))
+
+        # Second Contributor user should also normal permissions
+        self.assertEqual(len(permissions), len(permissions3))
+        # Second Contributor user also should have normal permissions for `news_item_2` as no local role for
+        # this user!
+        self.assertEqual(len(permissions3), len())
 
     def test_get_role_permissions(self):
         """

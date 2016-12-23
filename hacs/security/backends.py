@@ -99,7 +99,10 @@ class HacsAuthorizerBackend(object):
             if obj.local_roles:
                 try:
                     roles = obj.local_roles[getattr(user, user.USERNAME_FIELD)]
-                    _permissions = self.get_roles_permissions(*roles)
+                    if len(roles) == 1:
+                        _permissions = self.get_role_permissions(roles[0])
+                    else:
+                        _permissions = self.get_roles_permissions(*roles)
                     if _permissions:
                         local_role_permissions = local_role_permissions.union(_permissions)
                 except KeyError:
@@ -175,7 +178,7 @@ class HacsAuthorizerBackend(object):
         :param roles: list of natural key of HacsRoleModel or instance of HacsRoleModel
         :return:
         """
-        assert len(roles) > 1, "Number of arguments must be more that single, for single role, " \
+        assert len(roles) > 1, "Number of arguments must be more than single, for single role, " \
                                "`get_role_permissions` method could be used"
         role_cls = get_role_model()
         cache_key = get_cache_key(role_cls.__hacs_base_content_type__, klass=role_cls.__name__, _id=hash(roles))
