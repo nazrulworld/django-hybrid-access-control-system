@@ -21,6 +21,7 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 CACHE_KEY_FORMAT = "{prefix}.sm.{content_type}.{key}"
 HACS_STATIC_CONTENT_PERMISSION = "hacs.ManageStaticContent"
 HACS_PORTAL_MANAGER_PERMISSION = "hacs.ManagePortal"
+HACS_CONTENT_ADD_PERMISSION = "hacs.AddContent"
 STANDARD_PERMISSIONS = {
     "hacs.PublicView": {
         "title": "Public View",
@@ -45,7 +46,7 @@ STANDARD_PERMISSIONS = {
     },
     "hacs.ManageContent": {},
     "hacs.ViewContent": {},
-    "hacs.AddContent": {},
+    HACS_CONTENT_ADD_PERMISSION: {},
     "hacs.ModifyContent": {},
     "hacs.DeleteContent": {},
     HACS_STATIC_CONTENT_PERMISSION: {},
@@ -59,6 +60,7 @@ STANDARD_PERMISSIONS = {
 
 }
 
+HACS_OBJECT_CREATE_ACTION = "object.create"
 # Actions Definition
 HACS_ACTIONS = {
     'list.traverse': {
@@ -83,7 +85,7 @@ HACS_ACTIONS = {
     'object.view': {
         'title': _("Individual Object View")
     },
-    'object.create': {
+    HACS_OBJECT_CREATE_ACTION : {
         'title': _("Create")
     },
     'object.edit': {

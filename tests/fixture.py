@@ -65,6 +65,7 @@ class ModelFixture(object):
             globally_allowed=True,
             workflow=folder_workflow,
             permissions_actions_map={
+                "object.create": ["hacs.ManagePortal"],
                 "object.view": ["hacs.ViewContent"],
                 "object.edit": ["hacs.ModifyContent"],
                 "object.delete": ["hacs.DeleteContent"],
@@ -88,7 +89,9 @@ class ModelFixture(object):
             content_type=date_folder_cts,
             globally_allowed=False,
             workflow=None,
-            permissions_actions_map=None,
+            permissions_actions_map={
+                "object.create": ["hacs.ManageContent"],
+            },
             created_by=self.superuser
 
         )
@@ -103,6 +106,7 @@ class ModelFixture(object):
             globally_allowed=False,
             workflow=news_item_workflow,
             permissions_actions_map={
+              "object.create": ["hacs.AddContent"],
               "object.view": ["hacs.ViewContent"],
               "object.edit": ["hacs.ModifyContent"],
               "object.delete": ["hacs.DeleteContent"],
@@ -113,7 +117,7 @@ class ModelFixture(object):
 
         )
 
-        news_folder_ct_obj.allowed_content_types.add(news_folder_cts)
+        news_folder_ct_obj.allowed_content_types.add(date_folder_cts)
         date_folder_ct_obj.allowed_content_types.add(news_item_cts)
 
         news_item_ct_obj.save()
@@ -211,3 +215,10 @@ class ModelFixture(object):
         :return:
         """
         return get_user_model().objects.get_by_natural_key("contributor@test.com")
+
+    @cached_property
+    def memberuser(self):
+        """
+        :return:
+        """
+        return get_user_model().objects.get_by_natural_key("member@test.com")

@@ -164,12 +164,13 @@ class SecurityManager(object):
                     container_ct = self.content_type_cls.objects.get_for_model(container_obj.__class__)
                     if object_ct.content_type not in container_ct.allowed_content_types.all():
                         raise HacsSecurityException("", 9902)
+                # Only `object.create`\s permission comes from content type
+                obj_permissions = object_ct.permissions_actions_map[action]
             else:
                 # Other than create/insert action, owner must be respected
                 if self.get_ac_user() == obj.owner:
                     return True
-
-            obj_permissions = obj.permissions_actions_map[action]
+                obj_permissions = obj.permissions_actions_map[action]
 
         elif base_type == HACS_CONTENT_TYPE_UTILS:
             # @TODO: may be should use cache or list of permissions string

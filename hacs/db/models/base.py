@@ -305,7 +305,8 @@ class HacsModelSecurityMixin(models.Model):
                     if _workflow:
                         self.state = _workflow.default_state
 
-                if self.hacs_tracker.has_changed('state') or _insert:
+                if self.hacs_tracker.has_changed('state') or\
+                    (_insert and self.permissions_actions_map is None and _workflow is None):
                     # @TODO: permissions updated here
                     self.update_permissions(_workflow, hacs_ct)
 
@@ -357,29 +358,33 @@ class HacsModelSecurityMixin(models.Model):
                 # @TODO: need to meaningful error
                 raise
         else:
-            permissions = defaultdict()
-            # No workflow! we are going to search from default
-            for permission in self._meta.hacs_default_permissions:
+            # No workflow! we are going to search from contenttype
+            permissions = hacs_contenttype.permissions_actions_map.copy() or defaultdict()
+            permissions.pop('object.create', None)
 
-                if isinstance(permission, six.string_types) or (isinstance(permission, (tuple, list)) and
-                                                                        2 != len(permission)):
-                    # We don't accept invalid permission format for this contenttype
-                    continue
+            if not permissions:
 
-                permissions[permission[0]] = permission[1]
+                for permission in self._meta.hacs_default_permissions:
 
-            for permission in self._meta.permissions or []:
+                    if isinstance(permission, six.string_types) or (isinstance(permission, (tuple, list)) and
+                                                                            2 != len(permission)):
+                        # We don't accept invalid permission format for this contenttype
+                        continue
 
-                if isinstance(permission, six.string_types) or (isinstance(permission, (tuple, list)) and
-                                                                        2 != len(permission)):
-                    # We don't accept invalid permission format for this contenttype
-                    continue
-                try:
-                    # Trying to combine with default
-                    temp = set(permissions[permission[0]])
-                    permissions[permission[0]] = temp.union(permission[1])
-                except KeyError:
                     permissions[permission[0]] = permission[1]
+
+                for permission in self._meta.permissions or []:
+
+                    if isinstance(permission, six.string_types) or (isinstance(permission, (tuple, list)) and
+                                                                            2 != len(permission)):
+                        # We don't accept invalid permission format for this contenttype
+                        continue
+                    try:
+                        # Trying to combine with default
+                        temp = set(permissions[permission[0]])
+                        permissions[permission[0]] = temp.union(permission[1])
+                    except KeyError:
+                        permissions[permission[0]] = permission[1]
 
             self.permissions_actions_map = permissions
 

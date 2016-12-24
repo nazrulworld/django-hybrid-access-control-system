@@ -41,7 +41,7 @@ class TestSecurityManager(TestCase):
         logging.captureWarnings(False)
 
         security_manager = SecurityManager()
-
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
         with warnings.catch_warnings(record=True) as warns:
             # http://stackoverflow.com/questions/5644836/in-python-how-does-one-catch-warnings-as-if-they-were-exceptions
 
@@ -103,3 +103,10 @@ class TestSecurityManager(TestCase):
         """
         :return:
         """
+        date_folder = self.model_fixture.models.get('date_folder_cls').objects.get_by_natural_key('2016-10-10')
+        security_manager = SecurityManager(date_folder.__class__)
+        HACS_ACCESS_CONTROL_LOCAL.current_user = self.model_fixture.contributoruser
+
+        self.assertFalse(security_manager._check_object(date_folder, 'object.create'))
+
+

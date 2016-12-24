@@ -23,6 +23,8 @@ from hacs.db.models import BaseUserManager
 from hacs.db.models.base import HacsAbstractUser
 from hacs.db.models import HacsStaticModel
 from hacs.defaults import HACS_DEFAULT_STATE
+from hacs.security.helpers import HACS_CONTENT_ADD_PERMISSION
+from hacs.security.helpers import HACS_OBJECT_CREATE_ACTION
 
 if not apps.is_installed('django.contrib.admin'):
     # Fallback LogEntry Model, if admin app not installed
@@ -240,8 +242,9 @@ class HacsContentType(HacsUtilsModel):
     )
     # A dictionary map for content type permission
     # Data Format: {'action': (permission1. permission2)}
-    # Usually will be NULL, when workflow is active
-    permissions_actions_map = DictField(null=True)
+    # Usually should contain one permission 'object.create' map, when workflow is active
+    # because other permissions will be ignored if workflow is available
+    permissions_actions_map = DictField(null=True, default={HACS_OBJECT_CREATE_ACTION: [HACS_CONTENT_ADD_PERMISSION, ]})
 
     class Meta:
         app_label = "hacs"
