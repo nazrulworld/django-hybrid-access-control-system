@@ -189,6 +189,7 @@ def get_anonymous_user_role():
     :return:
     """
     role_cls = global_apps.get_model(HACS_APP_NAME, 'HacsRoleModel')
+
     try:
         return role_cls.objects.get_by_natural_key(getattr(settings, 'HACS_ANONYMOUS_ROLE_NAME',
                                                            HACS_ANONYMOUS_ROLE_NAME))

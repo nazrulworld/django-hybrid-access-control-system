@@ -487,7 +487,7 @@
           "object.delete": ["hacs.ManagePortal"],
           "object.manage_state":["Hacs.ManageContentState"],
           "share": [],
-          "list.traverse": ["hacs.CanTraverseContainer"],
+          "list.traverse": ["hacs.PublicView"],
           "list.view": ["hacs.CanListObjects"],
           "list.update": ["hacs.CanModifyObjects"],
           "list.delete": ["hacs.CanDeleteObjects"]

@@ -11,6 +11,7 @@ from hacs.models import HacsSystemUser
 from hacs.db.models import HacsItemModel
 from hacs.db.models import HacsContainerModel
 from hacs.security.base import SecurityManager
+from django.contrib.auth.models import AnonymousUser
 
 from tests.fixture import ModelFixture
 
@@ -103,10 +104,49 @@ class TestSecurityManager(TestCase):
         """
         :return:
         """
+        news_folder = self.model_fixture.models.get('news_folder_cls').objects.get_by_natural_key('news-folder')
         date_folder = self.model_fixture.models.get('date_folder_cls').objects.get_by_natural_key('2016-10-10')
+        news_item = self.model_fixture.models.get('news_item_cls').objects.get_by_natural_key('news-one')
         security_manager = SecurityManager(date_folder.__class__)
         HACS_ACCESS_CONTROL_LOCAL.current_user = self.model_fixture.contributoruser
 
+        # User Must Have `hacs.ManageContent` permission to create Date Folder
+        # Normally Contributor has don't have that permission
         self.assertFalse(security_manager._check_object(date_folder, 'object.create'))
 
+        # News One is now in draft state.
+
+        # Contributor has view access
+        self.assertTrue(security_manager._check_object(news_item, 'object.view'))
+
+        # Member User should not have view access
+        HACS_ACCESS_CONTROL_LOCAL.current_user = self.model_fixture.memberuser
+        self.assertFalse(security_manager._check_object(news_item, 'object.view'))
+
+        # Now we are changing state to internally_published.
+        news_item.state = 'internally_published'
+        news_item.save()
+
+        # Member user now should have view permission
+        self.assertTrue(security_manager._check_object(news_item, 'object.view'))
+
+        # Now we are changing state to published.
+        news_item.state = 'published'
+        news_item.save()
+
+        # Guest User should now view access
+        # But! still we have to wait, as in this test fixture by default Anonymous user
+        # don't have hacs.CanTraverseContainer, so content inside container don't have view permission for this user
+        # Until container's state is published
+        HACS_ACCESS_CONTROL_LOCAL.current_user = AnonymousUser()
+        self.assertFalse(security_manager._check_object(news_item, 'object.view'))
+        # Let's Publish Folders
+        news_folder.state = 'published'
+        news_folder.save()
+        date_folder.state = 'published'
+        date_folder.save()
+        # Refresh Data
+        news_item = self.model_fixture.models.get('news_item_cls').objects.get_by_natural_key('news-one')
+        # Now should have view permission
+        self.assertTrue(security_manager._check_object(news_item, 'object.view'))
 
