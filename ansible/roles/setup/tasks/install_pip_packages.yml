@@ -1,0 +1,41 @@
+---
+- name: force upgrade pip and virtualenv
+  pip: name="{{ item }}" state=latest
+  with_items:
+  - pip
+  - virtualenv
+
+- name: install packages from list using pip for system python
+  pip: requirements="{{hacs_ansible_path}}/vars/requirements.txt" state=present
+- name: find django admin executable path
+  shell: "which django-admin"
+  register: django_path
+
+- set_fact:
+    django_executable: "{{ django_path.stdout }}"
+
+- name: install packages from list using pip for python 2.7
+  become_user: "{{ system_user }}"
+  pip: requirements="{{hacs_ansible_path}}/vars/requirements.txt" virtualenv="{{ hacs_deploypath_path }}/env-py27" state=present virtualenv_python="python2.7"
+
+# Might be ansible bug: not working like python 2.7
+- name: create virtual environment for python 3.5
+  become_user: "{{system_user}}"
+  command: "{{ virtualenv_executable }} env-py35 -p python3.5"
+  args:
+    chdir: "{{ hacs_deploypath_path }}"
+
+- name: install packages from list using pip for python 3.5
+  become_user: "{{ system_user }}"
+  pip: requirements="{{hacs_ansible_path}}/vars/requirements.txt" executable="{{ hacs_deploypath_path }}/env-py35/bin/pip" state=present
+
+- name: create virtual environment for python 3.5
+  become_user: "{{system_user}}"
+  command: "{{ virtualenv_executable }} env-py36 -p python3.6"
+  args:
+    chdir: "{{ hacs_deploypath_path }}"
+
+- name: install packages from list using pip for python 3.6
+  become_user: "{{ system_user }}"
+  pip: requirements="{{hacs_ansible_path}}/vars/requirements.txt" executable="{{ hacs_deploypath_path }}/env-py36/bin/pip" state=present
+

@@ -1,0 +1,127 @@
+---
+# Make Hybrid Access Control System Ready
+- name: make sure project directory
+  file: path="{{ hacs_deploypath_path }}" state="directory" force=false owner="ubuntu" group="ubuntu"
+
+- name: make sure share directory is exists
+  file: path="{{ hacs_deploypath_path }}/share" state="directory" recurse=yes force=no owner="ubuntu" group="ubuntu"
+
+- name: clean generated files pyc
+  command: "find {{ hacs_source_path }} -type f -name '*.pyc' -delete"
+
+- name: clean generated files __pycache__
+  command: "find {{ hacs_source_path }} -type f -name '__pycache__' -delete"
+
+- name: run setup file of hacs
+  command: "{{ python_executable }}  setup.py develop"
+  args:
+      chdir: "{{ hacs_source_path }}"
+# Django install for System python
+- name: check if project is already create
+  stat: path="{{ hacs_deploypath_path }}/manage.py"
+  register: manage_py
+
+- name: start creating django project
+  become_user: "{{ system_user }}"
+  command: "{{django_executable}} startproject hacs_project ."
+  args:
+    chdir: "{{ hacs_deploypath_path }}"
+  when: not manage_py.stat.exists
+
+- name: create hacs django settings
+  template: src="settings.py.tpl" dest="{{hacs_project_path}}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+
+- name: create hacs django urls
+  template: src="urls.py.tpl" dest="{{hacs_project_path}}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+
+- name: check if project is already create
+  stat: path="{{ hacs_deploypath_path }}/{{ hacs_default_app }}"
+  register: default_app
+
+- name: create a default application
+  become_user: "{{ system_user }}"
+  command: "{{ python_executable }} manage.py startapp {{ hacs_default_app }}"
+  args:
+    chdir: "{{ hacs_deploypath_path }}"
+  when: not default_app.stat.exists
+
+# Django install for  python 3.5
+- name: python 3.5 | force upgrade pip and virtualenv
+  pip: name="{{ item }}" executable="{{ hacs_deploypath_path }}/env-py35/bin/pip"  state=latest
+  with_items:
+  - pip
+
+- name: python 3.5 | check if project is already create
+  become_user: "{{ system_user }}"
+  stat: path="{{ hacs_deploypath_path }}/env-py35/manage.py"
+  register: manage_py
+
+- name: python 3.5 | start creating django project
+  become_user: "{{ system_user }}"
+  command: "./bin/django-admin startproject {{ hacs_project_name }} ."
+  args:
+    chdir: "{{ hacs_deploypath_path }}/env-py35"
+  when: not manage_py.stat.exists
+
+- name: python 3.5 | run setup file of hacs
+  become_user: "{{ system_user }}"
+  command: "{{ hacs_deploypath_path }}/env-py35/bin/python  setup.py develop"
+  args:
+      chdir: "{{ hacs_source_path }}"
+
+- name: python 3.5 | create hacs django settings
+  template: src="settings.py.tpl" dest="{{ hacs_deploypath_path }}/env-py35/{{ hacs_project_name }}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+
+- name: python 3.5 | create hacs django urls
+  template: src="urls.py.tpl" dest="{{ hacs_deploypath_path }}/env-py35/{{ hacs_project_name }}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+
+- name: python 3.5 | check if project is already create
+  stat: path="{{ hacs_deploypath_path }}/env-py35/{{ hacs_default_app }}"
+  register: default_app
+
+- name: python 3.5 | create a default application
+  command: "./bin/python manage.py startapp {{ hacs_default_app }}"
+  args:
+    chdir: "{{ hacs_deploypath_path }}/env-py35/"
+  when: not default_app.stat.exists
+
+# Django install for  python 3.6
+- name: python 3.6 | force upgrade pip and virtualenv
+  pip: name="{{ item }}" executable="{{ hacs_deploypath_path }}/env-py36/bin/pip"  state=latest
+  with_items:
+  - pip
+
+- name: python 3.6 | check if project is already create
+  become_user: "{{ system_user }}"
+  stat: path="{{ hacs_deploypath_path }}/env-py36/manage.py"
+  register: manage_py
+
+- name: python 3.6 | start creating django project
+  become_user: "{{ system_user }}"
+  command: "./bin/django-admin startproject {{ hacs_project_name }} ."
+  args:
+    chdir: "{{ hacs_deploypath_path }}/env-py36"
+  when: not manage_py.stat.exists
+
+- name: python 3.6 | run setup file of hacs
+  become_user: "{{ system_user }}"
+  command: "{{ hacs_deploypath_path }}/env-py36/bin/python  setup.py develop"
+  args:
+      chdir: "{{ hacs_source_path }}"
+
+- name: python 3.6 | create hacs django settings
+  template: src="settings.py.tpl" dest="{{ hacs_deploypath_path }}/env-py36/{{ hacs_project_name }}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+
+- name: python 3.6 | create hacs django urls
+  template: src="urls.py.tpl" dest="{{ hacs_deploypath_path }}/env-py36/{{ hacs_project_name }}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+
+- name: python 3.6 | check if project is already create
+  stat: path="{{ hacs_deploypath_path }}/env-py36/{{ hacs_default_app }}"
+  register: default_app
+
+- name: python 3.6 | create a default application
+  command: "./bin/python manage.py startapp {{ hacs_default_app }}"
+  args:
+    chdir: "{{ hacs_deploypath_path }}/env-py36/"
+  when: not default_app.stat.exists
+

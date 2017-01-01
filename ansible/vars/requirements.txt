@@ -1,0 +1,8 @@
+Django>=1.10.3
+pytest-django
+django-redis
+jsmin
+rcssmin
+psycopg2
+ipdb
+mock

@@ -1,0 +1,42 @@
+---
+# PostgreSQL Setup
+- name: PostgreSQL is running
+  service:
+    name: "{{ postgresql_service_name }}"
+    state: started
+
+- name: Add extensions to the template0, so that any database created from, should globally available
+  shell: "{{ postgresql_bin_directory}}/psql -d template1 --username {{postgresql_admin_user}} -c 'CREATE EXTENSION IF NOT EXISTS {{ item }};'"
+  become: yes
+  become_user: "{{postgresql_service_user}}"
+  with_items: "{{postgresql_extensions}}"
+  register: result
+  changed_when: "'NOTICE' not in result.stderr"
+  when: postgresql_extensions
+
+- name: Make sure required users are present
+  become_user: "{{postgresql_admin_user}}"
+  postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    role_attr_flags: "{{ item.roles }}"
+    port: "{{ item.port | default(postgresql_port) }}"
+    state: present
+  with_items: "{{ postgresql_users }}"
+  when: postgresql_users|length > 0
+
+- name: Make sure databases are present
+  postgresql_db:
+    name: "{{item.name}}"
+    owner: "{{ item.owner | default(postgresql_database_owner) }}"
+    encoding: "{{ postgresql_encoding}}"
+    lc_collate: "{{postgresql_locale}}"
+    lc_ctype: "{{postgresql_ctype}}"
+    port: "{{postgresql_port}}"
+    template: "template1"
+    state: present
+    login_user: "{{postgresql_admin_user}}"
+  become: yes
+  become_user: "{{postgresql_admin_user}}"
+  with_items: "{{postgresql_databases}}"
+  when: postgresql_databases|length > 0

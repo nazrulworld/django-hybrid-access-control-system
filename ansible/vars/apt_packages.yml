@@ -27,6 +27,8 @@ APT_PACKAGES:
  - {name: "libxml2-dev", state: present, force: no}
  - {name: "libxslt1-dev", state: present, force: no}
  - {name: "python-dev", state: present, force: no}
+ - {name: "python3-dev", state: present, force: no}
+ - {name: "python3.6-dev", state: present, force: no}
  - {name: "python-ldap", state: present, force: no}
  - {name: "python-libxml2", state: present, force: no}
  - {name: "python-lxml", state: present, force: no}
@@ -48,6 +50,8 @@ APT_PACKAGES:
  - {name: "postgresql-{{ postgresql_version }}", state: present, force: no}
  - {name: "postgresql-contrib-{{ postgresql_version }}", state: present, force: no}
  - {name: "postgresql-client-{{ postgresql_version }}", state: present, force: no}
+ - {name: "libpq-dev", state: present, force: no}
+
 
 
 

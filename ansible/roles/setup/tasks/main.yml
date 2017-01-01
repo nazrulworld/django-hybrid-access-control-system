@@ -1,2 +1,26 @@
 ---
-- include: install_apt_packages.yml
+#- include: install_apt_packages.yml
+# Override some variables
+- name: find psql executable path
+  shell: "which psql"
+  register: psql_path
+
+- name: find python executable path
+  shell: "which python"
+  register: python_path
+
+- name: find pip executable path
+  shell: "which pip"
+  register: pip_path
+
+- name: find virtualenv executable path
+  shell: "which virtualenv"
+  register: virtualenv_path
+
+- set_fact:
+    postgresql_psql_executable: "{{ psql_path.stdout }}"
+    python_executable: "{{ python_path.stdout }}"
+    pip_executable: "{{ pip_path.stdout }}"
+    virtualenv_executable: "{{ virtualenv_path.stdout }}"
+
+- include: install_pip_packages.yml

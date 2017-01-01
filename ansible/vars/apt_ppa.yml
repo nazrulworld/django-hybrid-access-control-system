@@ -1,6 +1,7 @@
 APT_PPA:
   - {repo: "ppa:git-core/ppa", state: present, validate_certs: yes }
   - {repo: "ppa:marutter/rrutter", state: present, validate_certs: yes}
+  - {repo: "ppa:jonathonf/python-3.6", state: present, validate_certs: yes}
   - {repo: "ppa:chris-lea/redis-server", state: present, validate_certs: yes}
   - {repo: "deb http://www.rabbitmq.com/debian/ testing main", state: present, validate_certs: yes}
   - {repo: "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main", state: present, validate_certs: yes}

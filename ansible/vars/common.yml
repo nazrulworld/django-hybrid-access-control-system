@@ -1,10 +1,38 @@
+system_user: "ubuntu"
+system_group: "ubuntu"
 postgresql_version: "9.4"
 postgresql_encoding: 'UTF-8'
 postgresql_admin_user: "postgres"
-postgresql_service_name: "postgres"
+postgresql_database_owner: "{{postgresql_admin_user}}"
+postgresql_service_user: "{{postgresql_admin_user}}"
+postgresql_service_name: "postgresql"
 postgresql_port: 5432
-
+postgresql_bin_directory: "/usr/bin"
+postgresql_locale: "en_US.UTF-8"
+postgresql_ctype: "en_US.UTF-8"
+postgresql_default_auth_method: "trust"
+postgresql_extensions:
+ - btree_gin
+ - citext
+ - hstore
+ - unaccent
+postgresql_users:
+  - {"name": "hacs_admin", "password": "hacs_secret_^5$", "roles": "CREATEDB,NOSUPERUSER"}
 postgresql_databases:
-  - {"name": "hacs_db", "password": "hacs_secret"}
+  - {"name": "hacs_db", owner: "hacs_admin"}
+  - {"name": "test_hacs_db", owner: "hacs_admin"}
+postgresql_psql_executable:
+
+python_executable: "/usr/bin/python"
+pip_executable: "/usr/bin/pip"
+virtualenv_executable: "/usr/bin/virtualenv"
+django_executable: "/usr/local/bin/django-admin"
 known_hosts:
  - "github.com"
+# HACS Section
+hacs_source_path: "/srv/hacs"
+hacs_ansible_path: "{{ hacs_source_path }}/ansible"
+hacs_deploypath_path: "/srv/hacs_dev"
+hacs_project_name: "hacs_project"
+hacs_project_path: "{{ hacs_deploypath_path }}/{{ hacs_project_name }}"
+hacs_default_app: "website"
