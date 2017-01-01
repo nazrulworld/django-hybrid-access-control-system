@@ -9,6 +9,8 @@ PY35 = sys.version_info[0:2] >= (3, 5)
 
 requirements = [
         'Django>=1.10.3',
+        'psycopg2',
+        'django-redis'
     ]
 test_requirements = ['pytest', 'pytest-django']
 if not PY34:
