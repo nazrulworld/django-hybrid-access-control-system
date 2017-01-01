@@ -17,3 +17,13 @@ def setupModels(*models):
 
     cts = [ContentType(app_label=model._meta.app_label, model=model._meta.model) for model in models]
     ContentType.objects.using(DEFAULT_DB_ALIAS).bulk_create(cts)
+
+
+def tearDownModels(*models):
+    """
+    :param models:
+    :return:
+    """
+    with connection.schema_editor(atomic=True) as schema_editor:
+        for model in models:
+            schema_editor.delete_model(model)

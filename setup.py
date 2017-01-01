@@ -5,6 +5,7 @@ import sys
 from setuptools import setup
 PY2 = sys.version_info[0] == 2
 PY34 = sys.version_info[0:2] >= (3, 4)
+PY35 = sys.version_info[0:2] >= (3, 5)
 
 requirements = [
         'Django>=1.10.3',
@@ -14,6 +15,9 @@ if not PY34:
     # we need backport of pathlib
     requirements.append('pathlib2')
     test_requirements.append('mock')
+
+if not PY35:
+    requirements.append('typing')
 
 
 def get_version():

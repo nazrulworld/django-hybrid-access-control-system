@@ -8,7 +8,7 @@ import hashlib
 import tempfile
 import datetime
 from django.test import Client
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.conf import settings
 from django.utils import timezone
 from importlib import import_module
@@ -67,7 +67,7 @@ def clean_lru():
 
 
 @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
-class TestMiddlewareFunction(TestCase):
+class TestMiddlewareFunction(TransactionTestCase):
 
     fixtures = (TEST_FIXTURE, )
 
@@ -147,7 +147,7 @@ class TestMiddlewareFunction(TestCase):
 
 
 @override_settings(HACS_FALLBACK_URLCONF=TEST_FALLBACK_URLCONF)
-class TestMiddlewareFunctionException(TestCase):
+class TestMiddlewareFunctionException(TransactionTestCase):
 
 
     def setUp(self):
@@ -179,7 +179,7 @@ class TestMiddlewareFunctionException(TestCase):
 
 ]})
 @override_settings(HACS_GENERATED_URLCONF_DIR='/tmp')
-class TestDynamicRouteMiddleware(TestCase):
+class TestDynamicRouteMiddleware(TransactionTestCase):
 
     fixtures = (TEST_FIXTURE, )
 
@@ -240,7 +240,7 @@ class TestDynamicRouteMiddleware(TestCase):
 @override_settings(
     HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir(),
 )
-class TestDynamicRouteMiddlewareFromBrowser(TestCase):
+class TestDynamicRouteMiddlewareFromBrowser(TransactionTestCase):
 
     fixtures = (TEST_FIXTURE, )
 
@@ -313,7 +313,7 @@ class TestDynamicRouteMiddlewareFromBrowser(TestCase):
     HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir(),
     CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'hacs_middleware', }},
 )
-class TestFirewallMiddleware(TestCase):
+class TestFirewallMiddleware(TransactionTestCase):
 
     fixtures = (TEST_FIXTURE, )
 
@@ -784,7 +784,7 @@ class TestFirewallMiddleware(TestCase):
 
 
 @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
-class TestFirewallMiddlewareFromBrowser(TestCase):
+class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
 
     fixtures = (TEST_FIXTURE, )
 

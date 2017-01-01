@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.postgres.fields import JSONField
 
 from .fields import DictField
 from .fields import SequenceField
@@ -288,7 +289,7 @@ class HacsWorkflowModel(HacsUtilsModel):
     # Data Format: {
     #   'state': {'action1': ('permission1', 'permission2'), 'action2': ('permission1', 'permission2')}
     # }
-    states_permissions_map = DictField(null=True, blank=True)
+    states_permissions_map = JSONField(null=True, blank=True)
 
     # These are view/actions name that will change the state of an object. User should use this action instead of
     # direct change the state of object.

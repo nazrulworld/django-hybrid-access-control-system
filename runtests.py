@@ -24,6 +24,7 @@ DJANGO_SETTINGS= {
         'django.contrib.messages',
         'django.contrib.staticfiles',
         'django.contrib.sites',
+        'django.contrib.postgres.apps.PostgresConfig',
         'hacs.apps.HACSConfig',
     ],
 
@@ -38,8 +39,13 @@ DJANGO_SETTINGS= {
     ],
     'DATABASES': {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': os.path.join(tempfile.gettempdir(), 'hacs_test_db.sqlite3'),
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'hacs_db',
+            'USER': 'hacs_admin',
+            'PASSWORD': 'hacs_secret_^5$',
+            'HOST': 'localhost',
+            'PORT': 5432,
+            'OPTIONS': { }
         }
     },
     'ROOT_URLCONF': 'hacs.urls',

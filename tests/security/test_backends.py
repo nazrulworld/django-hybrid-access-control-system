@@ -5,7 +5,7 @@ import pytest
 from django.conf import settings
 from django.core.cache import caches
 from tests.path import FIXTURE_PATH
-from django.test import TestCase
+from django.test import TransactionTestCase
 from hacs.models import HacsPermissionModel
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
@@ -25,7 +25,7 @@ from tests.fixture import ModelFixture
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 
-class TestHacsAuthorizerBackend(TestCase):
+class TestHacsAuthorizerBackend(TransactionTestCase):
     """"""
     fixtures = (FIXTURE, )
     model_fixture = ModelFixture()
@@ -199,3 +199,10 @@ class TestHacsAuthorizerBackend(TestCase):
         permissions = backend.get_roles_permissions('Guest', role_cls.objects.get_by_natural_key('Manager'))
         self.assertEqual(HacsPermissionModel.objects.count(), len(permissions))
         self.assertEqual(HacsPermissionModel.objects.count(), len(self.cache.get(cache_key3)))
+
+    def tearDown(self):
+        """
+        :return:
+        """
+        self.model_fixture.tear_down()
+        super(TestHacsAuthorizerBackend, self).tearDown()

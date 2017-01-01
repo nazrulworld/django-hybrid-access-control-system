@@ -3,7 +3,7 @@
 import pytest
 from collections import defaultdict
 from tests.path import FIXTURE_PATH
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.contrib.contenttypes.models import ContentType
 from hacs.models import HacsContentType
 from django.contrib.auth import get_user_model
@@ -16,7 +16,7 @@ FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 
-class TestHacsContainerModel(TestCase):
+class TestHacsContainerModel(TransactionTestCase):
     """
     """
     fixtures = (FIXTURE,)
@@ -145,6 +145,21 @@ class TestHacsContainerModel(TestCase):
         # Should not get workflow, although `acquire_parent` is true but respected parent recursive status!
         self.assertIsNone(date_folder.workflow)
 
+        # Create News Item at Site Root (item without container folder)
+        data = {
+            "name": "test news one at site root",
+            "slug": "test-news-one-at-site",
+            "description": "test news of HACS inside site root",
+            "created_by": contributor,
+            "owner": contributor,
+            "acquire_parent": True,
+            "container_content_type": None,
+            "container_id": None
+        }
+        news_item = news_item_cls(**data)
+        # Should Not Save, globally not allowed
+        news_item.save()
+
     def test_delete(self):
         """
         :return:
@@ -162,3 +177,10 @@ class TestHacsContainerModel(TestCase):
         # No records should be, as cascade applied
         self.assertEqual(news_item_cls.objects.count(), 0)
         self.assertEqual(date_folder_cls.objects.count(), 0)
+
+    def tearDown(self):
+        """
+        :return:
+        """
+        self.model_fixture.tear_down()
+        super(TestHacsContainerModel, self).tearDown()

@@ -15,11 +15,11 @@ from django.contrib.auth.models import _user_has_module_perms
 from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.postgres.fields import JSONField
 
 from hacs.fields import DictField
 from hacs.fields import ForeignKey
 from hacs.fields import SequenceField
-from hacs.fields import GenericRelation
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_USER
@@ -193,14 +193,14 @@ class HacsSecurityFieldMixin(models.Model):
     # During making maps, should consider parent if allowed
     #
     # Might need clean cache, as well child object cache also
-    permissions_actions_map = DictField(null=True, blank=True)
+    permissions_actions_map = JSONField(null=True, blank=True)
     #
     # Local Roles: {userid: (role1, role2, role3)}
     # user natural key as key and list of role's natural key
     # This attribute is also be tracked!, will be merged with parent local roles if enabled
     # dict update will be happened from top, child will always be win.
     # i.e parent local role: user1: (Manager,) but child has user1: (Editor) so child will be winner
-    local_roles = DictField(null=True, blank=True)
+    local_roles = JSONField(null=True, blank=True)
 
     owner = ForeignKey(
         settings.AUTH_USER_MODEL,

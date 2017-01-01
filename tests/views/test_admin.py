@@ -5,7 +5,7 @@ import os
 import json
 import tempfile
 from django.utils.http import urlencode
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.test import Client
 from django.conf import settings
 from django.core.cache import caches
@@ -35,7 +35,7 @@ TEST_SITE = "testserver"
 TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 
-class TestSelect2ContentTypesView(TestCase):
+class TestSelect2ContentTypesView(TransactionTestCase):
     """"""
     fixtures = (TEST_FIXTURE, )
 
@@ -217,7 +217,7 @@ class TestSelect2ContentTypesView(TestCase):
     HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir(),
     CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'hacs_middleware',}},
 )
-class TestSelect2ContentTypesViewFromBrowser(TestCase):
+class TestSelect2ContentTypesViewFromBrowser(TransactionTestCase):
     """"""
     fixtures = (TEST_FIXTURE, )
 

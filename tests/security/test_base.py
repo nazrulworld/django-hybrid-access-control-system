@@ -4,7 +4,7 @@ import pytest
 import logging
 import warnings
 from tests.path import FIXTURE_PATH
-from django.test import TestCase
+from django.test import TransactionTestCase
 from django.contrib.auth import get_user_model
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.models import HacsSystemUser
@@ -20,7 +20,7 @@ FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 
-class TestSecurityManager(TestCase):
+class TestSecurityManager(TransactionTestCase):
     """"""
 
     fixtures = (FIXTURE, )
@@ -138,8 +138,14 @@ class TestSecurityManager(TestCase):
         # But! still we have to wait, as in this test fixture by default Anonymous user
         # don't have hacs.CanTraverseContainer, so content inside container don't have view permission for this user
         # Until container's state is published
-        HACS_ACCESS_CONTROL_LOCAL.current_user = AnonymousUser()
-        self.assertFalse(security_manager._check_object(news_item, 'object.view'))
+        with warnings.catch_warnings(record=True) as warns:
+            # http://stackoverflow.com/questions/5644836/in-python-how-does-one-catch-warnings-as-if-they-were-exceptions
+            warnings.simplefilter("always")
+            HACS_ACCESS_CONTROL_LOCAL.current_user = AnonymousUser()
+            self.assertFalse(security_manager._check_object(news_item, 'object.view'))
+            new_warns = filter(lambda x: issubclass(x.category, UserWarning), warns)
+            # Should get one warning as well
+            self.assertEqual(1, len(tuple(new_warns)))
         # Let's Publish Folders
         news_folder.state = 'published'
         news_folder.save()
@@ -150,3 +156,9 @@ class TestSecurityManager(TestCase):
         # Now should have view permission
         self.assertTrue(security_manager._check_object(news_item, 'object.view'))
 
+    def tearDown(self):
+        """
+        :return:
+        """
+        self.model_fixture.tear_down()
+        super(TestSecurityManager, self).tearDown()

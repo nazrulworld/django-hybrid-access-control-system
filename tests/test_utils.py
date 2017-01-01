@@ -6,7 +6,7 @@ import sys
 import pytest
 import tempfile
 from django.utils import six
-from django.test import TestCase
+from django.test import TransactionTestCase
 from importlib import import_module
 from django.test import RequestFactory
 from hacs.models import SiteRoutingRules
@@ -25,7 +25,7 @@ TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 
-class UtilsTestCase(TestCase):
+class UtilsTestCase(TransactionTestCase):
     """
     """
     fixtures = (TEST_FIXTURE, )

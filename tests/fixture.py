@@ -7,7 +7,7 @@ from hacs.helpers import get_user_model
 from hacs.helpers import get_workflow_model
 from django.utils.functional import cached_property
 from django.contrib.contenttypes.models import ContentType
-from tests.helpers import setupModels
+from tests.helpers import setupModels, tearDownModels
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -187,6 +187,12 @@ class ModelFixture(object):
         }
         news_item2 = news_item_cls(**data2)
         news_item2.save()
+
+    def tear_down(self):
+        """
+        :return:
+        """
+        tearDownModels(*self.models.values())
 
     @cached_property
     def models(self):
