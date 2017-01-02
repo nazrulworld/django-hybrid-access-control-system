@@ -1,5 +1,12 @@
 ---
-#- include: install_apt_packages.yml
+- include: install_apt_packages.yml
+# Required Directory Structure
+- name: make sure project directory
+  file: path="{{ hacs_deploypath_path }}" state="directory" force=false owner="ubuntu" group="ubuntu"
+
+- name: make sure share directory is exists
+  file: path="{{ hacs_deploypath_path }}/share" state="directory" recurse=yes force=no owner="ubuntu" group="ubuntu"
+
 # Override some variables
 - name: find psql executable path
   shell: "which psql"

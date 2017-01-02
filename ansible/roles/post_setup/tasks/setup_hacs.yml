@@ -1,11 +1,5 @@
 ---
 # Make Hybrid Access Control System Ready
-- name: make sure project directory
-  file: path="{{ hacs_deploypath_path }}" state="directory" force=false owner="ubuntu" group="ubuntu"
-
-- name: make sure share directory is exists
-  file: path="{{ hacs_deploypath_path }}/share" state="directory" recurse=yes force=no owner="ubuntu" group="ubuntu"
-
 - name: clean generated files pyc
   command: "find {{ hacs_source_path }} -type f -name '*.pyc' -delete"
 
