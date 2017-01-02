@@ -23,10 +23,10 @@
   when: not manage_py.stat.exists
 
 - name: create hacs django settings
-  template: src="settings.py.tpl" dest="{{hacs_project_path}}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+  template: src="settings.py.j2" dest="{{hacs_project_path}}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
 
 - name: create hacs django urls
-  template: src="urls.py.tpl" dest="{{hacs_project_path}}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+  template: src="urls.py.j2" dest="{{hacs_project_path}}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
 
 - name: check if project is already create
   stat: path="{{ hacs_deploypath_path }}/{{ hacs_default_app }}"
