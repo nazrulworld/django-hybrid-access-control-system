@@ -72,7 +72,7 @@ def select2_contenttypes_view(request, content_type):
             data = {}
             filters = dict()
             if term:
-                filters[content_type_conf['searchable'] + '__contains'] = term
+                filters[content_type_conf['searchable'] + '__icontains'] = term
 
             queryset = content_type_conf['model'].objects.filter(**filters)
             data['total_count'] = len(queryset)

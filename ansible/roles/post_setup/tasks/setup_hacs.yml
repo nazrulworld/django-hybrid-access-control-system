@@ -64,10 +64,10 @@
       chdir: "{{ hacs_source_path }}"
 
 - name: python 3.5 | create hacs django settings
-  template: src="settings.py.tpl" dest="{{ hacs_deploypath_path }}/env-py35/{{ hacs_project_name }}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+  template: src="settings.py.j2" dest="{{ hacs_deploypath_path }}/env-py35/{{ hacs_project_name }}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
 
 - name: python 3.5 | create hacs django urls
-  template: src="urls.py.tpl" dest="{{ hacs_deploypath_path }}/env-py35/{{ hacs_project_name }}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+  template: src="urls.py.j2" dest="{{ hacs_deploypath_path }}/env-py35/{{ hacs_project_name }}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
 
 - name: python 3.5 | check if project is already create
   stat: path="{{ hacs_deploypath_path }}/env-py35/{{ hacs_default_app }}"
@@ -104,10 +104,10 @@
       chdir: "{{ hacs_source_path }}"
 
 - name: python 3.6 | create hacs django settings
-  template: src="settings.py.tpl" dest="{{ hacs_deploypath_path }}/env-py36/{{ hacs_project_name }}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+  template: src="settings.py.j2" dest="{{ hacs_deploypath_path }}/env-py36/{{ hacs_project_name }}/settings.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
 
 - name: python 3.6 | create hacs django urls
-  template: src="urls.py.tpl" dest="{{ hacs_deploypath_path }}/env-py36/{{ hacs_project_name }}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
+  template: src="urls.py.j2" dest="{{ hacs_deploypath_path }}/env-py36/{{ hacs_project_name }}/urls.py" force=true owner="{{ system_user }}" group="{{ system_group }}"
 
 - name: python 3.6 | check if project is already create
   stat: path="{{ hacs_deploypath_path }}/env-py36/{{ hacs_default_app }}"
