@@ -17,7 +17,6 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.postgres.fields import JSONField
 
-from hacs.fields import DictField
 from hacs.fields import ForeignKey
 from hacs.fields import SequenceField
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
@@ -26,6 +25,9 @@ from hacs.globals import HACS_CONTENT_TYPE_USER
 from hacs.globals import HACS_CONTENT_TYPE_UTILS
 from hacs.globals import HACS_CONTENT_TYPE_STATIC
 from hacs.helpers import get_contenttype_model
+from hacs.security.helpers import HACS_OBJECT_EDIT_ACTION
+from hacs.security.helpers import HACS_OBJECT_CREATE_ACTION
+from hacs.security.helpers import HACS_OBJECT_DELETE_ACTION
 from .manager import HacsBaseManager, \
     HacsModelManager, \
     HacsStaticModelManager
@@ -241,7 +243,8 @@ class HacsModelSecurityMixin(models.Model):
         :return:
         """
         # @TODO: security guard here: action: object.delete
-        #
+        security_manager = self._meta.default_manager._security_manager()
+        security_manager.check_obj_permission(self, action=HACS_OBJECT_DELETE_ACTION)
         return super(HacsModelSecurityMixin, self).delete(using, keep_parents)
 
     def _save_table(self, raw=False, cls=None, force_insert=False, force_update=False, using=None, update_fields=None):
@@ -321,6 +324,10 @@ class HacsModelSecurityMixin(models.Model):
 
         except FieldError:
                 raise
+        # Security Check Here!
+        security_manager = self._meta.default_manager._security_manager()
+        #security_manager.check_obj_permission(self,
+        #                                      action=_insert and HACS_OBJECT_CREATE_ACTION or HACS_OBJECT_EDIT_ACTION)
 
         ret = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,force_update, using, update_fields)
         if permission_changed:

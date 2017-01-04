@@ -389,4 +389,6 @@ class AccessControlMiddleware(object):
 
         HACS_ACCESS_CONTROL_LOCAL.__release_local__()
 
-__all__ = ("DynamicRouteMiddleware", "FirewallMiddleware", )
+        return response
+
+__all__ = [ str(x) for x in ("DynamicRouteMiddleware", "FirewallMiddleware", "AccessControlMiddleware")]

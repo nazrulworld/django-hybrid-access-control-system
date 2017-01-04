@@ -157,6 +157,8 @@ class SecurityManager(object):
                     return False
             if action == "object.create":
                 object_ct = self.content_type_cls.objects.get_for_model(obj.__class__)
+                # controversal steps  start #
+                # @TODO: because of performance issue, constraint might be handled by validators
                 if not object_ct.globally_allowed and container_obj is None:
                     raise HacsSecurityException("", 9901)
 
@@ -164,6 +166,7 @@ class SecurityManager(object):
                     container_ct = self.content_type_cls.objects.get_for_model(container_obj.__class__)
                     if object_ct.content_type not in container_ct.allowed_content_types.all():
                         raise HacsSecurityException("", 9902)
+                # controversal steps  end #
                 # Only `object.create`\s permission comes from content type
                 obj_permissions = object_ct.permissions_actions_map[action]
                 # We pass object/instance value None for object creation action!
@@ -178,7 +181,7 @@ class SecurityManager(object):
 
         elif base_type == HACS_CONTENT_TYPE_UTILS:
             # @TODO: may be should use cache or list of permissions string
-            obj_permissions = [x.name for x in obj.permissions.all()]
+            obj_permissions = obj.permissions
         elif base_type == HACS_CONTENT_TYPE_STATIC:
             obj_permissions = HACS_STATIC_CONTENT_PERMISSION
 

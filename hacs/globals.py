@@ -59,6 +59,9 @@ class Local(object):
     def __release_local__(self):
         self.__storage__.pop(self.__ident_func__(), None)
 
+    def __release_all__(self):
+        self.__storage__.clear()
+
     def __getattr__(self, name):
         try:
             return self.__storage__[self.__ident_func__()][name]

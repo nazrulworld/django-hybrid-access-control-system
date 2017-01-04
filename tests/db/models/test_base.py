@@ -9,7 +9,7 @@ from hacs.models import HacsContentType
 from django.contrib.auth import get_user_model
 from hacs.defaults import HACS_DEFAULT_STATE
 
-from tests.fixture import ModelFixture
+from tests.fixture import model_fixture
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 
@@ -20,12 +20,11 @@ class TestHacsContainerModel(TransactionTestCase):
     """
     """
     fixtures = (FIXTURE,)
-    model_fixture = ModelFixture()
 
     def setUp(self):
 
         super(TestHacsContainerModel, self).setUp()
-        self.model_fixture.init_data()
+        model_fixture.init_data()
 
     def test__save_table(self):
 
@@ -34,7 +33,7 @@ class TestHacsContainerModel(TransactionTestCase):
         #################
         ## INSERT TEST ##
         #################
-        news_folder_cls = self.model_fixture.models.get('news_folder_cls')
+        news_folder_cls = model_fixture.models.get('news_folder_cls')
         data = {
             "name": "test news folder",
             "slug": "test-news-folder",
@@ -51,7 +50,7 @@ class TestHacsContainerModel(TransactionTestCase):
         news_folder = news_folder_cls(**data)
         news_folder.save()
         local_roles = {"contributor@test.com": ["Editor", ]}
-        date_folder_cls = self.model_fixture.models.get('date_folder_cls')
+        date_folder_cls = model_fixture.models.get('date_folder_cls')
         data = {
             "name": "2016-12-12",
             "slug": "2016-12-12",
@@ -70,7 +69,7 @@ class TestHacsContainerModel(TransactionTestCase):
         date_folder.save()
 
         contributor = get_user_model().objects.get_by_natural_key("contributor@test.com")
-        news_item_cls = self.model_fixture.models.get('news_item_cls')
+        news_item_cls = model_fixture.models.get('news_item_cls')
         news_item_ct = HacsContentType.objects.get_for_model(news_item_cls)
         data = {
             "name": "test news one",
@@ -107,7 +106,7 @@ class TestHacsContainerModel(TransactionTestCase):
         news_folder.delete()
 
         # Test Recursive Works
-        news_folder_cls = self.model_fixture.models.get('news_folder_cls')
+        news_folder_cls = model_fixture.models.get('news_folder_cls')
         data = {
             "name": "test news folder 2",
             "slug": "test-news-folder-2",
@@ -124,7 +123,7 @@ class TestHacsContainerModel(TransactionTestCase):
         news_folder = news_folder_cls(**data)
         news_folder.save()
 
-        date_folder_cls = self.model_fixture.models.get('date_folder_cls')
+        date_folder_cls = model_fixture.models.get('date_folder_cls')
         data = {
             "name": "2016-12-12-2",
             "slug": "2016-12-12-2",
@@ -152,25 +151,26 @@ class TestHacsContainerModel(TransactionTestCase):
             "description": "test news of HACS inside site root",
             "created_by": contributor,
             "owner": contributor,
-            "acquire_parent": True,
+            "acquire_parent": False,
             "container_content_type": None,
             "container_id": None
         }
         news_item = news_item_cls(**data)
         # Should Not Save, globally not allowed
+        # This constraint check should be done by validator not responsible by BaseModel
         news_item.save()
 
     def test_delete(self):
         """
         :return:
         """
-        news_item_cls = self.model_fixture.models.get('news_item_cls')
-        date_folder_cls = self.model_fixture.models.get('date_folder_cls')
+        news_item_cls = model_fixture.models.get('news_item_cls')
+        date_folder_cls = model_fixture.models.get('date_folder_cls')
         # As we have one record
         self.assertGreater(news_item_cls.objects.count(), 0)
         self.assertGreater(date_folder_cls.objects.count(), 0)
         # Testing Children removed before parent container moved
-        news_folder_cls = self.model_fixture.models.get('news_folder_cls')
+        news_folder_cls = model_fixture.models.get('news_folder_cls')
         news_folder = news_folder_cls.objects.all().first()
         news_folder.delete()
 
@@ -182,5 +182,5 @@ class TestHacsContainerModel(TransactionTestCase):
         """
         :return:
         """
-        self.model_fixture.tear_down()
+        model_fixture.tear_down()
         super(TestHacsContainerModel, self).tearDown()

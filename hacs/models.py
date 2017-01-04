@@ -5,7 +5,6 @@ from django.utils import six
 from django.conf import settings
 from collections import defaultdict
 from django.contrib.sites.models import Site
-from django.contrib.auth.models import AnonymousUser
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
@@ -611,35 +610,3 @@ class HacsUserModel(HacsAbstractUser):
         :return:
         """
         return "<%s : %s %s>" % (getattr(self, self.USERNAME_FIELD), self.first_name, self.last_name or "")
-
-
-@python_2_unicode_compatible
-class HacsSystemUser(AnonymousUser):
-    """
-    """
-    is_active = True
-
-    @property
-    def is_system(self):
-        return True
-
-    @property
-    def is_anonymous(self):
-        return False
-
-    @property
-    def is_authenticated(self):
-        return True
-
-    def has_perm(self, perm, obj=None):
-        return True
-
-    def has_perms(self, perm_list, obj=None):
-        return True
-
-    def has_module_perms(self, module):
-        return True
-
-    def __str__(self):
-
-        return "SystemUser"

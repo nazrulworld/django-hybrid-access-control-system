@@ -12,35 +12,6 @@ from tests.helpers import setupModels, tearDownModels
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 
-def model_fixture():
-    """
-    :return:
-    """
-    class NewsFolder(HacsContainerModel):
-
-        class Meta:
-            app_label = "hacs"
-            db_table = "test_news_folder"
-
-    class DateFolder(HacsContainerModel):
-
-        class Meta:
-            app_label = "hacs"
-            db_table = "test_date_folder"
-
-    class NewsItem(HacsItemModel):
-
-        class Meta:
-            app_label = "hacs"
-            db_table = "test_news_item"
-
-    return {
-        "news_folder_cls": NewsFolder,
-        "date_folder_cls": DateFolder,
-        "news_item_cls": NewsItem
-    }
-
-
 class ModelFixture(object):
 
     def init_data(self):
@@ -52,7 +23,6 @@ class ModelFixture(object):
         self.init_hacs_content_types()
         # Initialized Hacs ContentType Data
         self.init_hacs_content_data()
-
 
     def init_hacs_content_types(self):
 
@@ -199,7 +169,27 @@ class ModelFixture(object):
         """
         :return:
         """
-        return model_fixture()
+
+        class NewsFolder(HacsContainerModel):
+            class Meta:
+                app_label = "hacs"
+                db_table = "test_news_folder"
+
+        class DateFolder(HacsContainerModel):
+            class Meta:
+                app_label = "hacs"
+                db_table = "test_date_folder"
+
+        class NewsItem(HacsItemModel):
+            class Meta:
+                app_label = "hacs"
+                db_table = "test_news_item"
+
+        return {
+            "news_folder_cls": NewsFolder,
+            "date_folder_cls": DateFolder,
+            "news_item_cls": NewsItem
+        }
 
     @cached_property
     def superuser(self):
@@ -228,3 +218,5 @@ class ModelFixture(object):
         :return:
         """
         return get_user_model().objects.get_by_natural_key("member@test.com")
+
+model_fixture = ModelFixture()

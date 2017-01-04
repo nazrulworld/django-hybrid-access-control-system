@@ -5,7 +5,10 @@ from collections import deque
 from collections import defaultdict
 from django.conf import settings
 from django.utils import lru_cache
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import get_permission_codename
+from django.utils.encoding import python_2_unicode_compatible
+
 from hacs.globals import HACS_APP_NAME
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from django.apps import apps as global_apps
@@ -17,6 +20,38 @@ from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 _ = lambda x: x
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
+
+
+@python_2_unicode_compatible
+class SystemUser(AnonymousUser):
+    """
+    """
+    is_active = True
+
+    @property
+    def is_system(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    def has_perm(self, perm, obj=None):
+        return True
+
+    def has_perms(self, perm_list, obj=None):
+        return True
+
+    def has_module_perms(self, module):
+        return True
+
+    def __str__(self):
+
+        return "SystemUser"
 
 CACHE_KEY_FORMAT = "{prefix}.sm.{content_type}.{key}"
 HACS_STATIC_CONTENT_PERMISSION = "hacs.ManageStaticContent"
@@ -61,6 +96,8 @@ STANDARD_PERMISSIONS = {
 }
 
 HACS_OBJECT_CREATE_ACTION = "object.create"
+HACS_OBJECT_EDIT_ACTION = "object.edit"
+HACS_OBJECT_DELETE_ACTION = "object.delete"
 # Actions Definition
 HACS_ACTIONS = {
     'list.traverse': {
@@ -88,10 +125,10 @@ HACS_ACTIONS = {
     HACS_OBJECT_CREATE_ACTION : {
         'title': _("Create")
     },
-    'object.edit': {
+    HACS_OBJECT_EDIT_ACTION: {
         'title': _("Edit")
     },
-    'object.delete': {
+    HACS_OBJECT_DELETE_ACTION: {
         'title': _("Delete"),
     },
     'object.manage_state': {

@@ -20,7 +20,7 @@ except ImportError:
     import mock
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
-from tests.fixture import ModelFixture
+from tests.fixture import model_fixture
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -28,12 +28,11 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 class TestHacsAuthorizerBackend(TransactionTestCase):
     """"""
     fixtures = (FIXTURE, )
-    model_fixture = ModelFixture()
 
     def setUp(self):
         """"""
         super(TestHacsAuthorizerBackend, self).setUp()
-        self.model_fixture.init_data()
+        model_fixture.init_data()
         self.cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
 
     @mock.patch('hacs.security.helpers.get_user_permissions', return_value=None)
@@ -116,10 +115,10 @@ class TestHacsAuthorizerBackend(TransactionTestCase):
         self.assertEqual(len(HacsPermissionModel.objects.all()), len(permissions))
 
         # Test with local_roles and object
-        news_item_1 = self.model_fixture.models.get('news_item_cls').objects.get_by_natural_key('news-one')
-        news_item_2 = self.model_fixture.models.get('news_item_cls').\
+        news_item_1 = model_fixture.models.get('news_item_cls').objects.get_by_natural_key('news-one')
+        news_item_2 = model_fixture.models.get('news_item_cls').\
             objects.get_by_natural_key('news-two-with-local-roles')
-        contributor1 = self.model_fixture.contributoruser
+        contributor1 = model_fixture.contributoruser
         contributor2 = get_user_model().objects.get_by_natural_key('contributor2@test.com')
         # First `Contributor` user who has local roles for `news_item_2`
         permissions  = backend.get_all_permissions(contributor1)
@@ -204,5 +203,5 @@ class TestHacsAuthorizerBackend(TransactionTestCase):
         """
         :return:
         """
-        self.model_fixture.tear_down()
+        model_fixture.tear_down()
         super(TestHacsAuthorizerBackend, self).tearDown()

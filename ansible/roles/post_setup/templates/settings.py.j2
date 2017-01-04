@@ -52,6 +52,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.sites.middleware.CurrentSiteMiddleware',
     'hacs.middleware.DynamicRouteMiddleware',
     'hacs.middleware.FirewallMiddleware',
+    'hacs.middleware.AccessControlMiddleware',
 ]
 
 ROOT_URLCONF = 'hacs_project.urls'

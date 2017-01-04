@@ -12,7 +12,7 @@ Vagrant.configure('2') do |config|
     machine.vm.box = "ubuntu/xenial64"
     machine.vm.provider "virtualbox" do |vb|
         # Memory Needs
-        vb.memory = 1024
+        vb.memory = 2048
     end
     machine.vm.network "private_network", ip: '192.168.10.10'
     machine.vm.network "forwarded_port", guest: 9999, host: 8080

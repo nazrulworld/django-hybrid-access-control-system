@@ -867,7 +867,7 @@ class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
 
             ContentTypeRoutingRules.objects.filter(content_type=ContentType.objects.get_for_model(HacsGroupModel)).delete()
 
-            # Now we are cleaning session and cache as well, group's route also clened
+            # Now we are cleaning session and cache as well, group's route also cleaned
             # so we expect urlconf should be like site urlconf
             browser.logout()
             self.cache.clear()

@@ -210,7 +210,8 @@ class TestSelect2ContentTypesView(TransactionTestCase):
 @modify_settings(MIDDLEWARE_CLASSES={'append': [
     'django.contrib.sites.middleware.CurrentSiteMiddleware',
     'hacs.middleware.DynamicRouteMiddleware',
-    'hacs.middleware.FirewallMiddleware'
+    'hacs.middleware.FirewallMiddleware',
+    'hacs.middleware.AccessControlMiddleware',
 
 ]})
 @override_settings(
