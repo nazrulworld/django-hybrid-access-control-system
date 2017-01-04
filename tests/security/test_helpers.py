@@ -3,14 +3,13 @@
 import pytest
 from tests.path import FIXTURE_PATH
 from django.test import TestCase
-from django.apps import apps as global_apps
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import get_user_model
 from hacs.security.helpers import *
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from hacs.globals import HACS_CONTENT_TYPE_USER
 from hacs.helpers import get_role_model
 from hacs.helpers import get_permission_model
+from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
 
@@ -26,7 +25,7 @@ class TestHelpers(TestCase):
         :return:
         """
         # Logically AnonymousUser contains same as UserModel
-        anonymouse_user_key = get_cache_key(get_user_model().__hacs_base_content_type__, AnonymousUser())
+        anonymouse_user_key = get_cache_key(get_user_model().__hacs_base_content_type__, ANONYMOUS_USER)
         self.assertEqual(CACHE_KEY_FORMAT.format(prefix="hacs", content_type=HACS_CONTENT_TYPE_USER, key='AnonymousUser.None'), anonymouse_user_key)
         # Get Cache Key using object
         superuser = get_user_model().objects.get_by_natural_key("superuser@test.com")
@@ -148,7 +147,6 @@ class TestHelpers(TestCase):
         # Should have six permissions
         self.assertEqual(6, len(permissions))
 
-
     def test_get_role_permissions(self):
         """
         :return:
@@ -164,3 +162,109 @@ class TestHelpers(TestCase):
 
         self.assertEqual(len(get_permission_model().objects.all()), len(permissions))
 
+    def test_attach_system_user(self):
+        """
+        :return:
+        """
+        # test with empty assigned user
+        attach_system_user()
+        self.assertEqual(HACS_ACCESS_CONTROL_LOCAL.current_user, SYSTEM_USER)
+        try:
+            HACS_ACCESS_CONTROL_LOCAL.current_user_backup
+            raise AssertionError("Code should not come here! because no user assigned before")
+        except AttributeError:
+            pass
+        release_system_user()
+        # Test with assigned user
+        HACS_ACCESS_CONTROL_LOCAL.current_user = ANONYMOUS_USER
+        attach_system_user()
+        try:
+            self.assertEqual(ANONYMOUS_USER, HACS_ACCESS_CONTROL_LOCAL.current_user_backup)
+        except AttributeError:
+            raise AssertionError("Code should not come here! as `current_user_backup` "
+                                 "should be assigned with Anonymous User")
+
+    def test_release_system_user(self):
+        """
+        :return:
+        """
+        # test with not assigned user
+        attach_system_user()
+        release_system_user()
+        try:
+            HACS_ACCESS_CONTROL_LOCAL.current_user
+            raise AssertionError("Code should not come here! as after release, there current_user should be removed")
+        except AttributeError:
+            pass
+        # test with assigned user
+        HACS_ACCESS_CONTROL_LOCAL.current_user = ANONYMOUS_USER
+        attach_system_user()
+        self.assertNotEqual(ANONYMOUS_USER, HACS_ACCESS_CONTROL_LOCAL.current_user)
+        release_system_user()
+        # should be restored anonymous user
+        self.assertEqual(ANONYMOUS_USER, HACS_ACCESS_CONTROL_LOCAL.current_user)
+        try:
+            HACS_ACCESS_CONTROL_LOCAL.current_user_backup
+            raise AssertionError("Code should not come here! after release system user "
+                                 "`current_user_backup` attribute should be removed")
+        except AttributeError:
+            pass
+
+    def tearDown(self):
+        """
+        :return:
+        """
+        super(TestHelpers, self).tearDown()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
+
+
+class TestHelpersException(TestCase):
+    """
+     Error handling test
+    """
+    fixtures = (FIXTURE,)
+
+    def test_attach_system_user(self):
+        """
+        :return:
+        """
+        # test multiple time attaching without release
+        attach_system_user()
+        try:
+            attach_system_user()
+            raise AssertionError("Code should not come here! as should raise assertion error, "
+                                 "already system user is attached ")
+        except AssertionError:
+            pass
+
+        # test not calling release but manually change system user to another
+        release_system_user()
+        HACS_ACCESS_CONTROL_LOCAL.current_user = ANONYMOUS_USER
+        attach_system_user()
+        # we are manually changing
+        HACS_ACCESS_CONTROL_LOCAL.current_user = get_user_model().objects.first()
+        try:
+            attach_system_user()
+            raise AssertionError("Code should not come here!, as current_user_backup is not empty due to "
+                                 "not calling `release_system_user` re-attach")
+        except AssertionError:
+            pass
+
+    def test_release_system_user(self):
+        """
+        :return:
+        """
+        # test with empty assigned user
+        try:
+            release_system_user()
+            raise AssertionError("Code should not come here! as current user must be System User")
+        except AssertionError:
+            pass
+
+        # test with other than system user
+        HACS_ACCESS_CONTROL_LOCAL.current_user = ANONYMOUS_USER
+        try:
+            release_system_user()
+            raise AssertionError("Code should not come here! as current user must be System User")
+        except AssertionError:
+            pass

@@ -14,6 +14,7 @@ from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from django.apps import apps as global_apps
 from hacs.helpers import get_role_model
 from hacs.helpers import get_contenttype_model
+from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 
 # Proxy Translation: @TODO: could be used django translation
@@ -53,6 +54,8 @@ class SystemUser(AnonymousUser):
 
         return "SystemUser"
 
+ANONYMOUS_USER = AnonymousUser()
+SYSTEM_USER = SystemUser()
 CACHE_KEY_FORMAT = "{prefix}.sm.{content_type}.{key}"
 HACS_STATIC_CONTENT_PERMISSION = "hacs.ManageStaticContent"
 HACS_PORTAL_MANAGER_PERMISSION = "hacs.ManagePortal"
@@ -343,3 +346,31 @@ def get_container_workflow(container_obj):
         return container_obj.workflow
 
     hct = get_contenttype_model().objects.get_for_model(container_obj.__class__)
+
+
+def attach_system_user():
+    """
+    :return:
+    """
+    current_user = getattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user', None)
+    assert not isinstance(current_user, SystemUser), "System User is already attached!"
+    assert getattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user_backup', None) is None, \
+        "HACS_ACCESS_CONTROL_LOCAL.current_user_backup has as user! This is error, you might be attached system user " \
+        "but forget to release system user."
+    if current_user is not None:
+        setattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user_backup', current_user)
+
+    setattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user', SYSTEM_USER)
+
+
+def release_system_user():
+    """
+    :return:
+    """
+    current_user = getattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user', None)
+    assert isinstance(current_user, SystemUser), "System User is not attached yet!"
+    backup_user = getattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user_backup', None)
+    HACS_ACCESS_CONTROL_LOCAL.__release_local__()
+    if backup_user is not None:
+        setattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user', backup_user)
+

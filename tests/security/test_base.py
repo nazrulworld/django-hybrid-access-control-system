@@ -8,9 +8,10 @@ from tests.path import FIXTURE_PATH
 from django.test import TransactionTestCase
 from django.contrib.auth import get_user_model
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
-from hacs.security.helpers import SystemUser
 from hacs.security.base import SecurityManager
-from django.contrib.auth.models import AnonymousUser
+from hacs.security.helpers import AnonymousUser
+from hacs.security.helpers import attach_system_user
+from hacs.security.helpers import release_system_user
 
 from tests.fixture import model_fixture
 
@@ -54,7 +55,7 @@ class TestSecurityManager(TransactionTestCase):
         with warnings.catch_warnings(record=True) as warns:
             # http://stackoverflow.com/questions/5644836/in-python-how-does-one-catch-warnings-as-if-they-were-exceptions
             # Test with system user
-            HACS_ACCESS_CONTROL_LOCAL.current_user = SystemUser()
+            attach_system_user()
             warnings.simplefilter("always")
             # should have permission without any complain because of system user
             self.assertTrue(security_manager._check('hacs.ManagePortal'))
@@ -63,8 +64,8 @@ class TestSecurityManager(TransactionTestCase):
             # System User is set! (usually should done by `AccessControlMiddleware`)
 
             self.assertEqual(0, len(tuple(new_warns)))
-            # Let's clean up user
-            HACS_ACCESS_CONTROL_LOCAL.__release_local__()
+            # Let's clean up system user
+            release_system_user()
             # Test If Release local is working
             try:
                 HACS_ACCESS_CONTROL_LOCAL.current_user
