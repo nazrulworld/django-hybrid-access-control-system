@@ -211,7 +211,7 @@ class HacsSecurityFieldMixin(models.Model):
         related_name="hacs_usm_{klass}_owners",
         related_query_name="hacs_usm_{klass}_owners_set",
         parent_link=False)
-
+    acquired_owners = JSONField(null=True, blank=True,)
     # If True: this Content object will inherit permission from parent Folder
     # could be come from ContentType object if not manually triggers
     acquire_parent = models.NullBooleanField()
@@ -321,6 +321,12 @@ class HacsModelSecurityMixin(models.Model):
                 if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
                     if self.hacs_tracker.has_changed('recursive') and not _insert:
                         self.apply_recursive_changed()
+                # For Insert Action, Parent owners will be acquired
+                if _insert and parent_container:
+                    self.update_acquired_owners(parent_container)
+                # Auto assign ownership while  inserting
+                if _insert and self.owner is None:
+                    self.owner = self.created_by
 
         except FieldError:
                 raise
@@ -415,6 +421,18 @@ class HacsModelSecurityMixin(models.Model):
             else:
                 self.local_roles = parent.local_roles
 
+    def update_acquired_owners(self, parent):
+        """
+        :param parent:
+        :return:
+        """
+        owners = set()
+        if parent.acquired_owners:
+            owners = owners.union(parent.acquired_owners)
+        owners.add(getattr(parent.owner, parent.owner.USERNAME_FIELD))
+
+        self.acquired_owners = list(owners)
+
     def apply_aquire_parent_changed(self):
         """
         :return:
@@ -451,7 +469,7 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTAINER
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map', 'workflow',
+    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner','local_roles', 'permissions_actions_map', 'workflow',
                                         'acquire_parent', 'recursive'))
     # If need other than custom ContentType\s workflow
     workflow = ForeignKey(
@@ -497,7 +515,7 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTENT
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'local_roles', 'permissions_actions_map', 'acquire_parent', ))
+    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner', 'local_roles', 'permissions_actions_map', 'acquire_parent', ))
     # Container Relation Start
     container_content_type = ForeignKey(
         "contenttypes.ContentType",

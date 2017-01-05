@@ -89,6 +89,32 @@ class SecurityManager(object):
         except HacsSecurityException as exc:
             raise PermissionDenied(exc)
 
+    def has_owner_privilege(self, obj, user=None):
+        """
+        :param obj:
+        :param user:
+        :return:
+        """
+        assert getattr(obj, '__hacs_base_content_type__', None) in \
+               (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT), \
+            "Only HACS content or container type model accepted!"
+
+        current_user = user or self.get_ac_user()
+        if current_user.is_anonymous:
+            return False
+
+        if getattr(current_user, 'is_system', False):
+            # System User Has All!
+            return True
+
+        if current_user != obj.owner:
+            # Let's Try From Acquired
+            acquired_owners = obj.acquired_owners or []
+            if getattr(current_user, current_user.USERNAME_FIELD, None) not in acquired_owners:
+                return False
+
+        return True
+
     def get_ac_user(self):
         """
         :return:
@@ -140,15 +166,35 @@ class SecurityManager(object):
         :param obj:
         :return:
         """
+        current_user = self.get_ac_user()
+        if current_user is None:
+            warnings.warn("No permission is checked because of empty user!", UserWarning)
+            return True
+        # Although system user clearance added in _check method but performance purpose here also implemented
+        if getattr(current_user, 'is_system', False):
+            logging.info("Got System User! All permission granted!")
+            return True
+
         base_type = getattr(obj, '__hacs_base_content_type__', None)
         if base_type is None:
-            warnings.warn("Hacs Security ignored as %s is not under any Hacs Base model" % obj.__class__.__name__, UserWarning)
+            warnings.warn("Hacs Security ignored as %s is not under any Hacs Base model" % obj.__class__.__name__,
+                          UserWarning)
             return True
 
         if base_type in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
             assert action is not None, "Action is required for %s, %s type Model"
             container_obj = base_type == HACS_CONTENT_TYPE_CONTAINER and getattr(obj, 'parent_container_object', None) or\
                          getattr(obj, 'container_object', None)
+
+            # Respect ownership! only case of authenticated user and no system of course
+            if action == "object.create" and container_obj:
+                has_owner_priv = self.has_owner_privilege(container_obj, current_user)
+            else:
+                has_owner_priv = self.has_owner_privilege(obj, current_user)
+
+            if has_owner_priv:
+                logging.info("Got Ownership Privilege! All permission granted!")
+                return True
 
             if container_obj:
                 if not self._check(container_obj.permissions_actions_map['list.traverse'], container_obj):
@@ -174,9 +220,6 @@ class SecurityManager(object):
                 # But if has container/parent and it has local roles, should try ofcourse
                 return self._check(obj_permissions, container_obj and container_obj.recursive and container_obj or None)
             else:
-                # Other than create/insert action, owner must be respected
-                if self.get_ac_user() == obj.owner:
-                    return True
                 obj_permissions = obj.permissions_actions_map[action]
 
         elif base_type == HACS_CONTENT_TYPE_UTILS:

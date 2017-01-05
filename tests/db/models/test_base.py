@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # ++ This file `test_base.py` is generated at 11/11/16 2:44 PM ++
 import pytest
+import copy
 from collections import defaultdict
 from tests.path import FIXTURE_PATH
 from django.test import TransactionTestCase
@@ -8,7 +9,8 @@ from django.contrib.contenttypes.models import ContentType
 from hacs.models import HacsContentType
 from django.contrib.auth import get_user_model
 from hacs.defaults import HACS_DEFAULT_STATE
-
+from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
+from django.core.exceptions import PermissionDenied
 from tests.fixture import model_fixture
 
 FIXTURE = FIXTURE_PATH / "testing_fixture.json"
@@ -166,10 +168,103 @@ class TestHacsContainerModel(TransactionTestCase):
         """
         news_item_cls = model_fixture.models.get('news_item_cls')
         date_folder_cls = model_fixture.models.get('date_folder_cls')
+        news_item_1 = news_item_cls.objects.get_by_natural_key('news-one')
+        news_item_1_copy = copy.copy(news_item_1)
+        news_item_2 = news_item_cls.objects.get_by_natural_key('news-two-with-local-roles')
+        news_item_2_copy = copy.copy(news_item_2)
+        date_folder1 = date_folder_cls.objects.get_by_natural_key('2016-10-10')
+        date_folder1_copy = copy.copy(date_folder1)
+        contributor2 = get_user_model().objects.get_by_natural_key('contributor2@test.com')
         # As we have one record
         self.assertGreater(news_item_cls.objects.count(), 0)
         self.assertGreater(date_folder_cls.objects.count(), 0)
+
+        # Test delete security guard
+        HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.memberuser
+        try:
+            news_item_1_copy.delete()
+            raise AssertionError("Code should not come here as member user don't have permission to delete any content")
+        except PermissionDenied:
+            pass
+
+        HACS_ACCESS_CONTROL_LOCAL.current_user = contributor2
+        try:
+            news_item_1_copy.delete()
+            raise AssertionError("Code should not come here as contributor user also don't has permission to "
+                                 "delete any content")
+        except PermissionDenied:
+            pass
+
+        HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.contributoruser
+        try:
+            news_item_1_copy.delete()
+            # re-insert for further test
+            news_item_1.save()
+            news_item_1_copy = copy.copy(news_item_1)
+        except PermissionDenied:
+            raise AssertionError("Code should not come here as although contributor user don't has permission to "
+                                 "delete any content but this certain contributor owner of this content")
+
+        HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.editoruser
+        try:
+            news_item_1_copy.delete()
+            # re-insert for further test
+            news_item_1.save()
+            news_item_1_copy = copy.copy(news_item_1)
+        except PermissionDenied:
+            raise AssertionError("Code should not come here as editor user has permission to "
+                                 "delete any content")
+
+        HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.superuser
+        try:
+            news_item_1_copy.delete()
+            # re-insert for further test
+            news_item_1.save()
+            news_item_1_copy = copy.copy(news_item_1)
+        except PermissionDenied:
+            raise AssertionError("Code should not come here as super user can perform any action")
+
+        # Test with local roles
+        # Contributor user has local role Editor on news_item2
+        HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.contributoruser
+        try:
+            news_item_2_copy.delete()
+            news_item_2.save()
+            news_item_2_copy = copy.copy(news_item_2)
+        except PermissionDenied:
+            raise AssertionError("Code should not come here, because contributor user has local role editor")
+
+        # Test By changing workflow state
+        HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.editoruser
+        try:
+            date_folder1_copy.delete()
+            date_folder1.save()
+        except PermissionDenied:
+            raise AssertionError("Code should not come here, as editor user should have permission to delete.")
+        date_folder1.state = 'published'
+        date_folder1.save()
+        date_folder1_copy = copy.copy(date_folder1)
+
+        try:
+            date_folder1_copy.delete()
+            raise AssertionError("Code should not come here, as state changed to published, not"
+                                 " `hacs.ManagePortal` permission holder can delete")
+        except PermissionDenied:
+            pass
+
+        date_folder1_copy.owner = model_fixture.editoruser
+        date_folder1_copy.save()
+
+        try:
+            date_folder1_copy.delete()
+            date_folder1.save()
+            date_folder1_copy = copy.copy(date_folder1)
+        except PermissionDenied:
+            raise AssertionError("Code should not come here, as owner changed to editor user,"
+                                 "can delete")
+
         # Testing Children removed before parent container moved
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
         news_folder_cls = model_fixture.models.get('news_folder_cls')
         news_folder = news_folder_cls.objects.all().first()
         news_folder.delete()
@@ -184,3 +279,4 @@ class TestHacsContainerModel(TransactionTestCase):
         """
         model_fixture.tear_down()
         super(TestHacsContainerModel, self).tearDown()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
