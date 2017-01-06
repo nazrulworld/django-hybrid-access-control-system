@@ -5,6 +5,8 @@ from hacs.db.models import HacsContainerModel
 from hacs.models import HacsContentType
 from hacs.helpers import get_user_model
 from hacs.helpers import get_workflow_model
+from hacs.security.helpers import attach_system_user
+from hacs.security.helpers import release_system_user
 from django.utils.functional import cached_property
 from django.contrib.contenttypes.models import ContentType
 from tests.helpers import setupModels, tearDownModels
@@ -18,11 +20,15 @@ class ModelFixture(object):
         """
         :return:
         """
+        attach_system_user()
+
         setupModels(*self.models.values())
         # Initialized Hacs ContentType
         self.init_hacs_content_types()
         # Initialized Hacs ContentType Data
         self.init_hacs_content_data()
+
+        release_system_user()
 
     def init_hacs_content_types(self):
 

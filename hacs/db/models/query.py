@@ -1,12 +1,19 @@
 # -*- coding: utf-8 -*-
 # ++ This file `query.py` is generated at 10/24/16 6:16 PM ++
 import logging
+from django.conf import settings
+from hacs.defaults import HACS_AC_BYPASS
 from django.db.models.query import QuerySet
 from hacs.security import SecurityManager
+from hacs.globals import HACS_CONTENT_TYPE_CONTENT
+from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
+from hacs.globals import HACS_CONTENT_TYPE_STATIC
+from hacs.globals import HACS_CONTENT_TYPE_UTILS
+from hacs.globals import HACS_CONTENT_TYPE_USER
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
-logger = logging.getLogger("hacs.HacsQuerySet::")
+logger = logging.getLogger("hacs.db.model.HacsQuerySet")
 
 __all__ = [str(x) for x in ("HacsQuerySet",)]
 
@@ -35,7 +42,8 @@ class HacsQuerySet(QuerySet):
         :return:
         """
         # @TODO: `list.view` action security check will be here
-        # self.security_manager.check_model_permission(self.model, "list.view")
+        # self.security_manager.check_model_permission(self.model, "object.view")
+        # "list.view" could have use at view level
         # ##
         # @TODO: restricted filters will be applied.
         # 1. we will add extra filter here! we will take benefits from JSON searchable.
@@ -49,6 +57,34 @@ class HacsQuerySet(QuerySet):
         # (one of match) user permissions)
         # return _self.iterator()
         logging.info("Got Query Request.")
+        active_security_guard = not self._disable_security_guard
+        current_user = self.security_manager.get_ac_user()
+        base_type = getattr(self.security_manager.model, '__hacs_base_content_type__', None)
+
+        if active_security_guard:
+            # we force disable security guard
+            if current_user is None:
+                logging.warn("No permission is checked because of empty user!", UserWarning)
+                active_security_guard = False
+            # Although system user clearance added in _check method but performance purpose here also implemented
+            elif getattr(current_user, 'is_system', False):
+                logging.info("Got System User! All permission granted!")
+                active_security_guard = False
+            elif getattr(settings, 'HACS_AC_BYPASS', HACS_AC_BYPASS):
+                active_security_guard = False
+
+        if active_security_guard and base_type:
+            # Yep! security guard applicable
+            filters = {}
+
+
+
+
+
+
+
+
+
 
         return super(HacsQuerySet, self).iterator()
 

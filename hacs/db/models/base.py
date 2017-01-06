@@ -332,14 +332,15 @@ class HacsModelSecurityMixin(models.Model):
                 raise
         # Security Check Here!
         security_manager = self._meta.default_manager._security_manager()
-        #security_manager.check_obj_permission(self,
-        #                                      action=_insert and HACS_OBJECT_CREATE_ACTION or HACS_OBJECT_EDIT_ACTION)
+        security_manager.check_obj_permission(self,
+                                              action=_insert and HACS_OBJECT_CREATE_ACTION or HACS_OBJECT_EDIT_ACTION)
 
-        ret = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,force_update, using, update_fields)
+        result = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,force_update, using,
+                                                                 update_fields)
         if permission_changed:
             # Send Signal Here
             pass
-        return ret
+        return result
 
     def update_permissions(self, workflow=None, hacs_contenttype=None):
         """

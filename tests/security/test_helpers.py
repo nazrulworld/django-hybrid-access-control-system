@@ -268,3 +268,10 @@ class TestHelpersException(TestCase):
             raise AssertionError("Code should not come here! as current user must be System User")
         except AssertionError:
             pass
+
+    def tearDown(self):
+        """
+        :return:
+        """
+        super(TestHelpersException, self).tearDown()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()

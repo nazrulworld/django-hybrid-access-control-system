@@ -10,6 +10,8 @@ from hacs.models import HacsContentType
 from django.contrib.auth import get_user_model
 from hacs.defaults import HACS_DEFAULT_STATE
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
+from hacs.security.helpers import attach_system_user
+from hacs.security.helpers import release_system_user
 from django.core.exceptions import PermissionDenied
 from tests.fixture import model_fixture
 
@@ -199,7 +201,10 @@ class TestHacsContainerModel(TransactionTestCase):
         try:
             news_item_1_copy.delete()
             # re-insert for further test
+            attach_system_user()
             news_item_1.save()
+            release_system_user()
+
             news_item_1_copy = copy.copy(news_item_1)
         except PermissionDenied:
             raise AssertionError("Code should not come here as although contributor user don't has permission to "
@@ -209,7 +214,10 @@ class TestHacsContainerModel(TransactionTestCase):
         try:
             news_item_1_copy.delete()
             # re-insert for further test
+            attach_system_user()
             news_item_1.save()
+            release_system_user()
+
             news_item_1_copy = copy.copy(news_item_1)
         except PermissionDenied:
             raise AssertionError("Code should not come here as editor user has permission to "
@@ -219,7 +227,11 @@ class TestHacsContainerModel(TransactionTestCase):
         try:
             news_item_1_copy.delete()
             # re-insert for further test
+
+            attach_system_user()
             news_item_1.save()
+            release_system_user()
+
             news_item_1_copy = copy.copy(news_item_1)
         except PermissionDenied:
             raise AssertionError("Code should not come here as super user can perform any action")
@@ -229,7 +241,11 @@ class TestHacsContainerModel(TransactionTestCase):
         HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.contributoruser
         try:
             news_item_2_copy.delete()
+
+            attach_system_user()
             news_item_2.save()
+            release_system_user()
+
             news_item_2_copy = copy.copy(news_item_2)
         except PermissionDenied:
             raise AssertionError("Code should not come here, because contributor user has local role editor")
@@ -238,11 +254,19 @@ class TestHacsContainerModel(TransactionTestCase):
         HACS_ACCESS_CONTROL_LOCAL.current_user = model_fixture.editoruser
         try:
             date_folder1_copy.delete()
+
+            attach_system_user()
             date_folder1.save()
+            release_system_user()
+
         except PermissionDenied:
             raise AssertionError("Code should not come here, as editor user should have permission to delete.")
         date_folder1.state = 'published'
+
+        attach_system_user()
         date_folder1.save()
+        release_system_user()
+
         date_folder1_copy = copy.copy(date_folder1)
 
         try:
@@ -253,11 +277,17 @@ class TestHacsContainerModel(TransactionTestCase):
             pass
 
         date_folder1_copy.owner = model_fixture.editoruser
+
+        attach_system_user()
         date_folder1_copy.save()
+        release_system_user()
 
         try:
             date_folder1_copy.delete()
+
+            attach_system_user()
             date_folder1.save()
+            release_system_user()
             date_folder1_copy = copy.copy(date_folder1)
         except PermissionDenied:
             raise AssertionError("Code should not come here, as owner changed to editor user,"

@@ -8,7 +8,7 @@ import hashlib
 import tempfile
 import datetime
 from django.test import Client
-from django.test import TestCase, TransactionTestCase
+from django.test import TransactionTestCase
 from django.conf import settings
 from django.utils import timezone
 from importlib import import_module
@@ -29,6 +29,7 @@ from hacs.models import RoutingTable
 from hacs.models import SiteRoutingRules
 from hacs.models import HacsGroupModel
 from hacs.globals import HACS_SITE_CACHE
+from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.utils import set_site_settings
 
 from hacs.middleware import FirewallMiddleware
@@ -144,6 +145,7 @@ class TestMiddlewareFunction(TransactionTestCase):
                     os.unlink(os.path.join(root, file_name))
 
         HACS_SITE_CACHE.clear()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
 
 
 @override_settings(HACS_FALLBACK_URLCONF=TEST_FALLBACK_URLCONF)
@@ -171,6 +173,7 @@ class TestMiddlewareFunctionException(TransactionTestCase):
 
         super(TestMiddlewareFunctionException, self).tearDown()
         HACS_SITE_CACHE.clear()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
 
 
 @modify_settings(MIDDLEWARE_CLASSES={'append': [
@@ -235,6 +238,7 @@ class TestDynamicRouteMiddleware(TransactionTestCase):
                     os.unlink(os.path.join(root, file_name))
 
         HACS_SITE_CACHE.clear()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
 
 
 @override_settings(
@@ -301,6 +305,7 @@ class TestDynamicRouteMiddlewareFromBrowser(TransactionTestCase):
                     os.unlink(os.path.join(root, file_name))
 
         HACS_SITE_CACHE.clear()
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
 
 
 @modify_settings(MIDDLEWARE_CLASSES={'append': [
@@ -782,6 +787,8 @@ class TestFirewallMiddleware(TransactionTestCase):
                 if file_name.startswith('hacs'):
                     os.unlink(os.path.join(root, file_name))
 
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
+
 
 @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
 class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
@@ -886,3 +893,4 @@ class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
             for file_name in files:
                 if file_name.startswith('hacs'):
                     os.unlink(os.path.join(root, file_name))
+        HACS_ACCESS_CONTROL_LOCAL.__release_local__()
