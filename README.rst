@@ -5,12 +5,12 @@ HACS(Hybrid Access Control System)
 .. image:: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system.svg?branch=master
     :target: https://travis-ci.org/nazrulworld/django-hybrid-access-control-system
 .. image:: https://ci.appveyor.com/api/projects/status/github/audreyr/cookiecutter?branch=master
-        :target: https://ci.appveyor.com/project/nazrulworld/django-hybrid-access-control-system/branch/master
+    :target: https://ci.appveyor.com/project/nazrulworld/django-hybrid-access-control-system/branch/master
 .. image:: https://codecov.io/gh/nazrulworld/django-hybrid-access-control-system/branch/master/graph/badge.svg
-        :target: https://codecov.io/gh/nazrulworld/django-hybrid-access-control-system
+    :target: https://codecov.io/gh/nazrulworld/django-hybrid-access-control-system
 .. image:: https://readthedocs.org/projects/django-hacs/badge/?version=latest
-        :target: https://readthedocs.org/projects/django-hacs/?badge=latest
-        :alt: Documentation Status
+    :target: https://readthedocs.org/projects/django-hacs/?badge=latest
+    :alt: Documentation Status
 .. image:: https://landscape.io/github/nazrulworld/django-hybrid-access-control-system/master/landscape.svg?style=flat
    :target: https://landscape.io/github/nazrulworld/django-hybrid-access-control-system/master
    :alt: Code Health
