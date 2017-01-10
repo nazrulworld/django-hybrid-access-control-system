@@ -9,10 +9,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.postgres.fields import JSONField
 
-from .fields import DictField
-from .fields import SequenceField
+from .fields import JSONField
 from .validators import UrlModulesValidator
 from .validators import HttpHandlerValidator
 from .validators import ContentTypeValidator
@@ -244,7 +242,7 @@ class HacsContentType(HacsUtilsModel):
     # Data Format: {'action': (permission1. permission2)}
     # Usually should contain one permission 'object.create' map, when workflow is active
     # because other permissions will be ignored if workflow is available
-    permissions_actions_map = DictField(null=True, default={HACS_OBJECT_CREATE_ACTION: [HACS_CONTENT_ADD_PERMISSION, ]})
+    permissions_actions_map = JSONField(null=True, default={HACS_OBJECT_CREATE_ACTION: [HACS_CONTENT_ADD_PERMISSION, ]})
 
     class Meta:
         app_label = "hacs"
@@ -270,11 +268,11 @@ class HacsWorkflowModel(HacsUtilsModel):
 
     # If you want to use custom role map for each permission. Other by default global map will be respected.
     # Data Format: {'permission name': ('role1', 'role2')}
-    permissions_map = DictField(null=True, blank=True)
+    permissions_map = JSONField(null=True, blank=True)
 
     # Which object states will be handled by this workflow. Also will be used as validator while applied this workflow
     # on specified content type.
-    states = SequenceField(null=True, blank=True)
+    states = JSONField(null=True, blank=True)
 
     # Targeted state after object is created
     default_state = models.CharField(
@@ -294,7 +292,7 @@ class HacsWorkflowModel(HacsUtilsModel):
     # direct change the state of object.
     # Transitions description could be another place, here only key is used.
     # Data Format: {'transition': {'target state': '', 'required permissions': () }}
-    transitions = DictField(null=True, blank=True)
+    transitions = JSONField(null=True, blank=True)
 
     class Meta:
         app_label = "hacs"
@@ -320,8 +318,8 @@ class RoutingTable(HacsUtilsModel):
     handlers: {'handler400': None, 'handler403': None, 'handler404': None, 'handler500': None}
     """
     description = models.TextField(_('description'), null=True, blank=True)
-    urls = SequenceField(_('URLs'), null=False, blank=False, validators=[UrlModulesValidator()])
-    handlers = DictField(_('Handlers'), null=True, blank=True, default='', validators=[HttpHandlerValidator()])
+    urls = JSONField(_('URLs'), null=False, blank=False, validators=[UrlModulesValidator()])
+    handlers = JSONField(_('Handlers'), null=True, blank=True, default='', validators=[HttpHandlerValidator()])
     generated_module = models.CharField(_('Generated Module'), null=True, blank=True, default=None, max_length=255)
     is_active = models.BooleanField(_('Is Active'), null=False, blank=True, default=True)
     is_deleted = models.BooleanField(_('Soft Delete'), null=False, blank=True, default=False)
@@ -381,7 +379,7 @@ class SiteRoutingRules(HacsUtilsModel):
                              blank=False,
                              related_name='hacs_site_routes')
 
-    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True)
+    allowed_method = JSONField(_('Allowed Method'), null=True, blank=True)
     blacklisted_uri = models.CharField(
         _('blacklisted uri'),
         max_length=255,
@@ -487,7 +485,7 @@ class ContentTypeRoutingRules(HacsUtilsModel):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, validators=[ContentTypeValidator()])
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    allowed_method = SequenceField(_('Allowed Method'), null=True, blank=True)
+    allowed_method = JSONField(_('Allowed Method'), null=True, blank=True)
     blacklisted_uri = models.CharField(
         _('blacklisted uri'),
         max_length=255,

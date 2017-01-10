@@ -98,7 +98,7 @@ class TestHacsContainerModel(TransactionTestCase):
         # We Test permissions map come from workflow
         news_folder_ct = HacsContentType.objects.get_for_model(news_folder_cls)
         self.assertEqual(news_folder.permissions_actions_map, news_folder_ct.workflow.states_permissions_map[news_folder.state])
-        # Should get workflow also
+        # Should get workflow alsodate_folder_cls
         self.assertIsNotNone(date_folder.workflow)
         self.assertEqual(news_folder.workflow, date_folder.workflow)
         # News Item workflow must be different

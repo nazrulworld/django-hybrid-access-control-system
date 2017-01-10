@@ -526,7 +526,8 @@
           "list.delete": ["hacs.ManageContent"]
         }
       },
-      "created_by": ["manager@test.com"]
+      "created_by": ["manager@test.com"],
+      "permissions": ["hacs.ManageUtilsContent"]
     }
   },
   {
@@ -566,7 +567,8 @@
           "share": ["hacs.ManageContentState"]
         }
       },
-      "created_by": ["manager@test.com"]
+      "created_by": ["manager@test.com"],
+      "permissions": ["hacs.ManageUtilsContent"]
     }
   }
 ]

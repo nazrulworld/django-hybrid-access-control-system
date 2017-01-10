@@ -15,10 +15,8 @@ from django.contrib.auth.models import _user_has_module_perms
 from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.postgres.fields import JSONField
 
 from hacs.fields import ForeignKey
-from hacs.fields import SequenceField
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_USER
@@ -28,6 +26,7 @@ from hacs.helpers import get_contenttype_model
 from hacs.security.helpers import HACS_OBJECT_EDIT_ACTION
 from hacs.security.helpers import HACS_OBJECT_CREATE_ACTION
 from hacs.security.helpers import HACS_OBJECT_DELETE_ACTION
+from hacs.fields import JSONField
 from .manager import HacsBaseManager, \
     HacsModelManager, \
     HacsStaticModelManager
@@ -178,7 +177,7 @@ class HacsUtilsFieldMixin(models.Model):
     class Meta:
         abstract = True
     # Only list of permissions, by default permission holder has all action permission
-    permissions = SequenceField(null=True, blank=True, validators=[])
+    permissions = JSONField(null=True, blank=True, validators=[])
 
 
 class HacsSecurityFieldMixin(models.Model):
@@ -271,6 +270,7 @@ class HacsModelSecurityMixin(models.Model):
             elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
                 if self.permissions is None and _insert:
                     self.update_permissions()
+
                 permission_changed = self.hacs_tracker.has_changed('permissions')
 
             elif self.__hacs_base_content_type__ in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):

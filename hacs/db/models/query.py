@@ -64,7 +64,7 @@ class HacsQuerySet(QuerySet):
         if active_security_guard:
             # we force disable security guard
             if current_user is None:
-                logging.warn("No permission is checked because of empty user!", UserWarning)
+                logging.warning("No permission is checked because of empty user!")
                 active_security_guard = False
             # Although system user clearance added in _check method but performance purpose here also implemented
             elif getattr(current_user, 'is_system', False):
@@ -76,14 +76,6 @@ class HacsQuerySet(QuerySet):
         if active_security_guard and base_type:
             # Yep! security guard applicable
             filters = {}
-
-
-
-
-
-
-
-
 
 
         return super(HacsQuerySet, self).iterator()
