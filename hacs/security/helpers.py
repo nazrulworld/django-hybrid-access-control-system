@@ -5,7 +5,8 @@ from collections import deque
 from collections import defaultdict
 from django.conf import settings
 from django.utils import lru_cache
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import get_backends
+from django.contrib.auth.models import AnonymousUser as DAU
 from django.contrib.auth import get_permission_codename
 from django.utils.encoding import python_2_unicode_compatible
 
@@ -21,6 +22,33 @@ from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 _ = lambda x: x
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
+
+
+def _user_get_all_permissions(user, obj=None):
+    """
+    :param user:
+    :param obj:
+    :return:
+    """
+    hacs_backend = None
+    for backend in get_backends():
+        if backend.__class__.__name__ == "HacsAuthorizerBackend":
+            hacs_backend = backend
+            break
+    assert hacs_backend, "'hacs.security.backends.HacsAuthorizerBackend' is need to added in settings"
+
+    return hacs_backend.get_all_permissions(user, obj)
+
+
+class AnonymousUser(DAU):
+    """
+    """
+    def get_all_permissions(self, obj=None):
+        """
+        :param obj:
+        :return:
+        """
+        return _user_get_all_permissions(self, obj)
 
 
 @python_2_unicode_compatible
@@ -196,7 +224,7 @@ def get_user_permissions(user):
     :param user:
     :return:
     """
-    # @TODO: need to something for special users. i.e system, anonymous
+    # @TODO: need to something for special users. i.e system
     permissions = set()
     for role in get_user_roles(user, True):
         for permission in role.hacs_rlm_permissions.all():
@@ -243,7 +271,7 @@ def get_user_roles(user, normalized=False):
     :param normalized: if true parent roles also me extracted
     :return:
     """
-    # @TODO: need to something for special users. i.e system, anonymous
+    # @TODO: need to something for special users. i.e system
     roles = set()
 
     if user.is_anonymous:

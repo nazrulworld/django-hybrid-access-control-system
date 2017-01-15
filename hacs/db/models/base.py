@@ -12,7 +12,6 @@ from collections import defaultdict
 from django.db.models.signals import class_prepared
 from django.contrib.auth.models import _user_has_perm
 from django.contrib.auth.models import _user_has_module_perms
-from django.contrib.auth.models import _user_get_all_permissions
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 
@@ -26,6 +25,7 @@ from hacs.helpers import get_contenttype_model
 from hacs.security.helpers import HACS_OBJECT_EDIT_ACTION
 from hacs.security.helpers import HACS_OBJECT_CREATE_ACTION
 from hacs.security.helpers import HACS_OBJECT_DELETE_ACTION
+from hacs.security.helpers import _user_get_all_permissions
 from hacs.fields import JSONField
 from .manager import HacsBaseManager, \
     HacsModelManager, \
@@ -74,7 +74,6 @@ def apply_default_permissions(sender, **kwargs):
             )
         elif sender.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
             sender._meta.hacs_default_permissions = ('hacs.ManageUtilsContent', )
-
 
 """
 Hacs Model short name map:

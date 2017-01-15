@@ -19,8 +19,6 @@ from .helpers import get_role_permissions
 from .helpers import get_django_builtin_permissions
 from hacs.helpers import get_role_model
 
-
-
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
 
