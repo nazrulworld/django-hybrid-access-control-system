@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # ++ This file `helpers.py` is generated at 11/5/16 3:31 PM ++
 from django.utils import six
-from collections import deque
-from collections import defaultdict
 from django.conf import settings
 from django.utils import lru_cache
 from django.contrib.auth import get_backends
@@ -14,7 +12,7 @@ from hacs.globals import HACS_APP_NAME
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from django.apps import apps as global_apps
 from hacs.helpers import get_role_model
-from hacs.helpers import get_contenttype_model
+from hacs.helpers import get_permission_model
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 
@@ -38,6 +36,22 @@ def _user_get_all_permissions(user, obj=None):
     assert hacs_backend, "'hacs.security.backends.HacsAuthorizerBackend' is need to added in settings"
 
     return hacs_backend.get_all_permissions(user, obj)
+
+
+def _user_get_all_roles(user, obj=None):
+    """
+    :param user:
+    :param obj:
+    :return:
+    """
+    hacs_backend = None
+    for backend in get_backends():
+        if backend.__class__.__name__ == "HacsAuthorizerBackend":
+            hacs_backend = backend
+            break
+    assert hacs_backend, "'hacs.security.backends.HacsAuthorizerBackend' is need to added in settings"
+
+    return hacs_backend.get_all_roles(user, obj)
 
 
 class AnonymousUser(DAU):
@@ -208,6 +222,14 @@ def get_cache_key(content_type, content_object=None, klass=None, _id=None):
         key="%s.%s" % (klass, _id))
 
 
+def get_user_cache_key(user):
+    """
+    :param user:
+    :return:
+    """
+    return get_cache_key(user.__hacs_base_content_type__, user)
+
+
 def normalize_role(container, role):
     """
     :param container: must be instance of set
@@ -219,33 +241,79 @@ def normalize_role(container, role):
         normalize_role(container, role.parent)
 
 
-def get_user_permissions(user):
+def normalize_role_children(container, role, unrestricted=False):
+    """
+    :param container: must be instance of set
+    :param role:
+    :param unrestricted:
+    :return:
+    """
+    container.add(role)
+    if unrestricted:
+        query_set = role.hacs_rlm_children.unrestricted()
+    else:
+        query_set = role.hacs_rlm_children.all()
+
+    for child in query_set:
+        normalize_role_children(container, child, unrestricted=unrestricted)
+
+    return container
+
+
+def normalize_permission(container, permission):
+    """
+    :param container: must be instance of set
+    :param permission:
+    :return:
+    """
+    container.add(permission)
+    if permission.parent is not None:
+        normalize_role(container, permission.parent)
+
+
+def get_user_permissions(user, unrestricted=False):
     """
     :param user:
+    :param unrestricted:
     :return:
     """
     # @TODO: need to something for special users. i.e system
     permissions = set()
-    for role in get_user_roles(user, True):
-        for permission in role.hacs_rlm_permissions.all():
+    for role in get_user_roles(user, True, unrestricted=unrestricted):
+        if unrestricted:
+            query_set = role.hacs_rlm_permissions.unrestricted()
+        else:
+            query_set = role.hacs_rlm_permissions.all()
+        for permission in query_set:
             permissions.add(permission)
 
     return permissions
 
 
-def get_group_permissions(group):
+def get_group_permissions(group, unrestricted=False):
     """
     :param group:
+    :param unrestricted:
     :return:
     """
     permissions = set()
-
     roles = set()
-    for role in group.roles.all():
+
+    if unrestricted:
+        query_set = group.roles.unrestricted()
+    else:
+        query_set = group.roles.all()
+
+    for role in query_set:
         normalize_role(roles, role)
 
     for role in roles:
-        for permission in role.hacs_rlm_permissions.all():
+        if unrestricted:
+            query_set = role.hacs_rlm_permissions.unrestricted()
+        else:
+            query_set = role.hacs_rlm_permissions.all()
+
+        for permission in query_set:
             permissions.add(permission)
 
     return permissions
@@ -259,16 +327,18 @@ def get_anonymous_user_role():
     role_cls = global_apps.get_model(HACS_APP_NAME, 'HacsRoleModel')
 
     try:
-        return role_cls.objects.get_by_natural_key(getattr(settings, 'HACS_ANONYMOUS_ROLE_NAME',
-                                                           HACS_ANONYMOUS_ROLE_NAME))
+        return role_cls.objects.get_by_natural_key(
+            getattr(settings, 'HACS_ANONYMOUS_ROLE_NAME', HACS_ANONYMOUS_ROLE_NAME)
+        )
     except role_cls.DoesNotExists:
         raise
 
 
-def get_user_roles(user, normalized=False):
+def get_user_roles(user, normalized=False, unrestricted=False):
     """
     :param user:
     :param normalized: if true parent roles also me extracted
+    :param unrestricted:
     :return:
     """
     # @TODO: need to something for special users. i.e system
@@ -277,17 +347,30 @@ def get_user_roles(user, normalized=False):
     if user.is_anonymous:
         roles.add(get_anonymous_user_role())
         return roles
+    if unrestricted:
+        query_set = user.roles.unrestricted()
+    else:
+        query_set = user.roles.all()
 
-    for role in user.roles.all():
+    for role in query_set:
 
         if normalized:
             normalize_role(roles, role)
         else:
             roles.add(role)
 
-    for group in user.groups.all().prefetch_related('roles'):
+    if unrestricted:
+        query_set = user.groups.unrestricted()
+    else:
+        query_set = user.groups.all()
 
-        for role in group.roles.all():
+    for group in query_set.prefetch_related('roles'):
+
+        if unrestricted:
+            q_set = group.roles.unrestricted()
+        else:
+            q_set = group.roles.all()
+        for role in q_set:
             if normalized:
                 normalize_role(roles, role)
             else:
@@ -296,12 +379,58 @@ def get_user_roles(user, normalized=False):
     return roles
 
 
-def get_container_permissions(content_type_cls, container):
+def get_group_roles(group, normalized=True, unrestricted=False):
     """
-    :param content_type_cls:
-    :param container:
+    :param group:
+    :param normalized: if true parent roles also me extracted
+    :param unrestricted:
     :return:
     """
+    # @TODO: need to something for special users. i.e system
+    roles = set()
+    if unrestricted:
+        query_set = group.roles.unrestricted()
+    else:
+        query_set = group.roles.all()
+
+    for role in query_set:
+        if normalized:
+            normalize_role(roles, role)
+        else:
+            roles.add(role)
+    return roles
+
+
+def get_permission_roles(permission, normalized=True, unrestricted=False):
+    """
+    :param permission:
+    :param normalized:
+    :param unrestricted:
+    :return:
+    """
+    if isinstance(permission, six.string_types):
+        try:
+            permission = get_permission_model().objects.get_by_natural_key(permission)
+        except get_permission_model().DoesNotExist:
+            # @TODO need raise with useful message
+            raise
+
+    permissions = set()
+    if normalized:
+        normalize_permission(permissions, permission)
+    else:
+        permissions.add(permission)
+
+    container = set()
+    for perm in permissions:
+        if unrestricted:
+            q_set = perm.roles.unrestricted()
+        else:
+            q_set = perm.roles.all()
+
+        for role in q_set:
+            normalize_role_children(container, role)
+    return container
 
 
 @lru_cache.lru_cache(maxsize=None)
@@ -338,9 +467,10 @@ def get_django_custom_permissions():
     return permissions
 
 
-def get_role_permissions(role):
+def get_role_permissions(role, unrestricted=False):
     """
     :param role: string(natural key value) or instance of HacsRoleModel
+    :param unrestricted:
     :return: list of HacsPermissionModel
     """
     role_cls = get_role_model()
@@ -357,23 +487,27 @@ def get_role_permissions(role):
     permissions = set()
 
     for role in roles:
-        for permission in role.hacs_rlm_permissions.all():
+        if unrestricted:
+            q_set = role.hacs_rlm_permissions.unrestricted()
+        else:
+            q_set = role.hacs_rlm_permissions.all()
+
+        for permission in q_set:
             permissions.add(permission)
 
     return permissions
 
 
-def get_container_workflow(container_obj):
+def get_container_workflow(container_obj, unrestricted=False):
     """
     :param container_obj:
+    :param unrestricted:
     :return:
     """
     assert container_obj.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER, "Instance must be derived from " \
                                                                                     "HacsContainerModel"
     if container_obj.workflow:
         return container_obj.workflow
-
-    hct = get_contenttype_model().objects.get_for_model(container_obj.__class__)
 
 
 def attach_system_user():

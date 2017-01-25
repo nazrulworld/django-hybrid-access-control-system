@@ -12,10 +12,10 @@ from collections import defaultdict
 from django.db.models.signals import class_prepared
 from django.contrib.auth.models import _user_has_perm
 from django.contrib.auth.models import _user_has_module_perms
+from django.contrib.auth import get_backends
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-from hacs.fields import ForeignKey
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_USER
@@ -25,7 +25,9 @@ from hacs.helpers import get_contenttype_model
 from hacs.security.helpers import HACS_OBJECT_EDIT_ACTION
 from hacs.security.helpers import HACS_OBJECT_CREATE_ACTION
 from hacs.security.helpers import HACS_OBJECT_DELETE_ACTION
+from hacs.security.helpers import _user_get_all_roles
 from hacs.security.helpers import _user_get_all_permissions
+
 from hacs.fields import JSONField
 from .manager import HacsBaseManager, \
     HacsModelManager, \
@@ -95,15 +97,15 @@ class HacsUserFieldMixin(models.Model):
     """
     roles = models.ManyToManyField(
         'hacs.HacsRoleModel',
-        related_name="hacs_rlm_users",
-        related_query_name="hacs_rlm_users_set",
+        related_name="%(app_label)s_rlm_users",
+        related_query_name="%(app_label)s_rlm_users_set",
         blank=True,
         db_constraint=False
     )
     groups = models.ManyToManyField(
         'hacs.HacsGroupModel',
-        related_name="hacs_grp_users",
-        related_query_name="hacs_grp_users_set",
+        related_name="%(app_label)s_grp_users",
+        related_query_name="%(app_label)s_grp_users_set",
         blank=True,
         db_constraint=False
     )
@@ -130,6 +132,13 @@ class HacsUserFieldMixin(models.Model):
         """
         return _user_get_all_permissions(self, obj)
 
+    def get_all_roles(self, obj=None):
+        """
+        :param obj
+        :return:
+        """
+        return _user_get_all_roles(self, obj)
+
     class Meta:
         abstract = True
 
@@ -144,22 +153,22 @@ class HacsBasicFieldMixin(models.Model):
     name = models.CharField(max_length=127, null=False, blank=True)
     slug = models.SlugField(max_length=127, null=False, blank=True, unique=True, db_index=True)
     created_on = models.DateTimeField(null=False, blank=True, default=timezone.now)
-    created_by = ForeignKey(
+    created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         db_constraint=False,
         # Prefix hacs
         # um = User Model
         # So pattern prefix_ref:model short name_own class name_actors
-        related_name="hacs_usm_{klass}_creators",
-        related_query_name="hacs_usm_{klass}_creators_set",
+        related_name="%(app_label)s_usm_%(class)s_%(model_name)s_creators",
+        related_query_name="%(app_label)s_usm_%(class)s_creators_set",
         on_delete=models.DO_NOTHING)
-    modified_by = ForeignKey(
+    modified_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         db_constraint=False,
         null=True,
         blank=True,
-        related_name="hacs_usm_{klass}_modifiers",
-        related_query_name="hacs_usm_{klass}_modifiers_set",
+        related_name="%(app_label)s_usm_%(class)s_%(model_name)s_modifiers",
+        related_query_name="%(app_label)s_usm_%(class)s_modifiers_set",
         on_delete=models.DO_NOTHING)
     modified_on = models.DateTimeField(null=True, blank=True)
 
@@ -194,6 +203,15 @@ class HacsSecurityFieldMixin(models.Model):
     #
     # Might need clean cache, as well child object cache also
     permissions_actions_map = JSONField(null=True, blank=True)
+
+    # Extremely system's job
+    #  Roles should be automatically mapped during state changed!
+    # Could achieved by subscribe signals or other way.
+    # Although it seems repetitive permission data for each object! but it is required
+    # During making maps, should consider parent if allowed
+    #
+    # Might need clean cache, as well child object cache also
+    roles_actions_map = JSONField(null=True, blank=True)
     #
     # Local Roles: {userid: (role1, role2, role3)}
     # user natural key as key and list of role's natural key
@@ -202,12 +220,12 @@ class HacsSecurityFieldMixin(models.Model):
     # i.e parent local role: user1: (Manager,) but child has user1: (Editor) so child will be winner
     local_roles = JSONField(null=True, blank=True)
 
-    owner = ForeignKey(
+    owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         db_constraint=False,
         on_delete=models.DO_NOTHING,
-        related_name="hacs_usm_{klass}_owners",
-        related_query_name="hacs_usm_{klass}_owners_set",
+        related_name="%(app_label)s_usm_%(class)s_%(model_name)s_owners",
+        related_query_name="%(app_label)s_usm_%(class)s_owners_set",
         parent_link=False)
     acquired_owners = JSONField(null=True, blank=True,)
     # If True: this Content object will inherit permission from parent Folder
@@ -313,6 +331,9 @@ class HacsModelSecurityMixin(models.Model):
                     self.update_permissions(_workflow, hacs_ct)
 
                 permission_changed = self.hacs_tracker.has_changed('permissions_actions_map')
+                if _insert or permission_changed:
+                    # Update Roles Actions Map as well
+                    self.update_roles_map()
 
                 if (self.hacs_tracker.has_changed('local_roles') or _insert) and self.acquire_parent:
                     self.update_local_roles_with_parent()
@@ -331,8 +352,10 @@ class HacsModelSecurityMixin(models.Model):
                 raise
         # Security Check Here!
         security_manager = self._meta.default_manager._security_manager()
-        security_manager.check_obj_permission(self,
-                                              action=_insert and HACS_OBJECT_CREATE_ACTION or HACS_OBJECT_EDIT_ACTION)
+        security_manager.check_obj_permission(
+            self,
+            action=_insert and HACS_OBJECT_CREATE_ACTION or HACS_OBJECT_EDIT_ACTION
+        )
 
         result = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,force_update, using,
                                                                  update_fields)
@@ -372,7 +395,8 @@ class HacsModelSecurityMixin(models.Model):
                 raise
         else:
             # No workflow! we are going to search from contenttype
-            permissions = hacs_contenttype.permissions_actions_map.copy() or defaultdict()
+            permissions = hacs_contenttype.permissions_actions_map and hacs_contenttype.permissions_actions_map.copy() \
+                          or defaultdict()
             permissions.pop('object.create', None)
 
             if not permissions:
@@ -433,6 +457,26 @@ class HacsModelSecurityMixin(models.Model):
 
         self.acquired_owners = list(owners)
 
+    def update_roles_map(self):
+        """
+        :return:
+        """
+        permissions_actions_map = self.permissions_actions_map.copy()
+        roles_actions_map = defaultdict()
+        hacs_backend = None
+        for backend in get_backends():
+            if backend.__class__.__name__ == "HacsAuthorizerBackend":
+                hacs_backend = backend
+                break
+        assert hacs_backend, "'hacs.security.backends.HacsAuthorizerBackend' is need to added in settings"
+
+        for action, permissions in six.iteritems(permissions_actions_map):
+            if not permissions:
+                continue
+            roles_actions_map[action] = hacs_backend.get_permissions_roles(*permissions)
+
+        self.roles_actions_map = roles_actions_map
+
     def apply_aquire_parent_changed(self):
         """
         :return:
@@ -472,25 +516,25 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
     hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner','local_roles', 'permissions_actions_map', 'workflow',
                                         'acquire_parent', 'recursive'))
     # If need other than custom ContentType\s workflow
-    workflow = ForeignKey(
+    workflow = models.ForeignKey(
         "hacs.HacsWorkflowModel",
         db_constraint=False,
         on_delete=models.DO_NOTHING,
         null=True,
         blank=True,
-        related_name="hacs_wfl_{klass}_containers",
-        related_query_name="hacs_wfl_{klass}_containers_set"
+        related_name="%(app_label)s_wfl_%(class)s_%(model_name)s_containers",
+        related_query_name="%(app_label)s_wfl_%(class)s_containers_set"
     )
     # Container Relation Start
     # See: https://docs.djangoproject.com/en/1.10/ref/contrib/contenttypes/#generic-relations
-    container_content_type = ForeignKey(
+    container_content_type = models.ForeignKey(
         "contenttypes.ContentType",
         on_delete=models.CASCADE,
         validators=[],
         null=True,
         blank=True,
-        related_name="hacs_cnr_{klass}_children",
-        related_query_name="hacs_cnr_{klass}_children_set"
+        related_name="%(app_label)s_cnr_%(class)s_%(model_name)s_children",
+        related_query_name="%(app_label)s_cnr_%(class)s_children_set"
     )
     # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
     # it should not be empty
@@ -517,14 +561,14 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTENT
     hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner', 'local_roles', 'permissions_actions_map', 'acquire_parent', ))
     # Container Relation Start
-    container_content_type = ForeignKey(
+    container_content_type = models.ForeignKey(
         "contenttypes.ContentType",
         on_delete=models.CASCADE,
         validators=[],
         null=True,
         blank=True,
-        related_name="hacs_cnr_{klass}_items",
-        related_query_name="hacs_cnr_{klass}_items_set"
+        related_name="%(app_label)s_cnr_%(class)s_%(model_name)s_items",
+        related_query_name="%(app_label)s_cnr_%(class)s_items_set"
     )
     # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
     # it should not be empty

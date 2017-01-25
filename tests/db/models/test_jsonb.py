@@ -199,43 +199,44 @@ class TestJsonBUsecase(TransactionTestCase):
 
         # Test With 3rd Level path search
         date_folder = date_folder_cls.objects.get(pk=1)
-        date_folder.permissions_actions_map.update({
+        date_folder.extra_info = {
             "hacs.action": {
                 "level2": {
                     "level3": date_folder.permissions_actions_map['object.view']
                 }
             }
-        })
+        }
 
         attach_system_user()
         date_folder.save()
         release_system_user()
         _filter = {
-            "permissions_actions_map__hacs.action__level2__level3__contained_by": list(
+            "extra_info__hacs.action__level2__level3__contained_by": list(
                 model_fixture.editoruser.get_all_permissions())
         }
         results = date_folder_cls.objects.filter(**_filter)
         self.assertEqual(1, results.count())
 
         _filter = {
-            "permissions_actions_map__hacs.action__level2__level3__has_any_keys": model_fixture.editoruser.get_all_permissions()
+            "extra_info__hacs.action__level2__level3__has_any_keys": model_fixture.editoruser.get_all_permissions()
         }
         results = date_folder_cls.objects.filter(**_filter)
         self.assertEqual(1, results.count())
 
         _filter = {
-            "permissions_actions_map__hacs.action__level2__level3__contained_by": list(
+            "extra_info__hacs.action__level2__level3__contained_by": list(
                 model_fixture.memberuser.get_all_permissions())
         }
         results = date_folder_cls.objects.filter(**_filter)
         self.assertEqual(0, results.count())
 
         _filter = {
-            "permissions_actions_map__object.view__level2__level3__contained_by": list(
+            "extra_info__object.view__level2__level3__contained_by": list(
                 model_fixture.editoruser.get_all_permissions())
         }
         results = date_folder_cls.objects.filter(**_filter)
         self.assertEqual(0, results.count())
+
 
     def tearDown(self):
         """"""

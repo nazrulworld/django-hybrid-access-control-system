@@ -269,6 +269,21 @@ class TestHelpersException(TestCase):
         except AssertionError:
             pass
 
+    def test_get_permission_roles(self):
+        """
+        :return:
+        """
+        roles = get_permission_roles("hacs.ManageContent")
+        # Should Two Roles, Editor, Manager
+        self.assertEqual(2, len(roles))
+
+        roles = get_permission_roles("hacs.PublicView")
+        # Should have all roles
+        self.assertEqual(5, len(roles))
+
+        roles = get_permission_roles("hacs.ManagePortal")
+        self.assertEqual(1, len(roles))
+
     def tearDown(self):
         """
         :return:

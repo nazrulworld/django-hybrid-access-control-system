@@ -161,7 +161,7 @@ class TestHacsAuthorizerBackend(TransactionTestCase):
         guest_cache_key = get_cache_key(get_role_model().__hacs_base_content_type__, klass=get_role_model().__name__, _id='Guest')
         permissions = backend.get_role_permissions('Guest')
         self.assertEqual(1, len(permissions))
-        self.assertEqual(1, len(self.cache.get(guest_cache_key)['permissions']))
+        self.assertEqual(1, len(self.cache.get(guest_cache_key)))
 
     @mock.patch('hacs.security.helpers.get_role_permissions', return_value=None)
     def test_get_roles_permissions(self, role_permissions_fn):

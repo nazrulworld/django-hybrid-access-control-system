@@ -20,15 +20,15 @@ class ModelFixture(object):
         """
         :return:
         """
-        attach_system_user()
-
-        setupModels(*self.models.values())
-        # Initialized Hacs ContentType
-        self.init_hacs_content_types()
-        # Initialized Hacs ContentType Data
-        self.init_hacs_content_data()
-
-        release_system_user()
+        try:
+            attach_system_user()
+            setupModels(*self.models.values())
+            # Initialized Hacs ContentType
+            self.init_hacs_content_types()
+            # Initialized Hacs ContentType Data
+            self.init_hacs_content_data()
+        finally:
+            release_system_user()
 
     def init_hacs_content_types(self):
 
@@ -168,25 +168,50 @@ class ModelFixture(object):
         """
         :return:
         """
-        tearDownModels(*self.models.values())
+        try:
+            attach_system_user()
+            for model in self.models.values():
+                try:
+                    ct = ContentType.objects.get_for_model(model)
+                    try:
+                        HacsContentType.objects.get(content_type=ct).delete()
+                    except HacsContentType.DoesNotExist:
+                        pass
+                    ct.delete()
+                except model.DoesNotExist:
+                    pass
+
+            tearDownModels(*self.models.values())
+        finally:
+            release_system_user()
 
     @cached_property
     def models(self):
         """
         :return:
         """
+        from hacs.fields import JSONField
 
         class NewsFolder(HacsContainerModel):
+
+            extra_info = JSONField(null=True)
+
             class Meta:
                 app_label = "hacs"
                 db_table = "test_news_folder"
 
         class DateFolder(HacsContainerModel):
+
+            extra_info = JSONField(null=True)
+
             class Meta:
                 app_label = "hacs"
                 db_table = "test_date_folder"
 
         class NewsItem(HacsItemModel):
+
+            extra_info = JSONField(null=True)
+
             class Meta:
                 app_label = "hacs"
                 db_table = "test_news_item"

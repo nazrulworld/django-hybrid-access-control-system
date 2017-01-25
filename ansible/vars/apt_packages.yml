@@ -50,6 +50,7 @@ APT_PACKAGES:
  - {name: "postgresql-{{ postgresql_version }}", state: present, force: no}
  - {name: "postgresql-contrib-{{ postgresql_version }}", state: present, force: no}
  - {name: "postgresql-client-{{ postgresql_version }}", state: present, force: no}
+ - {name: "postgresql-plpython-{{ postgresql_version }}", state: present, force: no}
  - {name: "libpq-dev", state: present, force: no}
 
 

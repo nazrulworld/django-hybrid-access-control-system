@@ -56,15 +56,6 @@
     }
   },
   {
-    "model": "hacs.HacsRoleModel",
-    "pk": 6,
-    "fields": {
-      "name": "Owner",
-      "parent": ["Editor"],
-      "is_system": true
-    }
-  },
-  {
     "model": "hacs.HacsGroupModel",
     "pk": 1,
     "fields": {
@@ -126,7 +117,7 @@
     "pk": 4,
     "fields": {
       "name": "hacs.ManageUser",
-      "roles": [["Manager"], ["Owner"]]
+      "roles": [["Manager"]]
     }
   },
   {
@@ -158,7 +149,7 @@
     "pk": 8,
     "fields": {
       "name": "hacs.ModifyContent",
-      "roles": [["Editor"], ["Owner"]]
+      "roles": [["Editor"]]
     }
   },
   {
@@ -166,7 +157,7 @@
     "pk": 9,
     "fields": {
       "name": "hacs.DeleteContent",
-      "roles": [["Editor"], ["Owner"]]
+      "roles": [["Editor"]]
     }
   },
   {
@@ -174,7 +165,7 @@
     "pk": 10,
     "fields": {
       "name": "hacs.ManageStaticContent",
-      "roles": [["Manager"], ["Owner"]]
+      "roles": [["Manager"]]
     }
   },
   {
@@ -182,7 +173,7 @@
     "pk": 11,
     "fields": {
       "name": "hacs.ManageUtilsContent",
-      "roles": [["Manager"], ["Owner"]]
+      "roles": [["Manager"]]
     }
   },
   {
@@ -190,7 +181,7 @@
     "pk": 12,
     "fields": {
       "name": "hacs.CanListObjects",
-      "roles": [["Contributor"], ["Owner"]]
+      "roles": [["Contributor"]]
     }
   },
   {
@@ -214,7 +205,7 @@
     "pk": 15,
     "fields": {
       "name": "hacs.CanTraverseContainer",
-      "roles": [["Member"], ["Owner"]]
+      "roles": [["Member"]]
     }
   },
   {
@@ -222,7 +213,7 @@
     "pk": 16,
     "fields": {
       "name": "hacs.ManageLocalRole",
-      "roles": [["Editor"], ["Owner"]]
+      "roles": [["Editor"]]
     }
   },
   {
@@ -230,7 +221,7 @@
     "pk": 17,
     "fields": {
       "name": "hacs.ManageContentState",
-      "roles": [["Editor"], ["Owner"]]
+      "roles": [["Editor"] ]
     }
   },
   {
@@ -485,7 +476,7 @@
           "object.view": ["hacs.PublicView"],
           "object.edit": [],
           "object.delete": ["hacs.ManagePortal"],
-          "object.manage_state":["Hacs.ManageContentState"],
+          "object.manage_state":["hacs.ManageContentState"],
           "share": [],
           "list.traverse": ["hacs.PublicView"],
           "list.view": ["hacs.CanListObjects"],
@@ -496,7 +487,7 @@
           "object.view": ["hacs.AuthenticatedView"],
           "object.edit": ["hacs.ManagePortal"],
           "object.delete": ["hacs.ManagePortal"],
-          "object.manage_state":["Hacs.ManageContentState"],
+          "object.manage_state":["hacs.ManageContentState"],
           "share": [],
           "list.traverse": ["hacs.CanTraverseContainer"],
           "list.view": ["hacs.CanListObjects"],
@@ -507,7 +498,7 @@
           "object.view": ["hacs.ViewContent"],
           "object.edit": ["hacs.ModifyContent"],
           "object.delete": ["hacs.DeleteContent"],
-          "object.manage_state":["Hacs.ManageContentState"],
+          "object.manage_state":["hacs.ManageContentState"],
           "share": ["hacs.ManageContentState"],
           "list.traverse": ["hacs.CanTraverseContainer"],
           "list.view": ["hacs.CanListObjects"],
@@ -542,21 +533,21 @@
           "object.view": ["hacs.PublicView"],
           "object.edit": [],
           "object.delete": ["hacs.ManageContent"],
-          "object.manage_state":["Hacs.ManageContentState"],
+          "object.manage_state":["hacs.ManageContentState"],
           "share": []
         },
         "internally_published": {
           "object.view": ["hacs.AuthenticatedView"],
           "object.edit": ["hacs.ManageContent"],
           "object.delete": ["hacs.ManageContent"],
-          "object.manage_state":["Hacs.ManageContentState"],
+          "object.manage_state":["hacs.ManageContentState"],
           "share": []
         },
         "draft": {
           "object.view": ["hacs.ViewContent"],
           "object.edit": ["hacs.ModifyContent"],
           "object.delete": ["hacs.DeleteContent"],
-          "object.manage_state":["Hacs.ManageContentState"],
+          "object.manage_state":["hacs.ManageContentState"],
           "share": ["hacs.ManageContentState"]
         },
         "private": {

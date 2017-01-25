@@ -59,8 +59,8 @@ class HacsRoleModel(HacsStaticModel):
         on_delete=models.CASCADE,
         null=True,
         blank=True,
-        related_name="hacs_rlm_children",
-        related_query_name="hacs_rlm_children_set"
+        related_name="%(app_label)s_rlm_children",
+        related_query_name="%(app_label)s_rlm_children_set"
     )
 
     class Meta:
@@ -80,8 +80,8 @@ class HacsGroupModel(HacsStaticModel):
     roles = models.ManyToManyField(
         "hacs.HacsRoleModel",
         db_constraint=False,
-        related_name="hacs_rlm_groups",
-        related_query_name="hacs_rlm_groups_set"
+        related_name="%(app_label)s_rlm_groups",
+        related_query_name="%(app_label)s_rlm_groups_set"
     )
 
     class Meta:
@@ -101,16 +101,16 @@ class HacsPermissionModel(HacsStaticModel):
     roles = models.ManyToManyField(
         "hacs.HacsRoleModel",
         db_constraint=False,
-        related_name="hacs_rlm_permissions",
-        related_query_name="hacs_rlm_permissions_set"
+        related_name="%(app_label)s_rlm_permissions",
+        related_query_name="%(app_label)s_rlm_permissions_set"
     )
     parent = models.ForeignKey(
         'self',
         db_constraint=False,
         null=True,
         blank=True,
-        related_name="hacs_prm_children",
-        related_query_name="hacs_prm_children_set"
+        related_name="%(app_label)s_prm_children",
+        related_query_name="%(app_label)s_prm_children_set"
     )
 
     class Meta:
@@ -138,27 +138,34 @@ class HacsContentTypeManager(HacsModelManager):
         # django.contenttype style!
         self._cache = defaultdict()
 
-    def get_by_natural_key(self, app_label, model):
+    def get_by_natural_key(self, app_label, model, __restricted__=False):
         """
         :param app_label:
         :param model:
+        :param __restricted__:
         :return:
         """
         try:
             hacs_ct = self._cache[self.db][(app_label, model)]
         except KeyError:
             ct = ContentType.objects.get_by_natural_key(app_label, model)
-            hacs_ct = self.select_related('content_type', 'workflow').\
-                prefetch_related('allowed_content_types').get(content_type=ct)
-            # now are caching
+            params = {
+                "content_type": ct
+            }
+            if __restricted__:
+                params["__restricted__"] = __restricted__
+
+            query_set = self.select_related('content_type', 'workflow').prefetch_related('allowed_content_types')
+            hacs_ct = query_set.get(**params)
             self._add_to_cache(self.db, hacs_ct)
 
         return hacs_ct
 
-    def get_for_model(self, model, for_concrete_model=True):
+    def get_for_model(self, model, for_concrete_model=True, __restricted__=False):
         """
         :param model:
         :param for_concrete_model:
+        :param __restricted__:
         :return:
         """
         ct = ContentType.objects.get_for_model(model, for_concrete_model)
@@ -166,23 +173,35 @@ class HacsContentTypeManager(HacsModelManager):
         try:
             hacs_ct = self._cache[self.db][(ct.app_label, ct.model)]
         except KeyError:
-            hacs_ct = self.select_related('content_type', 'workflow').\
-                prefetch_related('allowed_content_types').get(content_type=ct)
-            self._add_to_cache(self.db, hacs_ct)
+            params = {
+                "content_type": ct
+            }
+            if __restricted__:
+                params["__restricted__"] = __restricted__
 
+            query_set = self.select_related('content_type', 'workflow').prefetch_related('allowed_content_types')
+            hacs_ct = query_set.get(**params)
+            self._add_to_cache(self.db, hacs_ct)
         return hacs_ct
 
-    def get_for_id(self, id):
+    def get_for_id(self, id, __restricted__=False):
         """
         :param id:
+        :param __restricted__:
         :return:
         """
         try:
             hacs_ct = self._cache[self.db][id]
         except KeyError:
             ct = ContentType.objects.get_for_id(id)
-            hacs_ct = self.select_related('content_type', 'workflow').\
-                prefetch_related('allowed_content_types').get(content_type=ct)
+            params = {
+                "content_type": ct
+            }
+            if __restricted__:
+                params["__restricted__"] = __restricted__
+
+            query_set = self.select_related('content_type', 'workflow').prefetch_related('allowed_content_types')
+            hacs_ct = query_set.get(**params)
             self._add_to_cache(self.db, hacs_ct)
 
         return hacs_ct
@@ -225,8 +244,8 @@ class HacsContentType(HacsUtilsModel):
         'contenttypes.ContentType',
         blank=True,
         db_constraint=False,
-        related_name="hacs_ctr_hctype_ctypes",
-        related_query_name="hacs_ctr_hctype_ctypes_set"
+        related_name="%(app_label)s_ctr_hctype_ctypes",
+        related_query_name="%(app_label)s_ctr_hctype_ctypes_set"
     )
     # @TODO: need to decide workflow could be acquired. I think should not but respect parent permission (at least view)
     workflow = models.ForeignKey(
@@ -235,8 +254,8 @@ class HacsContentType(HacsUtilsModel):
         on_delete=models.DO_NOTHING,
         null=True,
         blank=True,
-        related_name="hacs_wfl_HacsContentType_ctypes",
-        related_query_name="hacs_wfl_HacsContentType_ctypes_set"
+        related_name="%(app_label)s_wfl_%(class)s_%(model_name)s_ctypes",
+        related_query_name="%(app_label)s_wfl_%(class)s_ctypes_set"
     )
     # A dictionary map for content type permission
     # Data Format: {'action': (permission1. permission2)}
@@ -563,7 +582,6 @@ class HacsUserManger(BaseUserManager):
             raise ValueError('Superuser must have is_superuser=True.')
 
         return self._create_user(email, password, **extra_fields)
-
 
 @python_2_unicode_compatible
 class HacsUserModel(HacsAbstractUser):
