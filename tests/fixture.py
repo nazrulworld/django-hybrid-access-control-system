@@ -190,7 +190,7 @@ class ModelFixture(object):
         """
         :return:
         """
-        from hacs.fields import JSONField
+        from hacs.db.models.fields import JSONField
 
         class NewsFolder(HacsContainerModel):
 

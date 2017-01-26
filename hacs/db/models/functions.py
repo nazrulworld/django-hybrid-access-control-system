@@ -5,7 +5,7 @@ from django.db.models import Func
 from django.db.models import Value
 from django.db.models import CharField
 from django.db.models.functions import Cast
-from hacs.fields import JSONField
+from .fields import JSONField
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 

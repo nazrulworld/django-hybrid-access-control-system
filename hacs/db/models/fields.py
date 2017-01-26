@@ -8,6 +8,7 @@ from django.contrib.postgres.fields import JSONField as ps_JSONField
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
+
 class JSONField(ps_JSONField):
     """
     """

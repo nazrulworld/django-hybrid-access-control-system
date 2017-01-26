@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import python_2_unicode_compatible
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-from .fields import JSONField
+from hacs.db.models.fields import JSONField
 from .validators import UrlModulesValidator
 from .validators import HttpHandlerValidator
 from .validators import ContentTypeValidator

@@ -28,7 +28,7 @@ from hacs.security.helpers import HACS_OBJECT_DELETE_ACTION
 from hacs.security.helpers import _user_get_all_roles
 from hacs.security.helpers import _user_get_all_permissions
 
-from hacs.fields import JSONField
+from .fields import JSONField
 from .manager import HacsBaseManager, \
     HacsModelManager, \
     HacsStaticModelManager
