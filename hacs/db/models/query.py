@@ -3,6 +3,7 @@
 import logging
 from django.db.models import Q
 from hacs.db.models.functions import JsonbExtractPath
+from hacs.db.models.functions import JsonbToArray
 from django.conf import settings
 from django.db.models.query import QuerySet
 from hacs.security.helpers import HACS_STATIC_CONTENT_PERMISSION
@@ -142,23 +143,24 @@ class HacsBaseQuerySet(QuerySet):
         user_permissions = user.get_all_permissions()
 
         if base_type in (HACS_CONTENT_TYPE_CONTENT, HACS_CONTENT_TYPE_CONTAINER):
+            user_name = user.is_authenticated() and getattr(user, user.USERNAME_FIELD) or user.__str__()
             query = Q(**{
-                        "permissions_actions_map__%s__contained_by" % action: user_permissions
+                        "permissions_actions_map__%s__has_any_keys" % action: user_permissions
                     }) | \
-                    Q(acquired_owners__contains=user.is_authenticated() and
-                                                        getattr(user, user.USERNAME_FIELD) or user.__str__()) \
+                    Q(acquired_owners__contains=user_name) \
                     | Q(**{
-                        "roles_actions_map__%s__contains" % action:
-                            JsonbExtractPath('local_roles', user.is_authenticated() and
-                                             getattr(user, user.USERNAME_FIELD) or user.__str__())
+                        "roles_actions_map__%s__has_any_keys" % action: JsonbToArray('local_roles__%s' % user_name)
                     })
+
             if user.is_authenticated():
                 query = query | Q(owner=user)
-            # @TODO: need to verification `contains` or `contained_by perfect for local_roles check`
+
             self.query.add_q(query)
+
         elif base_type == HACS_CONTENT_TYPE_UTILS:
-            query = Q(permissions__contained_by=user_permissions)
-            self.query.add_q(query)
+             query = Q(permissions__has_any_keys=user_permissions)
+             self.query.add_q(query)
+
         elif base_type == HACS_CONTENT_TYPE_STATIC:
             # Only Super User can see static contents
             if HACS_STATIC_CONTENT_PERMISSION not in user_permissions:

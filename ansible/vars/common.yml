@@ -1,6 +1,6 @@
 system_user: "ubuntu"
 system_group: "ubuntu"
-postgresql_version: "9.5"
+postgresql_version: "9.4"
 postgresql_encoding: 'UTF-8'
 postgresql_admin_user: "postgres"
 postgresql_database_owner: "{{postgresql_admin_user}}"

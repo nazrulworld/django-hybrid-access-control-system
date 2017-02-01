@@ -544,8 +544,8 @@
           "share": []
         },
         "draft": {
-          "object.view": ["hacs.ViewContent"],
-          "object.edit": ["hacs.ModifyContent"],
+          "object.view": ["hacs.ViewContent", "hacs.ManageContent"],
+          "object.edit": ["hacs.ModifyContent", "hacs.ManageContent"],
           "object.delete": ["hacs.DeleteContent"],
           "object.manage_state":["hacs.ManageContentState"],
           "share": ["hacs.ManageContentState"]

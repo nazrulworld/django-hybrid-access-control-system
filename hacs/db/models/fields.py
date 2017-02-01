@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 # ++ This file `fields.py` is generated at 3/4/16 5:54 PM ++
 import json
+from .lookups import HasAnyKeys
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.postgres.fields import JSONField as ps_JSONField
 
@@ -23,5 +24,6 @@ class JSONField(ps_JSONField):
             value = json.dumps(value, cls=DjangoJSONEncoder)
         return value
 
+JSONField.register_lookup(HasAnyKeys)
 
 __all__ = [str(x) for x in ('JSONField', )]

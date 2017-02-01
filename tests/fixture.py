@@ -42,7 +42,7 @@ class ModelFixture(object):
             workflow=folder_workflow,
             permissions_actions_map={
                 "object.create": ["hacs.ManagePortal"],
-                "object.view": ["hacs.ViewContent"],
+                "object.view": ["hacs.ViewContent", "hacs.ManageContent"],
                 "object.edit": ["hacs.ModifyContent"],
                 "object.delete": ["hacs.DeleteContent"],
                 "object.manage_state":["Hacs.ManageContentState"],
@@ -156,7 +156,7 @@ class ModelFixture(object):
             "description": "news of HACS with local roles",
             "created_by": self.editoruser,
             "owner": self.editoruser,
-            "local_roles": {"contributor@test.com": ("Editor",)},
+            "local_roles": {"contributor@test.com": ("Editor", "Member")},
             "acquire_parent": True,
             "container_content_type": ContentType.objects.get_for_model(date_folder_cls),
             "container_id": date_folder.pk
