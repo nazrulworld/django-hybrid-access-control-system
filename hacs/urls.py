@@ -14,7 +14,6 @@ urlpatterns = [
     url(r'^about/', name='about', view=AboutView.as_view()),
     url(r'^select2\-(?P<content_type>[a-z]+)\-list/$',
         name='select2_contenttypes_list', view=select2_contenttypes_view),
-    url(r'^test/', name='test', view=service_unavailable),
 ]
 
 handler403 = "hacs.views.errors.permission_denied"

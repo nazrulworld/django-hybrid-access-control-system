@@ -240,6 +240,7 @@ class HacsContentFieldMixin(models.Model):
         abstract = True
     description = models.TextField(null=True, blank=True)
 
+
 # Abstract Class
 class HacsModelSecurityMixin(models.Model):
     """

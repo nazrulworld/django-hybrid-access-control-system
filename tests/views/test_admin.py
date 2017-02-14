@@ -2,6 +2,7 @@
 # ++ This file `test_admin.py` is generated at 6/29/16 8:25 PM ++
 from __future__ import unicode_literals
 import os
+import sys
 import json
 import tempfile
 from django.utils.http import urlencode
@@ -23,6 +24,7 @@ from hacs.utils import get_user_object
 from hacs.globals import HACS_SITE_CACHE
 from hacs.defaults import HACS_CACHE_SETTING_NAME
 from hacs.models import HacsGroupModel
+from hacs.middleware import DynamicRouteMiddleware
 
 from tests.path import FIXTURE_PATH
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
@@ -31,10 +33,20 @@ TEST_USER_NAME = 'superuser@test.com'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_ROUTE = "default-route"
 TEST_SITE = "testserver"
+TEMP_DIR = tempfile.mkdtemp()
+
+if TEMP_DIR not in sys.path:
+    sys.path.append(TEMP_DIR)
+
 
 TEST_FIXTURE = FIXTURE_PATH / 'testing_fixture.json'
 
 
+@override_settings(HACS_GENERATED_URLCONF_DIR=TEMP_DIR)
+@modify_settings(MIDDLEWARE_CLASSES={'append': [
+    'django.contrib.sites.middleware.CurrentSiteMiddleware',
+    'hacs.middleware.DynamicRouteMiddleware']}
+)
 class TestSelect2ContentTypesView(TransactionTestCase):
     """"""
     fixtures = (TEST_FIXTURE, )
@@ -201,11 +213,13 @@ class TestSelect2ContentTypesView(TransactionTestCase):
         request.user.is_staff = False
         request.user.save()
         request.method = 'GET'
+        # Manually Trigger Default Router Generation other than exception should be happen
+        DynamicRouteMiddleware().process_request(request)
+
         response = select2_contenttypes_view(request, 'user')
         # Should Be Redirect to login page
         self.assertEqual(302, response.status_code)
         self.assertIn('admin/login', response.url)
-
 
 @modify_settings(MIDDLEWARE_CLASSES={'append': [
     'django.contrib.sites.middleware.CurrentSiteMiddleware',
@@ -215,7 +229,7 @@ class TestSelect2ContentTypesView(TransactionTestCase):
 
 ]})
 @override_settings(
-    HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir(),
+    HACS_GENERATED_URLCONF_DIR=TEMP_DIR,
     CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache', 'LOCATION': 'hacs_middleware',}},
 )
 class TestSelect2ContentTypesViewFromBrowser(TransactionTestCase):
@@ -241,8 +255,12 @@ class TestSelect2ContentTypesViewFromBrowser(TransactionTestCase):
 
     def test_view(self):
         """"""
-        _url = reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "user"})
         browser = Client()
+        # Patch to make sure route is generated other than
+        # Exception `NoReverseMatch: u'hacs' is not a registered namespace`
+        browser.get('/tests/')
+
+        _url = reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "user"})
         response = browser.get(_url)
         # Make sure authentication is required
         self.assertEqual(302, response.status_code)
@@ -292,15 +310,18 @@ class TestSelect2ContentTypesViewFromBrowser(TransactionTestCase):
 
     def test_exception(self):
         """"""
-        _url = reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "user"})
         browser = Client()
+        # Patch to make sure route is generated other than
+        # Exception `NoReverseMatch: u'hacs' is not a registered namespace`
+        browser.get('/tests/')
+        _url = reverse('hacs:select2_contenttypes_list', kwargs={"content_type": "user"})
+
         browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
         response = browser.get(_url, data={"pk": 999})
         self.assertEqual(500, response.status_code)
         self.assertEqual(500, json.loads(smart_text(response.content))['meta']['status'])
         response = browser.post(_url, {"page": 1})
         self.assertEqual(405, response.status_code)
-
 
     def tearDown(self):
         """

@@ -51,8 +51,10 @@ __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 if tempfile.gettempdir() not in sys.path:
     sys.path.append(tempfile.gettempdir())
 
-TEST_USER_NAME = 'superuser@test.com'
-TEST_USER_EMAIL = 'superuser@test.com'
+TEST_ADMIN_USER_NAME = 'superuser@test.com'
+TEST_ADMIN_USER_EMAIL = 'superuser@test.com'
+TEST_USER_NAME = 'editor@test.com'
+TEST_USER_EMAIL = 'editor@test.com'
 TEST_USER_PASSWORD = 'top_secret'
 TEST_HOST_NAME = 'testserver'
 TEST_ROUTE_NAME = 'default-route'
@@ -346,8 +348,11 @@ class TestFirewallMiddleware(TransactionTestCase):
         request.site = get_current_site(request)
         user = request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         middleware = FirewallMiddleware()
-        middleware.set_auth_group_settings(request, user.groups.get(name='Administrators'))
-        group_key = get_group_key(request, user.groups.get(name='Administrators'))
+
+        group = user.groups.unrestricted().first()
+        middleware.set_auth_group_settings(request, group)
+
+        group_key = get_group_key(request, group)
         group_urlconf_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
 
         # We make sure cache is updated and right values are assigned
@@ -394,7 +399,7 @@ class TestFirewallMiddleware(TransactionTestCase):
         user_settings['allowed_http_methods'] = None
         user_settings['groups'] = []
 
-        for group in test_user.groups.all():
+        for group in test_user.groups.unrestricted():
             user_settings['groups'].append((get_group_key(request, group), group.natural_key()))
             # We will trigger auth group settings from here
             middleware.set_auth_group_settings(request, group, False)
@@ -637,7 +642,7 @@ class TestFirewallMiddleware(TransactionTestCase):
         group_rules = ContentTypeRoutingRules.objects.get(
             site=request.site,
             content_type=ContentType.objects.get_for_model(HacsGroupModel),
-            object_id=HacsGroupModel.objects.get(name='Administrators').pk
+            object_id=HacsGroupModel.objects.get(name='Editors').pk
         )
         group_rules.blacklisted_uri = "^a[a-zA-Z0-9/]+/sites/"
         group_rules.save()
@@ -758,7 +763,7 @@ class TestFirewallMiddleware(TransactionTestCase):
         group_rules = ContentTypeRoutingRules.objects.get(
             site=request.site,
             content_type=ContentType.objects.get_for_model(HacsGroupModel),
-            object_id=HacsGroupModel.objects.get(name='Administrators').pk
+            object_id=HacsGroupModel.objects.get(name='Editors').pk
         )
         group_rules.allowed_method = ['GET']
         group_rules.save()
@@ -823,11 +828,12 @@ class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
             MIDDLEWARE_CLASSES={'append': [
                 'django.contrib.sites.middleware.CurrentSiteMiddleware',
                 'hacs.middleware.DynamicRouteMiddleware',
-                'hacs.middleware.FirewallMiddleware'
+                'hacs.middleware.FirewallMiddleware',
+                'hacs.middleware.AccessControlMiddleware'
             ]}
         ):
             browser = Client()
-            response = browser.get('/admin/')
+            response = browser.get('/tests/content-manager-view/')
             fake_request = RequestFactory().request()
             fake_request.urlconf = None
             fake_request.user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
@@ -837,12 +843,12 @@ class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
             # AS anonymous user so urlconf module should default site
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
-            # As anonymous user, so no direct access, should be redirected to login page
-            self.assertEqual(302, response.status_code)
+            # As anonymous user, so forbidden!, @todo: should be redirected to login page?
+            self.assertEqual(403, response.status_code)
 
             browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
-            response = browser.get('/admin/')
-            # Authenticated admin user should have access
+            response = browser.get('/tests/content-manager-view/')
+            # Authenticated Editor user should have access
             self.assertEqual(200, response.status_code)
 
             # User has dedicated urlconf module, so it should be assigned
@@ -853,21 +859,21 @@ class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
                                                    object_id=response.wsgi_request.user.id).delete()
 
             # Make Session works, as we remove user's route but still should same
-            response = browser.get('/admin/')
+            response = browser.get('/tests/content-manager-view/')
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
             self.assertEqual(expected_module, self.cache.get(user_key)['urlconf'])
 
             # Make sure caching works
             browser.logout()
             browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
-            response = browser.get('/admin/')
+            response = browser.get('/tests/content-manager-view/')
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
 
             # Now we are cleaning session and cache as well, so we expect urlconf should come group
             browser.logout()
             self.cache.clear()
             browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
-            response = browser.get('/admin/')
+            response = browser.get('/tests/content-manager-view/')
 
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_GROUP_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)
@@ -879,7 +885,7 @@ class TestFirewallMiddlewareFromBrowser(TransactionTestCase):
             browser.logout()
             self.cache.clear()
             browser.login(username=TEST_USER_NAME, password=TEST_USER_PASSWORD)
-            response = browser.get('/admin/')
+            response = browser.get('/tests/content-manager-view/')
 
             expected_module = get_generated_urlconf_module(get_generated_urlconf_file(TEST_ROUTE_NAME))
             self.assertEqual(expected_module, response.wsgi_request.urlconf)

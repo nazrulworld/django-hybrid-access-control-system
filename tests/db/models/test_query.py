@@ -203,6 +203,8 @@ class TestHacsQuerySet(TransactionTestCase):
 
         # *************
         # @TODO: Test Acquired Owners works
+        # @TODO: Test View Permission of Utils Model
+        # @TODO: Test View Permission of Static Model
 
 
     def tearDown(self):

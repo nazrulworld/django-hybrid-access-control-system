@@ -12,7 +12,7 @@ requirements = [
         'psycopg2',
         'django-redis'
     ]
-test_requirements = ['pytest', 'pytest-django']
+test_requirements = ['pytest', 'pytest-django', 'pytest-flake8']
 if not PY34:
     # we need backport of pathlib
     requirements.append('pathlib2')

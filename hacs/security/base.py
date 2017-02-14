@@ -5,17 +5,12 @@ import logging
 import warnings
 from django.utils import six
 from django.conf import settings
-from django.core.cache import caches
 from django.utils.functional import cached_property
 from django.contrib.auth import get_backends
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import ugettext_lazy as _
-
-from hacs.globals import HACS_APP_LABEL
 from hacs.defaults import HACS_AC_BYPASS
 
 from hacs.globals import HACS_CONTENT_TYPE_UTILS
-from hacs.defaults import HACS_CACHE_SETTING_NAME
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
@@ -25,7 +20,7 @@ from .backends import HacsAuthorizerBackend
 from .helpers import HACS_STATIC_CONTENT_PERMISSION
 from .helpers import HACS_PORTAL_MANAGER_PERMISSION
 from .helpers import HacsSecurityException
-# from hacs.lru_wrapped import get_content_type_key
+
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -42,7 +37,6 @@ class SecurityManager(object):
         :param model:
         """
         self.model = model
-        self.cache = caches[getattr(settings, 'HACS_CACHE_SETTING_NAME', HACS_CACHE_SETTING_NAME)]
 
     def check_view_permission(self, permissions, view=None, request=None):
         """
@@ -139,10 +133,13 @@ class SecurityManager(object):
         """
         user = self.get_ac_user()
         if user is None:
-            warnings.warn("No permission is checked because of empty user!", UserWarning)
+            if settings.DEBUG:
+                warnings.warn("No permission is checked because of empty user!", UserWarning)
             return True
-        elif getattr(user, 'is_system', False):
-            logging.info("Got System User! All permission granted!")
+        if getattr(user, 'is_system', False) or getattr(user, 'is_superuser', False):
+            if settings.DEBUG:
+                logging.info("Got %s! All permission granted!" % getattr(user, 'is_superuser', False) and
+                             "SuperUser" or "System User")
             return True
 
         if isinstance(permissions, six.string_types):
@@ -171,8 +168,10 @@ class SecurityManager(object):
             warnings.warn("No permission is checked because of empty user!", UserWarning)
             return True
         # Although system user clearance added in _check method but performance purpose here also implemented
-        if getattr(current_user, 'is_system', False):
-            logging.info("Got System User! All permission granted!")
+        if getattr(current_user, 'is_system', False) or getattr(current_user, 'is_superuser', False):
+            if settings.DEBUG:
+                logging.info("Got %s! All permission granted!" % getattr(current_user, 'is_superuser', False) and
+                             "SuperUser" or "System User")
             return True
 
         base_type = getattr(obj, '__hacs_base_content_type__', None)

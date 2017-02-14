@@ -8,3 +8,4 @@ rcssmin
 psycopg2
 ipdb
 mock
+pytest-flake8

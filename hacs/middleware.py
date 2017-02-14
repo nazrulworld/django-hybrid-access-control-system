@@ -111,6 +111,16 @@ class FirewallMiddleware(object):
         """
         if self._validate:
             pass
+        # *******************************************************
+        # Firewall is not applicable for SystemUser and SuperUser
+        # *******************************************************
+        if getattr(request.user, 'is_system', False) or getattr(request.user, 'is_superuser', False):
+            if settings.DEBUG:
+                logger.debug("%s is not application for %s" % (
+                    self.name,
+                    getattr(request.user, 'is_superuser', False) and "SuperUser" or "System User"))
+            return
+
         _old_urlconf = getattr(request, 'urlconf', None)
         # #################################
         # Maintenance Mode Checking Start #
@@ -204,7 +214,7 @@ class FirewallMiddleware(object):
             'groups': [],
             'has_own_rules': None
         }
-        for group in request.user.groups.all():
+        for group in request.user.groups.unrestricted():
             initial_data['groups'].append((get_group_key(request, group), group.natural_key()))
             # We will trigger auth group settings from here
             self.set_auth_group_settings(request, group, False)

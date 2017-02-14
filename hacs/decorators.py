@@ -4,7 +4,7 @@ from functools import wraps
 from django.utils.decorators import available_attrs
 from hacs.security import SecurityManager
 
-__author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
+__author__ = 'Md Nazrul Islam<connect2nazrul@gmail.com>'
 
 
 def permission_required(permissions):

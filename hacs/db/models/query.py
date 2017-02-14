@@ -125,8 +125,10 @@ class HacsBaseQuerySet(QuerySet):
                 logging.warning("No permission is checked because of empty user!")
                 active_security_guard = False
             # Although system user clearance added in _check method but performance purpose here also implemented
-            elif getattr(current_user, 'is_system', False):
-                logging.info("Got System User! All permission granted!")
+            elif getattr(current_user, 'is_system', False) or getattr(current_user, 'is_superuser', False):
+                if settings.DEBUG:
+                    logging.info("Got %s! All permission granted!" % getattr(current_user, 'is_superuser', False) and
+                                 "SuperUser" or "System User")
                 active_security_guard = False
             elif getattr(settings, 'HACS_AC_BYPASS', HACS_AC_BYPASS):
                 active_security_guard = False

@@ -6,14 +6,15 @@ import sys
 import pytest
 import tempfile
 from django.utils import six
+from hacs.models import SiteRoutingRules
 from django.test import TransactionTestCase
 from importlib import import_module
 from django.test import RequestFactory
-from hacs.models import SiteRoutingRules
 from django.test import override_settings
-from django.contrib.auth import get_user_model
 from django.contrib.sites.shortcuts import get_current_site
 from hacs.utils import *
+from hacs.helpers import get_user_model
+from hacs.security.helpers import get_cache_key
 
 from .path import FIXTURE_PATH
 
@@ -46,8 +47,8 @@ class UtilsTestCase(TransactionTestCase):
         request = self.request_factory.request(user=user)
         request.site = get_current_site(request)
         group = user.groups.all()[0]
-        result = get_group_key(request, group, prefix='hacs')
-        self.assertEqual(result, 'hacs:site_%s:group_%s' % (request.site.id, group.id))
+        result = get_group_key(request, group)
+        self.assertEqual(result, '%s_site_%s' % (get_cache_key(group.__hacs_base_content_type__, group), request.site.id))
 
     def test_get_user_key(self):
         """
@@ -56,8 +57,9 @@ class UtilsTestCase(TransactionTestCase):
         request = self.request_factory.request()
         request.user = user = self.user_model_cls.objects.get(**{self.user_model_cls.USERNAME_FIELD: TEST_USER_NAME})
         request.site = get_current_site(request)
-        result = get_user_key(request, prefix='hacs')
-        self.assertEqual(result, 'hacs:site_%s:user_%s' % (request.site.id, user.id))
+        result = get_user_key(request)
+        self.assertEqual(result, '%s_site_%s' % (
+            get_cache_key(request.user.__hacs_base_content_type__, request.user), request.site.id))
 
     @override_settings(HACS_GENERATED_URLCONF_DIR=tempfile.gettempdir())
     def test_get_generated_urlconf_file(self):

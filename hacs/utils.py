@@ -24,11 +24,12 @@ from django.utils.module_loading import module_has_submodule
 from .models import SiteRoutingRules
 from .globals import HACS_SITE_CACHE
 from .globals import HTTP_METHOD_LIST
-from .defaults import HACS_AC_BYPASS
 from .globals import HACS_ACCESS_CONTROL_LOCAL
 from .defaults import HACS_FALLBACK_URLCONF
 from .defaults import HACS_GENERATED_URLCONF_DIR
 from .globals import HACS_GENERATED_FILENAME_PREFIX
+from hacs.security.helpers import get_cache_key
+from hacs.security.helpers import get_user_cache_key
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -169,10 +170,7 @@ def get_group_key(request, group, prefix='hacl', suffix=None):
     :param suffix:
     :return:
     """
-    if suffix is None:
-        suffix = ''
-    return "{prefix}:site_{site_id}:group_{group_id}{suffix}".\
-        format(prefix=prefix, site_id=request.site.id, group_id=group.id, suffix=suffix)
+    return '%s_site_%s' % (get_cache_key(group.__hacs_base_content_type__, group), request.site.pk)
 
 
 def get_user_key(request, prefix='hacl', suffix=None):
@@ -183,11 +181,7 @@ def get_user_key(request, prefix='hacl', suffix=None):
     :param suffix:
     :return:
     """
-    if suffix is None:
-        suffix = ''
-    return "{prefix}:site_{site_id}:user_{user_id}{suffix}".\
-        format(prefix=prefix, site_id=request.site.id, user_id=request.user.is_authenticated() and request.user.id or 0,
-               suffix=suffix)
+    return '%s_site_%s' % (get_user_cache_key(request.user), request.site.pk)
 
 
 def get_generated_urlconf_file(route_name, prefix=None):

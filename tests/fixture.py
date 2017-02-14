@@ -227,6 +227,13 @@ class ModelFixture(object):
         """
         :return:
         """
+        return get_user_model().objects.get_by_natural_key("superuser@test.com")
+
+    @cached_property
+    def manageruser(self):
+        """
+        :return:
+        """
         return get_user_model().objects.get_by_natural_key("manager@test.com")
 
     @cached_property

@@ -276,7 +276,8 @@
       "email": "editor@test.com",
       "password": "top_secret",
       "groups": [["Editors" ]],
-      "roles": [["Editor"]]
+      "roles": [["Editor"]],
+      "is_staff": true
     }
   },
   {
@@ -286,6 +287,7 @@
       "first_name": "Test Manager User",
       "email": "manager@test.com",
       "password": "top_secret",
+      "is_staff": true,
       "groups": [["Administrators" ]],
       "roles": [["Manager"]]
     }
@@ -328,6 +330,12 @@
           "url_module": ["hacs.urls", "hacs"],
           "namespace": "hacs",
           "children": []
+        },
+        {
+          "prefix": "tests",
+          "url_module": ["tests.urls", "tests"],
+          "namespace": "tests",
+          "children": []
         }
       ],
       "handlers": {
@@ -364,6 +372,12 @@
           "prefix": "hacs",
           "url_module": ["hacs.urls", "hacs"],
           "namespace": "hacs",
+          "children": []
+        },
+        {
+          "prefix": "tests",
+          "url_module": ["tests.urls", "tests"],
+          "namespace": "tests",
           "children": []
         }
       ],
@@ -402,6 +416,12 @@
           "url_module": ["hacs.urls", "hacs"],
           "namespace": "hacs",
           "children": []
+        },
+        {
+          "prefix": "tests",
+          "url_module": ["tests.urls", "tests"],
+          "namespace": "tests",
+          "children": []
         }
       ],
       "handlers": {
@@ -421,7 +441,7 @@
       "site": 2,
       "route": ["user-route"],
       "content_type": ["hacs", "hacsusermodel"],
-      "object_id": 1,
+      "object_id": 4,
       "created_by": ["manager@test.com"]
     }
   },
@@ -441,6 +461,12 @@
           "url_module": ["hacs.urls", "hacs"],
           "namespace": "hacs",
           "children": []
+        },
+        {
+          "prefix": "tests",
+          "url_module": ["tests.urls", "tests"],
+          "namespace": "tests",
+          "children": []
         }
       ],
       "handlers": {
@@ -459,7 +485,7 @@
       "site": 2,
       "route": ["group-route"],
       "content_type": ["hacs", "hacsgroupmodel"],
-      "object_id": 1,
+      "object_id": 2,
       "allowed_method": ["GET", "POST"],
       "created_by": ["manager@test.com"]
     }
