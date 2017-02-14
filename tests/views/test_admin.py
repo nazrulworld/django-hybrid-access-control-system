@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.cache import caches
 from django.test import override_settings
 from django.test import modify_settings
-from django.core.urlresolvers import reverse
+from django.urls import set_urlconf, reverse
 from django.utils.six.moves import range
 from django.utils.encoding import smart_text
 from django.test import RequestFactory
@@ -215,7 +215,9 @@ class TestSelect2ContentTypesView(TransactionTestCase):
         request.method = 'GET'
         # Manually Trigger Default Router Generation other than exception should be happen
         DynamicRouteMiddleware().process_request(request)
-
+        # We are pushing newly generated url conf into current thread
+        set_urlconf(request.urlconf)
+        # Patch Done!
         response = select2_contenttypes_view(request, 'user')
         # Should Be Redirect to login page
         self.assertEqual(302, response.status_code)
