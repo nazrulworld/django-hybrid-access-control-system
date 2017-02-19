@@ -63,8 +63,6 @@ def get_package_data(package):
     return {package: filepaths}
 
 
-
-
 setup(
     name='django-hacs',
     version=get_version(),

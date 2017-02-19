@@ -37,6 +37,23 @@ from .tracker import FieldError
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
+"""
+OnSave `HACS Content` Workflow Assignment
+-----------------------------------------
+1. Current Object's workflow is None:
+ a. Try from Object's ContentType, if no workflow goes b.
+ b. If parent aquisition is allowed tried from parent object.
+
+2. In case of Container ContentType and if current workflow is None and workflow from parent is available should get
+ workflow as it's own
+
+3. If workflow is changed, must trigger `update_permissions` method. @TODO: what should be for child contents?
+a method inside container object class? triggering signal? should consider performance?
+
+4. Workflow Constraint: for container/item content type if workflow not available, `permisions_aactions_map` is
+mandatory (no matter from where it is coming from)
+
+"""
 
 logger = logging.getLogger("hacs.db.models.base")
 
@@ -223,7 +240,7 @@ class HacsSecurityFieldMixin(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         db_constraint=False,
-        on_delete=models.DO_NOTHING,
+        on_delete=models.PROTECT,
         related_name="%(app_label)s_usm_%(class)s_%(model_name)s_owners",
         related_query_name="%(app_label)s_usm_%(class)s_owners_set",
         parent_link=False)
@@ -280,12 +297,14 @@ class HacsModelSecurityMixin(models.Model):
                       self.uuid is not None
         except FieldError:
                 raise
+
         try:
             if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_STATIC:
                 # Simple Static Model Has no state or permissions
                 permission_changed = False
 
             elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_UTILS:
+
                 if self.permissions is None and _insert:
                     self.update_permissions()
 
@@ -293,45 +312,25 @@ class HacsModelSecurityMixin(models.Model):
 
             elif self.__hacs_base_content_type__ in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
 
-                hacs_ct = get_contenttype_model().objects.get_for_model(self._meta.model)
-                if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-                    parent_container = getattr(self, 'parent_container_object')
-                elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
-                    parent_container = getattr(self, 'container_object')
+                workflow, hacs_content_type, parent_container = self._extract_workflow_info()
 
-                if self.hacs_tracker.has_changed('acquire_parent') and not _insert:
-                    # Only Applicable on Update
-                    self.apply_aquire_parent_changed()
+                if workflow is not None and self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
 
-                _workflow = None
-                if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-                    # Try From Container Default
-                    _workflow = self.workflow
+                    if self.workflow is None:
+                        # We forced set to workflow, if available from parent or content type
+                        self.workflow = workflow
 
-                if _workflow is None:
-                    # Try From content type
-                    _workflow = hacs_ct.workflow
+                if self.state is None and workflow:
+                    # we forced set state if workflow is available
+                    self.state = workflow.default_state
 
-                if _workflow is None and self.acquire_parent and parent_container is not None:
-                    # We respect parent settings (allow acquiring)
+                if self._required_permission_update(workflow):
 
-                    if parent_container.recursive:
-                        _workflow = parent_container.workflow
-
-                if _insert and _workflow is not None and self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-                    # Set workflow
-                    self.workflow = _workflow
-
-                if _insert and self.state is None:
-                    if _workflow:
-                        self.state = _workflow.default_state
-
-                if self.hacs_tracker.has_changed('state') or\
-                    (_insert and self.permissions_actions_map is None and _workflow is None):
                     # @TODO: permissions updated here
-                    self.update_permissions(_workflow, hacs_ct)
+                    self.update_permissions(workflow, hacs_content_type)
 
                 permission_changed = self.hacs_tracker.has_changed('permissions_actions_map')
+
                 if _insert or permission_changed:
                     # Update Roles Actions Map as well
                     self.update_roles_map()
@@ -342,15 +341,18 @@ class HacsModelSecurityMixin(models.Model):
                 if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
                     if self.hacs_tracker.has_changed('recursive') and not _insert:
                         self.apply_recursive_changed()
+
                 # For Insert Action, Parent owners will be acquired
                 if _insert and parent_container:
                     self.update_acquired_owners(parent_container)
+
                 # Auto assign ownership while  inserting
                 if _insert and self.owner is None:
                     self.owner = self.created_by
 
         except FieldError:
                 raise
+
         # Security Check Here!
         security_manager = self._meta.default_manager._security_manager()
         security_manager.check_obj_permission(
@@ -360,18 +362,18 @@ class HacsModelSecurityMixin(models.Model):
 
         result = super(HacsModelSecurityMixin, self)._save_table(raw, cls, force_insert,force_update, using,
                                                                  update_fields)
-        if permission_changed:
-            # Send Signal Here
-            pass
+        # if permission_changed:
+        #     # Send Signal Here
+        #     pass
         return result
 
-    def update_permissions(self, workflow=None, hacs_contenttype=None):
+    def update_permissions(self, workflow=None, hacs_content_type=None):
         """
         :param workflow
-        :param hacs_contenttype
+        :param hacs_content_type
         :return:
         """
-        if hacs_contenttype is None:
+        if hacs_content_type is None:
             # yep! utils model
             permissions = set()
             for permission in tuple(self._meta.hacs_default_permissions) + tuple(self._meta.permissions or []):
@@ -396,7 +398,7 @@ class HacsModelSecurityMixin(models.Model):
                 raise
         else:
             # No workflow! we are going to search from contenttype
-            permissions = hacs_contenttype.permissions_actions_map and hacs_contenttype.permissions_actions_map.copy() \
+            permissions = hacs_content_type.permissions_actions_map and hacs_content_type.permissions_actions_map.copy() \
                           or defaultdict()
             permissions.pop('object.create', None)
 
@@ -488,6 +490,56 @@ class HacsModelSecurityMixin(models.Model):
         :return:
         """
 
+    def _extract_workflow_info(self):
+        """
+        :return:
+        """
+        hacs_content_type = get_contenttype_model().objects.get_for_model(self._meta.model)
+
+        parent_container = None
+
+        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+            parent_container = getattr(self, 'parent_container_object')
+
+        elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
+            parent_container = getattr(self, 'container_object')
+
+        workflow = None
+
+        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+            # Try From Container Default
+            workflow = self.workflow
+
+        if workflow is None:
+            # Try From content type
+            workflow = hacs_content_type.workflow
+
+        if workflow is None and self.acquire_parent and parent_container is not None:
+            # We respect parent settings (allow acquiring)
+
+            if parent_container.recursive:
+                workflow = parent_container.workflow
+
+        return workflow, hacs_content_type, parent_container
+
+    def _required_permission_update(self, workflow):
+        """
+        :return:
+        """
+        required = False
+
+        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+            required = self.hacs_tracker.has_changed('workflow')
+
+        if not required:
+            required = self.hacs_tracker.has_changed('state')
+
+        if not required:
+            # Hmm should looking for default permission
+            required = self.permissions_actions_map is None and workflow is None
+
+        return required
+
 ######################
 # PUBLIC CLASS       #
 ######################
@@ -519,8 +571,8 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
     # If need other than custom ContentType\s workflow
     workflow = models.ForeignKey(
         "hacs.HacsWorkflowModel",
-        db_constraint=False,
-        on_delete=models.DO_NOTHING,
+        db_constraint=True,
+        on_delete=models.PROTECT,
         null=True,
         blank=True,
         related_name="%(app_label)s_wfl_%(class)s_%(model_name)s_containers",
@@ -548,12 +600,14 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
     class Meta:
         abstract = True
 
-    def update_children_local_roles(self):
+    def update_children_security_info(self):
         """
         :return:
+        This method consists of updating permissions, local roles over children those things are inherited from current
+        object. could also be related to cache invalidation.
         """
         # @TODO: this is complicated need to define easy way. could be time consuming task.
-        # Have to search all children
+        # 1. Find all children of current object
 
 
 class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFieldMixin, HacsSecurityFieldMixin):
@@ -563,7 +617,7 @@ class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFiel
     hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner', 'local_roles', 'permissions_actions_map', 'acquire_parent', ))
     # Container Relation Start
     container_content_type = models.ForeignKey(
-        "contenttypes.ContentType",
+        'contenttypes.ContentType',
         on_delete=models.CASCADE,
         validators=[],
         null=True,

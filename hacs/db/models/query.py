@@ -2,7 +2,6 @@
 # ++ This file `query.py` is generated at 10/24/16 6:16 PM ++
 import logging
 from django.db.models import Q
-from hacs.db.models.functions import JsonbExtractPath
 from hacs.db.models.functions import JsonbToArray
 from django.conf import settings
 from django.db.models.query import QuerySet
@@ -14,6 +13,8 @@ from hacs.globals import HACS_CONTENT_TYPE_UTILS
 from hacs.globals import HACS_CONTENT_TYPE_STATIC
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
+from hacs.security.helpers import attach_system_user
+from hacs.security.helpers import release_system_user
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -48,13 +49,37 @@ class HacsBaseQuerySet(QuerySet):
         :param kwargs:
         :return:
         """
-        active_security_guard, current_user, base_type = self._extract_security_info()
-        if active_security_guard and self.query.can_filter():
-            # Yep! security guard applicable
-            # self._add_security_guard(base_type, current_user, 'object.update')
-            pass
+        # Copied from parent
+        assert self.query.can_filter(), "Cannot update a query once a slice has been taken."
 
-        return super(HacsBaseQuerySet, self).update(**kwargs)
+        active_security_guard, current_user, base_type = self._extract_security_info()
+
+        if active_security_guard:
+            # Yep! security guard applicable
+            self._add_security_guard(base_type, current_user, 'object.update')
+
+        if self._queryset_update_allowed(base_type, kwargs):
+            # We are doing normal update
+            return super(HacsBaseQuerySet, self).update(**kwargs)
+
+        # Special Kind of Update
+        delete_query = self._clone()
+        count = 0
+        # @TODO: should  save faster, use system user?
+        attach_system_user()
+
+        for obj in delete_query:
+
+            for key in kwargs.keys():
+                if hasattr(obj, key):
+                    setattr(obj, key, kwargs[key])
+
+            obj.save(update_fields=kwargs.keys())
+            count += 1
+
+        release_system_user()
+
+        return count
 
     update.alters_data = True
 
@@ -65,8 +90,8 @@ class HacsBaseQuerySet(QuerySet):
         active_security_guard, current_user, base_type = self._extract_security_info()
         if active_security_guard and self.query.can_filter() and self._fields is None:
             # Yep! security guard applicable
-            # self._add_security_guard(base_type, current_user, 'object.delete')
-            pass
+            # Every deletion should send signals
+            self._add_security_guard(base_type, current_user, 'object.delete')
 
         return super(HacsBaseQuerySet, self).delete()
 
@@ -179,6 +204,33 @@ class HacsBaseQuerySet(QuerySet):
             # 1. Make Manager from HacsBaseManager & django.auth.BaseUserManager
             # 2. Manager's `get` and or `get_by_natural_key` methods by default should be unrestricted
             pass
+
+    def _queryset_update_allowed(self, base_type, update_kwargs):
+
+        """
+        :param base_type:
+        :param update_kwargs:
+        :return:
+        """
+        allowed = base_type not in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT) or\
+                  base_type is None or 0 == len(update_kwargs)
+
+        if not allowed:
+            tracker_fields = (
+                'acquire_parent',
+                'workflow',
+                'state',
+                'permissions_actions_map',
+                'local_roles',
+                'recursive',
+                'owner'
+            )
+
+            fields = set(update_kwargs.keys()).intersection(set(tracker_fields))
+            # Non Trigger Update
+            allowed = (0 == len(fields))
+
+        return allowed
 
 
 class HacsQuerySet(HacsBaseQuerySet):

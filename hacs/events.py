@@ -25,6 +25,7 @@ from .lru_wrapped import get_generated_urlconf_module
 from hacs.models import HacsGroupModel
 from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
+from hacs.db.models.signals import queryset_update
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
 
@@ -39,6 +40,7 @@ class DummyRequest(object):
 ###########################
 # ******** EVENTS ********
 ###########################
+
 @receiver(pre_delete, dispatch_uid="hacs.events.pre_delete_hacs_model")
 def pre_delete_hacs_model(sender, instance, **kwargs):
     """
@@ -53,7 +55,6 @@ def pre_delete_hacs_model(sender, instance, **kwargs):
 
     if base_contenttype == HACS_CONTENT_TYPE_CONTAINER:
         _pre_delete_hacs_container(sender, instance)
-
 
 
 @receiver(post_save, sender='hacs.routingtable', dispatch_uid="hacs.events.post_save_routingtable_model")
