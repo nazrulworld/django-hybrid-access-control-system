@@ -12,9 +12,11 @@ from hacs.globals import HACS_APP_NAME
 from hacs.defaults import HACS_ANONYMOUS_ROLE_NAME
 from django.apps import apps as global_apps
 from hacs.helpers import get_role_model
+from hacs.helpers import get_contenttype_model
 from hacs.helpers import get_permission_model
 from hacs.globals import HACS_ACCESS_CONTROL_LOCAL
 from hacs.globals import HACS_CONTENT_TYPE_CONTAINER
+from hacs.globals import HACS_CONTENT_TYPE_CONTENT
 
 # Proxy Translation: @TODO: could be used django translation
 _ = lambda x: x
@@ -517,7 +519,7 @@ def attach_system_user():
     current_user = getattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user', None)
     assert not isinstance(current_user, SystemUser), "System User is already attached!"
     assert getattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user_backup', None) is None, \
-        "HACS_ACCESS_CONTROL_LOCAL.current_user_backup has as user! This is error, you might be attached system user " \
+        "HACS_ACCESS_CONTROL_LOCAL.curreadavancednt_user_backup has as user! This is error, you might be attached system user " \
         "but forget to release system user."
     if current_user is not None:
         setattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user_backup', current_user)
@@ -535,4 +537,33 @@ def release_system_user():
     HACS_ACCESS_CONTROL_LOCAL.__release_local__()
     if backup_user is not None:
         setattr(HACS_ACCESS_CONTROL_LOCAL, 'current_user', backup_user)
+
+
+def workflow_from_parent(obj):
+
+    """
+    :param obj
+    :return:
+    @TODO: Need to implement cache?
+    """
+    parent_container = obj.parent_container_object
+
+    if not obj.acquire_parent or  parent_container is None:
+        return
+
+    hacs_content_type = get_contenttype_model().objects.get_for_model(parent_container._meta.model)
+
+    workflow = None
+    # Try From content type
+    if parent_container.recursive:
+        workflow = hacs_content_type.workflow
+
+    if workflow:
+        return workflow
+
+    # Always HACS Container Type, so `parent_container_id`
+    if parent_container.acquire_parent and parent_container.parent_container_id:
+        return workflow_from_parent(parent_container)
+
+
 

@@ -98,6 +98,6 @@ setup(
     install_requires=requirements,
     extras_require={
         'test': test_requirements,
-        'develop': ['jsmin', 'rcssmin']
+        'develop': ['jsmin', 'rcssmin', 'flake8', 'flake8-isort']
     }
 )

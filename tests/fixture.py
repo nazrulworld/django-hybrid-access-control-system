@@ -109,7 +109,6 @@ class ModelFixture(object):
             "created_by": self.superuser,
             "owner": self.superuser,
             "acquire_parent": False,
-            "workflow": None,
             "container_content_type": None,
             "parent_container_id": None,
             "recursive": True
@@ -127,7 +126,6 @@ class ModelFixture(object):
             "local_roles": None,
             "owner": self.superuser,
             "acquire_parent": True,
-            "workflow": None,
             "container_content_type": ContentType.objects.get_for_model(folder_cls),
             "parent_container_id": news_folder.pk,
             "recursive": True
@@ -145,7 +143,7 @@ class ModelFixture(object):
             "owner": self.contributoruser,
             "acquire_parent": True,
             "container_content_type": ContentType.objects.get_for_model(date_folder_cls),
-            "container_id": date_folder.pk
+            "parent_container_id": date_folder.pk
         }
         news_item = news_item_cls(**data)
         news_item.save()
@@ -159,7 +157,7 @@ class ModelFixture(object):
             "local_roles": {"contributor@test.com": ("Editor", "Member")},
             "acquire_parent": True,
             "container_content_type": ContentType.objects.get_for_model(date_folder_cls),
-            "container_id": date_folder.pk
+            "parent_container_id": date_folder.pk
         }
         news_item2 = news_item_cls(**data2)
         news_item2.save()

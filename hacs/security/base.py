@@ -182,8 +182,8 @@ class SecurityManager(object):
 
         if base_type in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
             assert action is not None, "Action is required for %s, %s type Model"
-            container_obj = base_type == HACS_CONTENT_TYPE_CONTAINER and getattr(obj, 'parent_container_object', None) or\
-                         getattr(obj, 'container_object', None)
+
+            container_obj = getattr(obj, 'parent_container_object', None)
 
             # Respect ownership! only case of authenticated user and no system of course
             if action == "object.create" and container_obj:
@@ -200,6 +200,7 @@ class SecurityManager(object):
                     warnings.warn("Any action denied! because user don't have hacs.CanTraverseContainer parent "
                                     "container ")
                     return False
+
             if action == "object.create":
                 object_ct = self.content_type_cls.objects.get_for_model(obj.__class__)
                 # controversal steps  start #
@@ -224,12 +225,14 @@ class SecurityManager(object):
         elif base_type == HACS_CONTENT_TYPE_UTILS:
             # @TODO: may be should use cache or list of permissions string
             obj_permissions = obj.permissions
+
         elif base_type == HACS_CONTENT_TYPE_STATIC:
             obj_permissions = HACS_STATIC_CONTENT_PERMISSION
 
         elif base_type == HACS_CONTENT_TYPE_USER:
             # @TODO: Need to plan, what should be
             obj_permissions = "hacs.ManageUser"
+
         else:
             # Default Must Be Super User
             obj_permissions = HACS_PORTAL_MANAGER_PERMISSION

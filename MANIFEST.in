@@ -1,6 +1,5 @@
 graft hacs
 graft docs
-prune ansible
 include LICENSE
 include MANIFEST.in
 include *.rst

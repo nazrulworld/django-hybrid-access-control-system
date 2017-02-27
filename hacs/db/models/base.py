@@ -27,6 +27,7 @@ from hacs.security.helpers import HACS_OBJECT_CREATE_ACTION
 from hacs.security.helpers import HACS_OBJECT_DELETE_ACTION
 from hacs.security.helpers import _user_get_all_roles
 from hacs.security.helpers import _user_get_all_permissions
+from hacs.security.helpers import workflow_from_parent
 
 from .fields import JSONField
 from .manager import HacsBaseManager, \
@@ -36,6 +37,8 @@ from .tracker import FieldTracker
 from .tracker import FieldError
 
 __author__ = "Md Nazrul Islam<connect2nazrul@gmail.com>"
+
+hacs_content_tracker_fields = ('uuid', 'state', 'owner', 'local_roles', 'permissions_actions_map', 'acquire_parent', )
 
 """
 OnSave `HACS Content` Workflow Assignment
@@ -237,6 +240,22 @@ class HacsSecurityFieldMixin(models.Model):
     # i.e parent local role: user1: (Manager,) but child has user1: (Editor) so child will be winner
     local_roles = JSONField(null=True, blank=True)
 
+    # Container Relation Start
+    # See: https://docs.djangoproject.com/en/1.10/ref/contrib/contenttypes/#generic-relations
+    container_content_type = models.ForeignKey(
+        "contenttypes.ContentType",
+        on_delete=models.CASCADE,
+        validators=[],
+        null=True,
+        blank=True,
+        related_name="%(app_label)s_cnr_%(class)s_%(model_name)s_children",
+        related_query_name="%(app_label)s_cnr_%(class)s_children_set"
+    )
+    # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
+    # it should not be empty
+    parent_container_id = models.PositiveIntegerField(null=True, blank=True)
+    parent_container_object = GenericForeignKey('container_content_type', 'parent_container_id', )
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         db_constraint=False,
@@ -312,13 +331,7 @@ class HacsModelSecurityMixin(models.Model):
 
             elif self.__hacs_base_content_type__ in (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT):
 
-                workflow, hacs_content_type, parent_container = self._extract_workflow_info()
-
-                if workflow is not None and self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-
-                    if self.workflow is None:
-                        # We forced set to workflow, if available from parent or content type
-                        self.workflow = workflow
+                workflow, hacs_content_type = self._extract_workflow_info()
 
                 if self.state is None and workflow:
                     # we forced set state if workflow is available
@@ -339,12 +352,13 @@ class HacsModelSecurityMixin(models.Model):
                     self.update_local_roles_with_parent()
 
                 if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
+
                     if self.hacs_tracker.has_changed('recursive') and not _insert:
                         self.apply_recursive_changed()
 
                 # For Insert Action, Parent owners will be acquired
-                if _insert and parent_container:
-                    self.update_acquired_owners(parent_container)
+                if _insert and self.container_content_type:
+                    self.update_acquired_owners()
 
                 # Auto assign ownership while  inserting
                 if _insert and self.owner is None:
@@ -430,13 +444,10 @@ class HacsModelSecurityMixin(models.Model):
 
     def update_local_roles_with_parent(self):
         """
-        :param:
+        :param parent:
         :return:
         """
-        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-            parent = getattr(self, 'parent_container_object')
-        elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
-            parent = getattr(self, 'container_object')
+        parent = getattr(self, 'parent_container_object')
 
         # @TODO: Not sure `GenericForeignKey` immediately available!
         if parent is None:
@@ -448,11 +459,12 @@ class HacsModelSecurityMixin(models.Model):
             else:
                 self.local_roles = parent.local_roles
 
-    def update_acquired_owners(self, parent):
+    def update_acquired_owners(self):
         """
-        :param parent:
         :return:
         """
+        parent = getattr(self, 'parent_container_object')
+
         owners = set()
         if parent.acquired_owners:
             owners = owners.union(parent.acquired_owners)
@@ -496,43 +508,19 @@ class HacsModelSecurityMixin(models.Model):
         """
         hacs_content_type = get_contenttype_model().objects.get_for_model(self._meta.model)
 
-        parent_container = None
+        # Try From content type
+        workflow = hacs_content_type.workflow
 
-        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-            parent_container = getattr(self, 'parent_container_object')
+        if workflow is None and self.acquire_parent:
+            workflow = workflow_from_parent(self)
 
-        elif self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTENT:
-            parent_container = getattr(self, 'container_object')
-
-        workflow = None
-
-        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-            # Try From Container Default
-            workflow = self.workflow
-
-        if workflow is None:
-            # Try From content type
-            workflow = hacs_content_type.workflow
-
-        if workflow is None and self.acquire_parent and parent_container is not None:
-            # We respect parent settings (allow acquiring)
-
-            if parent_container.recursive:
-                workflow = parent_container.workflow
-
-        return workflow, hacs_content_type, parent_container
+        return workflow, hacs_content_type
 
     def _required_permission_update(self, workflow):
         """
         :return:
         """
-        required = False
-
-        if self.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-            required = self.hacs_tracker.has_changed('workflow')
-
-        if not required:
-            required = self.hacs_tracker.has_changed('state')
+        required = self.hacs_tracker.has_changed('state')
 
         if not required:
             # Hmm should looking for default permission
@@ -566,33 +554,9 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
     """
     """
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTAINER
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner','local_roles', 'permissions_actions_map', 'workflow',
-                                        'acquire_parent', 'recursive'))
-    # If need other than custom ContentType\s workflow
-    workflow = models.ForeignKey(
-        "hacs.HacsWorkflowModel",
-        db_constraint=True,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name="%(app_label)s_wfl_%(class)s_%(model_name)s_containers",
-        related_query_name="%(app_label)s_wfl_%(class)s_containers_set"
-    )
-    # Container Relation Start
-    # See: https://docs.djangoproject.com/en/1.10/ref/contrib/contenttypes/#generic-relations
-    container_content_type = models.ForeignKey(
-        "contenttypes.ContentType",
-        on_delete=models.CASCADE,
-        validators=[],
-        null=True,
-        blank=True,
-        related_name="%(app_label)s_cnr_%(class)s_%(model_name)s_children",
-        related_query_name="%(app_label)s_cnr_%(class)s_children_set"
-    )
-    # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
-    # it should not be empty
-    parent_container_id = models.PositiveIntegerField(null=True, blank=True)
-    parent_container_object = GenericForeignKey('container_content_type', 'parent_container_id', )
+
+    hacs_tracker = FieldTracker(fields=hacs_content_tracker_fields + ('recursive', ))
+
     # Container Relation End
     # This field will be effective for state of shared, locked
     recursive = models.NullBooleanField(null=True, blank=True)
@@ -608,28 +572,28 @@ class HacsContainerModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsConten
         """
         # @TODO: this is complicated need to define easy way. could be time consuming task.
         # 1. Find all children of current object
+        content_types = [ct
+                  for ct in get_contenttype_model().objects.filter_by_base_type
+                  (HACS_CONTENT_TYPE_CONTAINER, HACS_CONTENT_TYPE_CONTENT) if not ct.content_type.model_class() != self.__class__
+                  ]
+
+        for content_type in content_types:
+
+            model = content_type.model_class()
+            objects = model.objects.unrestricted().filter(container_content_type=content_type)
+
+            if objects.count() == 0:
+                continue
+
+        # hacs_models = [m for m in django_apps.get_models() if getattr(m, '__hacs_base_content_type__', None) in
+        #                (HACS_CONTENT_TYPE_CONTENT, HACS_CONTENT_TYPE_CONTAINER) and m != model]
 
 
 class HacsItemModel(HacsModelSecurityMixin, HacsBasicFieldMixin, HacsContentFieldMixin, HacsSecurityFieldMixin):
-    """
-    """
+    """"""
     __hacs_base_content_type__ = HACS_CONTENT_TYPE_CONTENT
-    hacs_tracker = FieldTracker(fields=('uuid', 'state', 'owner', 'local_roles', 'permissions_actions_map', 'acquire_parent', ))
-    # Container Relation Start
-    container_content_type = models.ForeignKey(
-        'contenttypes.ContentType',
-        on_delete=models.CASCADE,
-        validators=[],
-        null=True,
-        blank=True,
-        related_name="%(app_label)s_cnr_%(class)s_%(model_name)s_items",
-        related_query_name="%(app_label)s_cnr_%(class)s_items_set"
-    )
-    # @TODO: on conditional validator should implemented. i.e if `container_content_type` has value,
-    # it should not be empty
-    container_id = models.PositiveIntegerField(null=True, blank=True)
-    container_object = GenericForeignKey('container_content_type', 'container_id',)
-    # Container Relation End
+
+    hacs_tracker = FieldTracker(fields=hacs_content_tracker_fields)
 
     class Meta:
         abstract = True

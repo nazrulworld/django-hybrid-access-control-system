@@ -138,6 +138,22 @@ class HacsContentTypeManager(HacsModelManager):
         # django.contenttype style!
         self._cache = defaultdict()
 
+    def filter_by_base_type(self, *base_types):
+        """
+        :param base_types
+        :return:
+        """
+        queryset = self.unrestricted()
+
+        # Validate Cache, @todo: is optimized ?
+        if queryset.count() != len(self._cache):
+            # Cache don\t have full results
+            self.clear_cache()
+            for ct in queryset.select_related('content_type', 'workflow').prefetch_related('allowed_content_types'):
+                self._add_to_cache(self.db, ct)
+
+        return filter(lambda x: x.__hacs_base_content_type__ in base_types, self._cache.values())
+
     def get_by_natural_key(self, app_label, model, __restricted__=False):
         """
         :param app_label:

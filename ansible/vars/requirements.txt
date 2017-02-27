@@ -1,11 +1,17 @@
 Django>=1.10.3
+psycopg2
+django-redis
+# For Development Only
 pytest-django
 pytest-cov
 pytest-xdist
-django-redis
 jsmin
 rcssmin
-psycopg2
 ipdb
 mock
+flake8
+flake8-isort
 pytest-flake8
+django-extensions
+Werkzeug
+

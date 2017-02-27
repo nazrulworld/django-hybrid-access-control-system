@@ -153,12 +153,10 @@ def _pre_delete_hacs_container(model, instance):
     content_type = ContentType.objects.get_for_model(model)
 
     for model_cls in hacs_models:
-        filters = {"container_content_type": content_type}
-        if model_cls.__hacs_base_content_type__ == HACS_CONTENT_TYPE_CONTAINER:
-            filters["parent_container_id"] = instance.pk
-        else:
-            # Content
-            filters["container_id"] = instance.pk
+        filters = {
+            "container_content_type": content_type,
+            "parent_container_id": instance.pk
+        }
         # Delete All Child records
         model_cls.objects.filter(**filters).delete()
 

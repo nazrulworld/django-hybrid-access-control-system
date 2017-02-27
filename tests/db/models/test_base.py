@@ -45,7 +45,6 @@ class TestHacsContainerModel(TransactionTestCase):
             "created_by": superuser,
             "owner": superuser,
             "acquire_parent": False,
-            "workflow": None,
             "container_content_type": None,
             "parent_container_id": None,
             "recursive": True
@@ -63,7 +62,6 @@ class TestHacsContainerModel(TransactionTestCase):
             "local_roles": local_roles,
             "owner": superuser,
             "acquire_parent": True,
-            "workflow": None,
             "container_content_type": ContentType.objects.get_for_model(news_folder_cls),
             "parent_container_id": news_folder.pk,
             "recursive": True
@@ -83,7 +81,7 @@ class TestHacsContainerModel(TransactionTestCase):
             "owner": contributor,
             "acquire_parent": True,
             "container_content_type": ContentType.objects.get_for_model(date_folder_cls),
-            "container_id": date_folder.pk
+            "parent_container_id": date_folder.pk
         }
         news_item = news_item_cls(**data)
         news_item.save()
@@ -98,11 +96,6 @@ class TestHacsContainerModel(TransactionTestCase):
         # We Test permissions map come from workflow
         news_folder_ct = HacsContentType.objects.get_for_model(news_folder_cls)
         self.assertEqual(news_folder.permissions_actions_map, news_folder_ct.workflow.states_permissions_map[news_folder.state])
-        # Should get workflow alsodate_folder_cls
-        self.assertIsNotNone(date_folder.workflow)
-        self.assertEqual(news_folder.workflow, date_folder.workflow)
-        # News Item workflow must be different
-        self.assertNotEqual(news_item_ct.workflow, date_folder.workflow)
 
         # Test Local Roles inherit from DateFolder
         self.assertEqual(local_roles, news_item.local_roles)
@@ -118,7 +111,6 @@ class TestHacsContainerModel(TransactionTestCase):
             "created_by": superuser,
             "owner": superuser,
             "acquire_parent": False,
-            "workflow": None,
             "container_content_type": None,
             "parent_container_id": None,
             "recursive": False
@@ -136,7 +128,6 @@ class TestHacsContainerModel(TransactionTestCase):
             "local_roles": {"contributor@test.com": ("Editor",)},
             "owner": superuser,
             "acquire_parent": True,
-            "workflow": None,
             "container_content_type": ContentType.objects.get_for_model(news_folder_cls),
             "parent_container_id": news_folder.pk,
             "recursive": True
@@ -146,7 +137,7 @@ class TestHacsContainerModel(TransactionTestCase):
         date_folder.save()
 
         # Should not get workflow, although `acquire_parent` is true but respected parent recursive status!
-        self.assertIsNone(date_folder.workflow)
+        # self.assertIsNone(date_folder.workflow)
 
         # Create News Item at Site Root (item without container folder)
         data = {
@@ -157,7 +148,7 @@ class TestHacsContainerModel(TransactionTestCase):
             "owner": contributor,
             "acquire_parent": False,
             "container_content_type": None,
-            "container_id": None
+            "parent_container_id": None
         }
         news_item = news_item_cls(**data)
         # Should Not Save, globally not allowed
